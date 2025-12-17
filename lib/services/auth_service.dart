@@ -7,6 +7,7 @@ class AuthService extends ChangeNotifier {
   AuthService();
 
   String output = '';
+  String? username;
   Future<void> register(String username, String password) async {
     final url = Uri.parse(
       "https://employeeservice.coseligtest.workers.dev/api/register",
@@ -42,6 +43,7 @@ class AuthService extends ChangeNotifier {
         body: jsonEncode({'username': username, 'password': password}),
       );
 
+      this.username = username; // 登入成功時儲存帳號
       output = 'HTTP status: ${response.statusCode}\nBody:\n${response.body}';
       notifyListeners();
     } catch (e) {

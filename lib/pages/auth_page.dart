@@ -1,4 +1,5 @@
 import 'package:coselig_staff_portal/services/auth_service.dart';
+import 'package:coselig_staff_portal/pages/staff_home_page.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
@@ -15,7 +16,19 @@ class _AuthPageState extends State<AuthPage> {
 
   @override
   Widget build(BuildContext context) {
-    final authService = context.watch<AuthService>(); // 監聽 service 狀態
+    final authService = context.watch<AuthService>();
+
+    Future<void> handleLogin() async {
+      await authService.login(usernameController.text, passwordController.text);
+      // 假設 statusCode 200/201 視為登入成功
+      if (authService.output.contains('HTTP status: 200') ||
+          authService.output.contains('HTTP status: 201')) {
+        if (!mounted) return;
+        Navigator.of(context).pushReplacement(
+          MaterialPageRoute(builder: (_) => const StaffHomePage()),
+        );
+      }
+    }
 
     return Scaffold(
       appBar: AppBar(title: const Text('員工入口')),
@@ -37,10 +50,7 @@ class _AuthPageState extends State<AuthPage> {
               Row(
                 children: [
                   ElevatedButton(
-                    onPressed: () => authService.login(
-                      usernameController.text,
-                      passwordController.text,
-                    ),
+                    onPressed: handleLogin,
                     child: const Text('登入'),
                   ),
                   ElevatedButton(
@@ -56,7 +66,7 @@ class _AuthPageState extends State<AuthPage> {
               Expanded(
                 child: SingleChildScrollView(
                   child: Text(
-                    authService.output, // 這裡自動更新
+                    authService.output,
                     style: const TextStyle(fontFamily: 'Courier', fontSize: 14),
                   ),
                 ),
