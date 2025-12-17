@@ -1,9 +1,9 @@
 import 'dart:convert';
 
+import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 
-class AuthService {
-
+class AuthService extends ChangeNotifier {
   AuthService();
 
   String output = '';
@@ -18,14 +18,12 @@ class AuthService {
     );
 
     if (response.statusCode == 201) {
-      // setState(() {
-      //   output = "註冊成功！可以直接登入";
-      // });
+      notifyListeners();
+      output = "註冊成功！可以直接登入";
     } else {
       final data = jsonDecode(response.body);
-      // setState(() {
-      //   output = "註冊失敗：${data['error'] ?? 'Unknown'}";
-      // });
+      notifyListeners();
+      output = "註冊失敗：${data['error'] ?? 'Unknown'}";
     }
   }
 
@@ -34,9 +32,7 @@ class AuthService {
       'https://employeeservice.coseligtest.workers.dev/api/login',
     );
 
-    // setState(() {
-    //   output = '正在登入...';
-    // });
+    output = '正在登入...';
 
     try {
       final response = await http.post(
@@ -45,13 +41,9 @@ class AuthService {
         body: jsonEncode({'username': username, 'password': password}),
       );
 
-      // setState(() {
-      //   output = 'HTTP status: ${response.statusCode}\nBody:\n${response.body}';
-      // });
+      output = 'HTTP status: ${response.statusCode}\nBody:\n${response.body}';
     } catch (e) {
-      // setState(() {
-      //   output = '請求失敗: $e';
-      // });
+      output = '請求失敗: $e';
     }
   }
 }

@@ -8,7 +8,6 @@ class AuthPage extends StatefulWidget {
 }
 
 class _AuthPageState extends State<AuthPage> {
-  String output = '';
   TextEditingController usernameController = TextEditingController();
   TextEditingController passwordController = TextEditingController();
 
@@ -51,7 +50,7 @@ class _AuthPageState extends State<AuthPage> {
             Expanded(
               child: SingleChildScrollView(
                 child: Text(
-                  output,
+                  AuthService().output,
                   style: const TextStyle(fontFamily: 'Courier', fontSize: 14),
                 ),
               ),
