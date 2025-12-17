@@ -21,46 +21,48 @@ class _AuthPageState extends State<AuthPage> {
       appBar: AppBar(title: const Text('員工入口')),
       body: Padding(
         padding: const EdgeInsets.all(20.0),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            TextField(
-              controller: usernameController,
-              decoration: const InputDecoration(labelText: '帳號'),
-            ),
-            TextField(
-              controller: passwordController,
-              decoration: const InputDecoration(labelText: '密碼'),
-              obscureText: true,
-            ),
-            Row(
-              children: [
-                ElevatedButton(
-                  onPressed: () => authService.login(
-                    usernameController.text,
-                    passwordController.text,
+        child: Center(
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              TextField(
+                controller: usernameController,
+                decoration: const InputDecoration(labelText: '帳號'),
+              ),
+              TextField(
+                controller: passwordController,
+                decoration: const InputDecoration(labelText: '密碼'),
+                obscureText: true,
+              ),
+              Row(
+                children: [
+                  ElevatedButton(
+                    onPressed: () => authService.login(
+                      usernameController.text,
+                      passwordController.text,
+                    ),
+                    child: const Text('登入'),
                   ),
-                  child: const Text('登入'),
-                ),
-                ElevatedButton(
-                  onPressed: () => authService.register(
-                    usernameController.text,
-                    passwordController.text,
+                  ElevatedButton(
+                    onPressed: () => authService.register(
+                      usernameController.text,
+                      passwordController.text,
+                    ),
+                    child: const Text('註冊'),
                   ),
-                  child: const Text('註冊'),
-                ),
-              ],
-            ),
-            const SizedBox(height: 20),
-            Expanded(
-              child: SingleChildScrollView(
-                child: Text(
-                  authService.output, // 這裡自動更新
-                  style: const TextStyle(fontFamily: 'Courier', fontSize: 14),
+                ],
+              ),
+              const SizedBox(height: 20),
+              Expanded(
+                child: SingleChildScrollView(
+                  child: Text(
+                    authService.output, // 這裡自動更新
+                    style: const TextStyle(fontFamily: 'Courier', fontSize: 14),
+                  ),
                 ),
               ),
-            ),
-          ],
+            ],
+          ),
         ),
       ),
     );

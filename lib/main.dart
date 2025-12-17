@@ -1,4 +1,5 @@
 import 'package:coselig_staff_portal/pages/auth_page.dart';
+import 'package:coselig_staff_portal/pages/splash_screen.dart';
 import 'package:coselig_staff_portal/services/auth_service.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
@@ -18,7 +19,7 @@ class MainApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return const MaterialApp(
-      home: AuthPage(),
+      home: SplashScreen(),
     );
   }
 }
