@@ -5,11 +5,32 @@
     "version": "0.2.0",
     "configurations": [
         {
-            "name": "coselig_staff_portal (release mode)",
+            "name": "release",
+            "program": "lib/main.dart",
             "request": "launch",
             "type": "dart",
             "flutterMode": "release",
             "console": "debugConsole",
+            "args": [
+                "-d",
+                "chrome",
+                "--web-port",
+                "25565",
+            ]
+        },
+        {
+            "name": "debug",
+            "program": "lib/main.dart",
+            "request": "launch",
+            "type": "dart",
+            "flutterMode": "debug",
+            "console": "debugConsole",
+            "args": [
+                "-d",
+                "chrome",
+                "--web-port",
+                "25565",
+            ]
         },
         {
             "name": "網站",
