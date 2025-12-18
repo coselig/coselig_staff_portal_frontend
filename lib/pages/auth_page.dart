@@ -11,15 +11,16 @@ class AuthPage extends StatefulWidget {
 }
 
 class _AuthPageState extends State<AuthPage> {
-  TextEditingController usernameController = TextEditingController();
+  TextEditingController nameController = TextEditingController();
   TextEditingController passwordController = TextEditingController();
+  TextEditingController emailController = TextEditingController();
 
   @override
   Widget build(BuildContext context) {
     final authService = context.watch<AuthService>();
 
     Future<void> handleLogin() async {
-      await authService.login(usernameController.text, passwordController.text);
+      await authService.login(emailController.text, passwordController.text);
       // 假設 statusCode 200/201 視為登入成功
       if (authService.output.contains('HTTP status: 200') ||
           authService.output.contains('HTTP status: 201')) {
@@ -39,8 +40,12 @@ class _AuthPageState extends State<AuthPage> {
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
               TextField(
-                controller: usernameController,
-                decoration: const InputDecoration(labelText: '帳號'),
+                controller: nameController,
+                decoration: const InputDecoration(labelText: '姓名'),
+              ),
+              TextField(
+                controller: emailController,
+                decoration: const InputDecoration(labelText: '電子郵件'),
               ),
               TextField(
                 controller: passwordController,
@@ -55,7 +60,8 @@ class _AuthPageState extends State<AuthPage> {
                   ),
                   ElevatedButton(
                     onPressed: () => authService.register(
-                      usernameController.text,
+                      nameController.text,
+                      emailController.text,
                       passwordController.text,
                     ),
                     child: const Text('註冊'),

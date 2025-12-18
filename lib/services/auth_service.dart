@@ -7,15 +7,21 @@ class AuthService extends ChangeNotifier {
   AuthService();
 
   String output = '';
-  String? username;
-  Future<void> register(String username, String password) async {
+  String? email;
+  String? name;
+  Future<void> register(String name, String email, String password) async {
     final url = Uri.parse(
       "https://employeeservice.coseligtest.workers.dev/api/register",
     );
     final response = await http.post(
       url,
       headers: {"Content-Type": "application/json"},
-      body: jsonEncode({"username": username, "password": password}),
+      body: jsonEncode({
+        "name": name,
+        "email": email,
+        "password": password,
+        "role": "employee",
+      }),
     );
 
     if (response.statusCode == 201) {
@@ -28,7 +34,7 @@ class AuthService extends ChangeNotifier {
     }
   }
 
-  Future<void> login(String username, String password) async {
+  Future<void> login(String email, String password) async {
     final url = Uri.parse(
       'https://employeeservice.coseligtest.workers.dev/api/login',
     );
@@ -40,10 +46,16 @@ class AuthService extends ChangeNotifier {
       final response = await http.post(
         url,
         headers: {'Content-Type': 'application/json'},
-        body: jsonEncode({'username': username, 'password': password}),
+        body: jsonEncode({'email': email, 'password': password}),
       );
 
-      this.username = username; // 登入成功時儲存帳號
+      this.email = email; // 登入成功時儲存帳號
+      final data = jsonDecode(response.body);
+      if (response.statusCode == 200 && data['user'] != null) {
+        name = data['user']['name'];
+      } else {
+        name = null;
+      }
       output = 'HTTP status: ${response.statusCode}\nBody:\n${response.body}';
       notifyListeners();
     } catch (e) {

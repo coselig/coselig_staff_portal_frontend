@@ -14,7 +14,7 @@ class StaffHomePage extends StatelessWidget {
         padding: const EdgeInsets.all(16.0),
         children: [
           Text(
-            '歡迎，${authService.username ?? '員工'}！',
+            '歡迎，${authService.name ?? '員工'}！',
             style: const TextStyle(fontSize: 24),
           ),
           const SizedBox(height: 20),
