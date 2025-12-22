@@ -33,14 +33,43 @@ class _StaffHomePageState extends State<StaffHomePage> {
     String? checkOutTime = attendance.todayAttendance?['check_out_time'];
     String formatTime(String? dt) {
       if (dt == null || dt.isEmpty) return '--';
-      final parts = dt.split(' ');
-      return parts.length == 2 ? parts[1] : dt;
+      // SQLite datetime 格式 yyyy-MM-dd HH:mm:ss
+      try {
+        final parts = dt.split(' ');
+        if (parts.length == 2) {
+          final datePart = parts[0];
+          final timePart = parts[1];
+          final dateTime = DateTime.parse('$datePart $timePart');
+          // 台灣時區 UTC+8
+          final twDateTime = dateTime.toUtc().add(const Duration(hours: 8));
+          return '${twDateTime.hour.toString().padLeft(2, '0')}:${twDateTime.minute.toString().padLeft(2, '0')}:${twDateTime.second.toString().padLeft(2, '0')}';
+        }
+        return dt;
+      } catch (_) {
+        return dt;
+      }
     }
 
     return Scaffold(
       appBar: AppBar(
         title: const Text('員工系統'),
         actions: [
+          IconButton(
+            icon: const Icon(Icons.refresh),
+            tooltip: '手動刷新',
+            onPressed: () async {
+              print('[StaffHomePage][refresh] userId: $userId');
+              if (userId != null) {
+                await attendance.getTodayAttendance(userId);
+                print('[StaffHomePage][refresh] after getTodayAttendance');
+                if (context.mounted) {
+                  ScaffoldMessenger.of(
+                    context,
+                  ).showSnackBar(const SnackBar(content: Text('已手動刷新打卡資料')));
+                }
+              }
+            },
+          ),
           IconButton(
             icon: const Icon(Icons.logout),
             tooltip: '登出',
@@ -77,6 +106,7 @@ class _StaffHomePageState extends State<StaffHomePage> {
           ),
           const SizedBox(height: 20),
           Row(
+            mainAxisAlignment: MainAxisAlignment.spaceAround,
             children: [
               Expanded(child: Text('今日上班時間：${formatTime(checkInTime)}')),
               ElevatedButton(
@@ -91,6 +121,7 @@ class _StaffHomePageState extends State<StaffHomePage> {
           ),
           const SizedBox(height: 20),
           Row(
+            mainAxisAlignment: MainAxisAlignment.spaceAround,
             children: [
               Expanded(child: Text('今日下班時間：${formatTime(checkOutTime)}')),
               ElevatedButton(
