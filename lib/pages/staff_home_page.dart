@@ -2,6 +2,8 @@ import 'package:coselig_staff_portal/services/attendance_service.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:coselig_staff_portal/services/auth_service.dart';
+import 'package:coselig_staff_portal/widgets/month_year_picker.dart';
+import 'package:coselig_staff_portal/widgets/attendance_calendar_view.dart';
 
 class StaffHomePage extends StatefulWidget {
   const StaffHomePage({super.key});
@@ -140,6 +142,36 @@ class _StaffHomePageState extends State<StaffHomePage> {
               attendance.errorMessage!,
               style: const TextStyle(color: Colors.red, fontSize: 14),
             ),
+          const SizedBox(height: 24),
+          ElevatedButton(
+            child: Text('選擇月份'),
+            onPressed: () async {
+              final result = await showMonthYearPicker(
+                context: context,
+                initialYear: DateTime.now().year,
+                initialMonth: DateTime.now().month,
+              );
+              if (result != null) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(
+                    content: Text('選擇的日期:${result.year}/${result.month}'),
+                  ),
+                );
+              }
+            },
+          ),
+
+          const SizedBox(height: 24),
+          AttendanceCalendarView(
+            month: DateTime.now(),
+            recordsMap: {1: '打卡', 2: '打卡', 5: '打卡'},
+            leaveDaysMap: {
+              3: ['請假'],
+              4: ['請假'],
+            },
+            holidaysMap: {6: '假日'},
+            todayDay: DateTime.now().day,
+          ),
         ],
       ),
     );
