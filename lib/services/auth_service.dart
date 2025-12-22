@@ -63,10 +63,17 @@ class AuthService extends ChangeNotifier {
     notifyListeners();
 
     try {
+      // 支援 email 或 name 登入
+      Map<String, dynamic> loginBody;
+      if (email.contains('@')) {
+        loginBody = {'email': email, 'password': password};
+      } else {
+        loginBody = {'name': email, 'password': password};
+      }
       final res = await _client.post(
         Uri.parse('$baseUrl/api/login'),
         headers: {'Content-Type': 'application/json'},
-        body: jsonEncode({'email': email, 'password': password}),
+        body: jsonEncode(loginBody),
       );
 
       final data = jsonDecode(res.body);
