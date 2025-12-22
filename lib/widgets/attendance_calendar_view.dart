@@ -1,3 +1,4 @@
+import 'package:coselig_staff_portal/utils/time_utils.dart';
 import 'package:flutter/material.dart';
 
 /// 月曆視圖元件，顯示一個月的打卡、請假、假日狀態
@@ -73,6 +74,16 @@ class AttendanceCalendarView extends StatelessWidget {
     );
   }
 
+  String _debugRecordString(dynamic record) {
+    if (record is Map<String, dynamic>) {
+      String checkIn = record['check_in_time'] ?? '';
+      String checkOut = record['check_out_time'] ?? '';
+      String day = record['day']?.toString() ?? '';
+      return 'day:$day\n上:${formatTime(checkIn)} 下:${formatTime(checkOut)}';
+    }
+    return record.toString();
+  }
+
   Widget _buildCalendarDay(
     BuildContext context,
     int day,
@@ -100,12 +111,24 @@ class AttendanceCalendarView extends StatelessWidget {
       backgroundColor = Colors.green.shade100;
       textColor = Colors.green.shade900;
       icon = Icons.check_circle;
-      status = '打卡';
+      // 顯示上班/下班時間
+      String checkIn = record['check_in_time'] ?? '';
+      String checkOut = record['check_out_time'] ?? '';
+      if (checkIn.isNotEmpty && checkOut.isNotEmpty) {
+        status = '上:${formatTime(checkIn)}\n下:${formatTime(checkOut)}';
+      } else if (checkIn.isNotEmpty) {
+        status = '上:${formatTime(checkIn)}';
+      } else if (checkOut.isNotEmpty) {
+        status = '下:${formatTime(checkOut)}';
+      } else {
+        status = '打卡';
+      }
     } else {
       backgroundColor = Colors.grey.shade100;
       textColor = Colors.grey.shade600;
       status = '';
     }
+      
     if (isWeekend && status == '') {
       backgroundColor = Colors.grey.shade200;
     }
@@ -134,8 +157,23 @@ class AttendanceCalendarView extends StatelessWidget {
               if (status.isNotEmpty)
                 Padding(
                   padding: const EdgeInsets.only(top: 2),
-                  child: Text(status, style: TextStyle(color: textColor, fontSize: 12)),
+                  child: Text(
+                    status,
+                    style: TextStyle(color: textColor, fontSize: 12),
+                    textAlign: TextAlign.center,
+                  ),
                 ),
+              if (record != null)
+                Padding(
+                  padding: const EdgeInsets.only(top: 2),
+                  child: Text(
+                    _debugRecordString(record),
+                    style: const TextStyle(fontSize: 10, color: Colors.grey),
+                    maxLines: 4,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ),
+  
             ],
           ),
         ),

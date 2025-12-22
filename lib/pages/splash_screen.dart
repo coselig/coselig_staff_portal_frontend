@@ -15,21 +15,28 @@ class SplashScreen extends StatefulWidget {
 
 class _SplashScreenState extends State<SplashScreen> {
   bool _navigated = false;
+  bool _autoLoginStarted = false;
 
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
-    final authService = context.watch<AuthService>();
-    if (!_navigated && !authService.isLoading) {
+    if (!_autoLoginStarted) {
+      _autoLoginStarted = true;
+      _doAutoLoginAndNavigate();
+    }
+  }
+
+  Future<void> _doAutoLoginAndNavigate() async {
+    final authService = context.read<AuthService>();
+    await authService.tryAutoLogin();
+    if (!mounted) return;
+    if (!_navigated) {
       _navigated = true;
-      Future.microtask(() {
-        if (!mounted) return;
-        if (authService.isLoggedIn) {
-          Navigator.of(context).pushReplacementNamed('/home');
-        } else {
-          Navigator.of(context).pushReplacementNamed('/login');
-        }
-      });
+      if (authService.isLoggedIn) {
+        Navigator.of(context).pushReplacementNamed('/home');
+      } else {
+        Navigator.of(context).pushReplacementNamed('/login');
+      }
     }
   }
 

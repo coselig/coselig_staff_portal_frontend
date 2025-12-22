@@ -16,6 +16,38 @@ class AttendanceService extends ChangeNotifier {
   Map<String, dynamic>? todayAttendance;
   String? errorMessage;
 
+  /// 取得指定月份的打卡記錄
+  Future<Map<int, dynamic>> getMonthAttendance(
+    String userId,
+    int year,
+    int month,
+  ) async {
+    print(
+      '[AttendanceService][getMonthAttendance] userId: $userId, year: $year, month: $month',
+    );
+    final res = await http.get(
+      Uri.parse(
+        '$baseUrl/api/attendance/month?user_id=$userId&year=$year&month=$month',
+      ),
+      headers: {'Content-Type': 'application/json'},
+    );
+    if (res.statusCode == 200) {
+      // 假設 API 回傳格式: { "records": [ { "day": 1, ... }, ... ] }
+      final data = jsonDecode(res.body);
+      final records = data['records'] as List<dynamic>? ?? [];
+      final Map<int, dynamic> recordsMap = {};
+      for (final record in records) {
+        if (record is Map<String, dynamic> && record['day'] != null) {
+          recordsMap[record['day']] = record;
+        }
+      }
+      return recordsMap;
+    } else {
+      print('[AttendanceService][getMonthAttendance] error: ${res.body}');
+      return {};
+    }
+  }
+
   /// 上班打卡
   Future<bool> checkIn(String userId) async {
     print('[AttendanceService][checkIn] userId: $userId');

@@ -11,7 +11,7 @@ void main() {
   runApp(
     MultiProvider(
       providers: [
-        ChangeNotifierProvider(create: (_) => AuthService()..tryAutoLogin()),
+        ChangeNotifierProvider(create: (_) => AuthService()),
         ChangeNotifierProvider(create: (_) => AttendanceService()),
       ],
       child: const MainApp(),

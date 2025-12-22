@@ -1,3 +1,4 @@
+import 'package:coselig_staff_portal/utils/time_utils.dart';
 import 'package:coselig_staff_portal/services/attendance_service.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
@@ -14,15 +15,41 @@ class StaffHomePage extends StatefulWidget {
 
 class _StaffHomePageState extends State<StaffHomePage> {
   bool _requested = false;
+  DateTime _selectedMonth = DateTime.now();
+  Map<int, dynamic> _monthRecords = {};
 
   @override
-  void didChangeDependencies() {
-    super.didChangeDependencies();
+  void initState() {
+    super.initState();
+    Future.microtask(_initUserAndAttendance);
+  }
+
+  Future<void> _initUserAndAttendance() async {
+    if (_requested) return;
+    _requested = true;
     final authService = context.read<AuthService>();
     final attendance = context.read<AttendanceService>();
-    if (!_requested && authService.userId != null) {
-      _requested = true;
-      attendance.getTodayAttendance(authService.userId!);
+    await authService.tryAutoLogin();
+    if (authService.userId != null) {
+      await attendance.getTodayAttendance(authService.userId!);
+      await _fetchMonthAttendance();
+    }
+  }
+
+  Future<void> _fetchMonthAttendance() async {
+    final authService = context.read<AuthService>();
+    final attendance = context.read<AttendanceService>();
+    final userId = authService.userId;
+    if (userId != null) {
+      final records = await attendance.getMonthAttendance(
+        userId,
+        _selectedMonth.year,
+        _selectedMonth.month,
+      );
+      setState(() {
+        _monthRecords = records;
+        print('[StaffHomePage][_monthRecords] $_monthRecords');
+      });
     }
   }
 
@@ -33,24 +60,6 @@ class _StaffHomePageState extends State<StaffHomePage> {
     final userId = authService.userId;
     String? checkInTime = attendance.todayAttendance?['check_in_time'];
     String? checkOutTime = attendance.todayAttendance?['check_out_time'];
-    String formatTime(String? dt) {
-      if (dt == null || dt.isEmpty) return '--';
-      // SQLite datetime 格式 yyyy-MM-dd HH:mm:ss
-      try {
-        final parts = dt.split(' ');
-        if (parts.length == 2) {
-          final datePart = parts[0];
-          final timePart = parts[1];
-          final dateTime = DateTime.parse('$datePart $timePart');
-          // 台灣時區 UTC+8
-          final twDateTime = dateTime.toUtc().add(const Duration(hours: 8));
-          return '${twDateTime.hour.toString().padLeft(2, '0')}:${twDateTime.minute.toString().padLeft(2, '0')}:${twDateTime.second.toString().padLeft(2, '0')}';
-        }
-        return dt;
-      } catch (_) {
-        return dt;
-      }
-    }
 
     return Scaffold(
       appBar: AppBar(
@@ -148,10 +157,14 @@ class _StaffHomePageState extends State<StaffHomePage> {
             onPressed: () async {
               final result = await showMonthYearPicker(
                 context: context,
-                initialYear: DateTime.now().year,
-                initialMonth: DateTime.now().month,
+                initialYear: _selectedMonth.year,
+                initialMonth: _selectedMonth.month,
               );
               if (result != null) {
+                setState(() {
+                  _selectedMonth = DateTime(result.year, result.month);
+                });
+                await _fetchMonthAttendance();
                 ScaffoldMessenger.of(context).showSnackBar(
                   SnackBar(
                     content: Text('選擇的日期:${result.year}/${result.month}'),
@@ -162,15 +175,21 @@ class _StaffHomePageState extends State<StaffHomePage> {
           ),
 
           const SizedBox(height: 24),
-          AttendanceCalendarView(
-            month: DateTime.now(),
-            recordsMap: {1: '打卡', 2: '打卡', 5: '打卡'},
-            leaveDaysMap: {
-              3: ['請假'],
-              4: ['請假'],
-            },
-            holidaysMap: {6: '假日'},
-            todayDay: DateTime.now().day,
+          Center(
+            child: ConstrainedBox(
+              constraints: BoxConstraints(maxWidth: 420),
+              child: AttendanceCalendarView(
+                month: _selectedMonth,
+                recordsMap: _monthRecords,
+                leaveDaysMap: {},
+                holidaysMap: {},
+                todayDay:
+                    (_selectedMonth.year == DateTime.now().year &&
+                        _selectedMonth.month == DateTime.now().month)
+                    ? DateTime.now().day
+                    : null,
+              ),
+            ),
           ),
         ],
       ),
