@@ -1,3 +1,4 @@
+import 'package:coselig_staff_portal/pages/admin_page.dart';
 import 'package:coselig_staff_portal/pages/auth_page.dart';
 import 'package:coselig_staff_portal/pages/splash_screen.dart';
 import 'package:coselig_staff_portal/pages/staff_home_page.dart';
@@ -37,6 +38,7 @@ class MainApp extends StatelessWidget {
         '/login': (context) => const AuthPage(),
         '/home': (context) => const StaffHomePage(),
         '/register': (context) => const RegisterFrame(),
+        '/admin': (context) => const AdminPage(),
       },
     );
   }

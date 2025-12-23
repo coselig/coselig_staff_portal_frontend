@@ -99,6 +99,16 @@ class _StaffHomePageState extends State<StaffHomePage> {
         child: ListView(
           children: [
             DrawerHeader(child: Text('光悅員工系統', style: TextStyle(fontSize: 20))),
+            if (authService.isAdmin) ...[
+              ListTile(
+                leading: Icon(Icons.admin_panel_settings),
+                title: Text('管理員系統'),
+                onTap: () {
+                  Navigator.of(context).pushNamed('/admin');
+                },
+              ),
+              const Divider(),
+            ],
             ListTile(
               leading: Icon(Icons.logout),
               title: Text('登出'),

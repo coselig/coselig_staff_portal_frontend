@@ -20,6 +20,32 @@ class AuthService extends ChangeNotifier {
   /// 是否已登入
   bool get isLoggedIn => name != null;
 
+  /// 是否為管理員
+  bool get isAdmin => role == 'admin';
+
+  /* ========================
+   * 獲取員工列表（管理員功能）
+   * ======================== */
+  Future<List<Map<String, dynamic>>> getEmployees() async {
+    try {
+      final res = await _client.get(
+        Uri.parse('$baseUrl/api/employees'),
+        headers: {'Content-Type': 'application/json'},
+      );
+
+      if (res.statusCode == 200) {
+        final data = jsonDecode(res.body);
+        final employees = data['employees'] as List<dynamic>? ?? [];
+        return employees.map((e) => e as Map<String, dynamic>).toList();
+      } else {
+        throw Exception('獲取員工列表失敗: ${res.body}');
+      }
+    } catch (e) {
+      print('獲取員工列表錯誤: $e');
+      rethrow;
+    }
+  }
+
   /* ========================
    * 自動登入（讀取 session）
    * ======================== */

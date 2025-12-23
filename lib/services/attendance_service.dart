@@ -16,6 +16,22 @@ class AttendanceService extends ChangeNotifier {
   Map<String, dynamic>? todayAttendance;
   String? errorMessage;
 
+/// 取得所有員工的打卡記錄（管理員功能）
+  Future<Map<String, Map<int, dynamic>>> getAllEmployeesAttendance(
+    int year,
+    int month,
+  ) async {
+    print(
+      '[AttendanceService][getAllEmployeesAttendance] year: $year, month: $month',
+    );
+
+    // TODO: 實現管理員 API 來獲取所有員工的打卡記錄
+    // 目前返回空數據，顯示功能尚未實現的消息
+    print('[AttendanceService][getAllEmployeesAttendance] 管理員功能尚未實現，返回空數據');
+
+    return {};
+  }
+
   /// 取得指定月份的打卡記錄
   Future<Map<int, dynamic>> getMonthAttendance(
     String userId,
