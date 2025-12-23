@@ -23,22 +23,32 @@ class AttendanceCalendarView extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    // 取得本月1號的日期
     final firstDayOfMonth = DateTime(month.year, month.month, 1);
+    // 取得本月最後一天的日期
     final lastDayOfMonth = DateTime(month.year, month.month + 1, 0);
+    // 1號是星期幾（1=週一, 7=週日，若為7則轉成0，讓1號對齊在週日）
     final firstWeekday = firstDayOfMonth.weekday == 7 ? 0 : firstDayOfMonth.weekday;
+    // 本月天數
     final daysInMonth = lastDayOfMonth.day;
     const cellWidth = 36.0;
+    // 計算總格數（補足前面空格與最後一週）
     final totalCells = ((daysInMonth + firstWeekday) / 7).ceil() * 7;
     final List<Widget> gridItems = [];
+    // 產生月曆格子
     for (int i = 0; i < totalCells; i++) {
+      // 前面 firstWeekday 個格子補空白，讓1號對齊正確星期
+      // 超過本月天數的格子也補空白
       if (i < firstWeekday || i - firstWeekday + 1 > daysInMonth) {
         gridItems.add(const SizedBox.shrink());
       } else {
+        // 計算當前格子是幾號
         final day = i - firstWeekday + 1;
         final record = recordsMap[day];
         final leave = leaveDaysMap[day];
         final holiday = holidaysMap[day];
         final isToday = todayDay == day;
+        // 判斷是否為週末（週日或週六）
         final isWeekend = (i % 7 == 0) || (i % 7 == 6);
         gridItems.add(_buildCalendarDay(context, day, record, leave, isToday, holiday, isWeekend));
       }

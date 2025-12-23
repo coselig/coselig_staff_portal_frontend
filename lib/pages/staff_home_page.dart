@@ -72,7 +72,10 @@ class _StaffHomePageState extends State<StaffHomePage> {
               print('[StaffHomePage][refresh] userId: $userId');
               if (userId != null) {
                 await attendance.getTodayAttendance(userId);
-                print('[StaffHomePage][refresh] after getTodayAttendance');
+                await _fetchMonthAttendance();
+                print(
+                  '[StaffHomePage][refresh] after getTodayAttendance & getMonthAttendance',
+                );
                 if (context.mounted) {
                   ScaffoldMessenger.of(
                     context,

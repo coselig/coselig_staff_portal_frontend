@@ -41,6 +41,7 @@ class AttendanceService extends ChangeNotifier {
           recordsMap[record['day']] = record;
         }
       }
+      print('[AttendanceService][getMonthAttendance] recordsMap: $recordsMap');
       return recordsMap;
     } else {
       print('[AttendanceService][getMonthAttendance] error: ${res.body}');

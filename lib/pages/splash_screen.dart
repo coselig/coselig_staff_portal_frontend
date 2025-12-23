@@ -22,7 +22,9 @@ class _SplashScreenState extends State<SplashScreen> {
     super.didChangeDependencies();
     if (!_autoLoginStarted) {
       _autoLoginStarted = true;
-      _doAutoLoginAndNavigate();
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        _doAutoLoginAndNavigate();
+      });
     }
   }
 
