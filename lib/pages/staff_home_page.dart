@@ -6,6 +6,7 @@ import 'package:coselig_staff_portal/services/auth_service.dart';
 import 'package:coselig_staff_portal/widgets/month_year_picker.dart';
 import 'package:coselig_staff_portal/widgets/attendance_calendar_view.dart';
 import 'package:coselig_staff_portal/main.dart';
+import 'package:coselig_staff_portal/services/excel_export_service.dart';
 
 class StaffHomePage extends StatefulWidget {
   const StaffHomePage({super.key});
@@ -18,6 +19,7 @@ class _StaffHomePageState extends State<StaffHomePage> {
   bool _requested = false;
   DateTime _selectedMonth = DateTime.now();
   Map<int, dynamic> _monthRecords = {};
+  final ExcelExportService _excelExportService = ExcelExportService();
 
   @override
   void initState() {
@@ -152,26 +154,56 @@ class _StaffHomePageState extends State<StaffHomePage> {
               style: const TextStyle(color: Colors.red, fontSize: 14),
             ),
           const SizedBox(height: 24),
-          ElevatedButton(
-            child: Text('選擇月份'),
-            onPressed: () async {
-              final result = await showMonthYearPicker(
-                context: context,
-                initialYear: _selectedMonth.year,
-                initialMonth: _selectedMonth.month,
-              );
-              if (result != null) {
-                setState(() {
-                  _selectedMonth = DateTime(result.year, result.month);
-                });
-                await _fetchMonthAttendance();
-                scaffoldMessengerKey.currentState!.showSnackBar(
-                  SnackBar(
-                    content: Text('選擇的日期:${result.year}/${result.month}'),
-                  ),
-                );
-              }
-            },
+          Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              ElevatedButton(
+                child: Text('選擇月份'),
+                onPressed: () async {
+                  final result = await showMonthYearPicker(
+                    context: context,
+                    initialYear: _selectedMonth.year,
+                    initialMonth: _selectedMonth.month,
+                  );
+                  if (result != null) {
+                    setState(() {
+                      _selectedMonth = DateTime(result.year, result.month);
+                    });
+                    await _fetchMonthAttendance();
+                    scaffoldMessengerKey.currentState!.showSnackBar(
+                      SnackBar(
+                        content: Text('選擇的日期:${result.year}/${result.month}'),
+                      ),
+                    );
+                  }
+                },
+              ),
+              const SizedBox(width: 16),
+              ElevatedButton(
+                child: Text('匯出Excel'),
+                onPressed: () async {
+                  final authService = context.read<AuthService>();
+                  final employeeName = authService.name ?? '員工';
+                  final employeeId = authService.userId ?? '';
+
+                  try {
+                    await _excelExportService.exportAttendanceRecords(
+                      employeeName: employeeName,
+                      employeeId: employeeId,
+                      monthRecords: _monthRecords,
+                      month: _selectedMonth,
+                    );
+                    scaffoldMessengerKey.currentState!.showSnackBar(
+                      const SnackBar(content: Text('Excel檔案匯出成功')),
+                    );
+                  } catch (e) {
+                    scaffoldMessengerKey.currentState!.showSnackBar(
+                      SnackBar(content: Text('匯出失敗: $e')),
+                    );
+                  }
+                },
+              ),
+            ],
           ),
 
           const SizedBox(height: 24),
