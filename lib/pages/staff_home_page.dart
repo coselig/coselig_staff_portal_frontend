@@ -175,16 +175,22 @@ class _StaffHomePageState extends State<StaffHomePage> {
           ),
 
           const SizedBox(height: 24),
-          AttendanceCalendarView(
-            month: _selectedMonth,
-            recordsMap: _monthRecords,
-            leaveDaysMap: {},
-            holidaysMap: {},
-            todayDay:
-                (_selectedMonth.year == DateTime.now().year &&
-                    _selectedMonth.month == DateTime.now().month)
-                ? DateTime.now().day
-                : null,
+          Align(
+            alignment: Alignment.center,
+            child: ConstrainedBox(
+              constraints: BoxConstraints(maxWidth: 680),
+              child: AttendanceCalendarView(
+                month: _selectedMonth,
+                recordsMap: _monthRecords,
+                leaveDaysMap: {},
+                holidaysMap: {},
+                todayDay:
+                    (_selectedMonth.year == DateTime.now().year &&
+                        _selectedMonth.month == DateTime.now().month)
+                    ? DateTime.now().day
+                    : null,
+              ),
+            ),
           ),
         ],
       ),
