@@ -184,7 +184,9 @@ class _AdminPageState extends State<AdminPage> {
                             final userId = _allEmployeesRecords.keys.elementAt(index);
                             final employeeData = _allEmployeesRecords[userId]!;
                             final employee = employeeData['employee'] as Map<String, dynamic>;
-                            final records = employeeData['records'] as Map<int, dynamic>;
+                        final records = Map<int, dynamic>.from(
+                          employeeData['records'] as Map,
+                        );
 
                             return Card(
                               margin: const EdgeInsets.only(bottom: 16),
