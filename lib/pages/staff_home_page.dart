@@ -77,11 +77,9 @@ class _StaffHomePageState extends State<StaffHomePage> {
                 debugPrint(
                   '[StaffHomePage][refresh] after getTodayAttendance & getMonthAttendance',
                 );
-                if (context.mounted) {
-                  ScaffoldMessenger.of(
-                    context,
-                  ).showSnackBar(const SnackBar(content: Text('已手動刷新打卡資料')));
-                }
+                scaffoldMessengerKey.currentState!.showSnackBar(
+                  const SnackBar(content: Text('已手動刷新打卡資料')),
+                );
               }
             },
           ),
@@ -167,7 +165,7 @@ class _StaffHomePageState extends State<StaffHomePage> {
                   _selectedMonth = DateTime(result.year, result.month);
                 });
                 await _fetchMonthAttendance();
-                ScaffoldMessenger.of(context).showSnackBar(
+                scaffoldMessengerKey.currentState!.showSnackBar(
                   SnackBar(
                     content: Text('選擇的日期:${result.year}/${result.month}'),
                   ),
@@ -177,21 +175,16 @@ class _StaffHomePageState extends State<StaffHomePage> {
           ),
 
           const SizedBox(height: 24),
-          Center(
-            child: ConstrainedBox(
-              constraints: BoxConstraints(maxWidth: 420),
-              child: AttendanceCalendarView(
-                month: _selectedMonth,
-                recordsMap: _monthRecords,
-                leaveDaysMap: {},
-                holidaysMap: {},
-                todayDay:
-                    (_selectedMonth.year == DateTime.now().year &&
-                        _selectedMonth.month == DateTime.now().month)
-                    ? DateTime.now().day
-                    : null,
-              ),
-            ),
+          AttendanceCalendarView(
+            month: _selectedMonth,
+            recordsMap: _monthRecords,
+            leaveDaysMap: {},
+            holidaysMap: {},
+            todayDay:
+                (_selectedMonth.year == DateTime.now().year &&
+                    _selectedMonth.month == DateTime.now().month)
+                ? DateTime.now().day
+                : null,
           ),
         ],
       ),

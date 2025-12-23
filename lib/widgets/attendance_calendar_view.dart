@@ -8,8 +8,6 @@ class AttendanceCalendarView extends StatelessWidget {
   final Map<int, List<dynamic>> leaveDaysMap; // day -> leave list
   final Map<int, dynamic> holidaysMap; // day -> holiday
   final int? todayDay;
-  
-  final double cellWidth;
 
   const AttendanceCalendarView({
     super.key,
@@ -18,7 +16,6 @@ class AttendanceCalendarView extends StatelessWidget {
     required this.leaveDaysMap,
     required this.holidaysMap,
     this.todayDay,
-    this.cellWidth = 36.0,
   });
 
   @override
@@ -31,7 +28,6 @@ class AttendanceCalendarView extends StatelessWidget {
     final firstWeekday = firstDayOfMonth.weekday == 7 ? 0 : firstDayOfMonth.weekday;
     // 本月天數
     final daysInMonth = lastDayOfMonth.day;
-    const cellWidth = 36.0;
     // 計算總格數（補足前面空格與最後一週）
     final totalCells = ((daysInMonth + firstWeekday) / 7).ceil() * 7;
     final List<Widget> gridItems = [];
@@ -56,29 +52,40 @@ class AttendanceCalendarView extends StatelessWidget {
     return Card(
       child: Padding(
         padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
-        child: Column(
-          children: [
-            GridView.count(
-              crossAxisCount: 7,
-              shrinkWrap: true,
-              physics: const NeverScrollableScrollPhysics(),
-              childAspectRatio: cellWidth / 32.0,
+        child: LayoutBuilder(
+          builder: (context, constraints) {
+            final availableWidth = constraints.maxWidth.clamp(
+              280.0,
+              420.0,
+            ); // 最小280，最大420
+            final cellSize = availableWidth / 7;
+            return Column(
               children: [
-                for (final label in ['日', '一', '二', '三', '四', '五', '六'])
-                  Center(
-                    child: Text(label, style: const TextStyle(fontWeight: FontWeight.bold)),
-                  ),
+                GridView.count(
+                  crossAxisCount: 7,
+                  shrinkWrap: true,
+                  physics: const NeverScrollableScrollPhysics(),
+                  children: [
+                    for (final label in ['日', '一', '二', '三', '四', '五', '六'])
+                      Center(
+                        child: Text(
+                          label,
+                          style: const TextStyle(fontWeight: FontWeight.bold),
+                        ),
+                      ),
+                  ],
+                ),
+                const SizedBox(height: 8),
+                GridView.count(
+                  crossAxisCount: 7,
+                  shrinkWrap: true,
+                  physics: const NeverScrollableScrollPhysics(),
+                  childAspectRatio: 1.0, // 正方形比例
+                  children: gridItems,
+                ),
               ],
-            ),
-            const SizedBox(height: 8),
-            GridView.count(
-              crossAxisCount: 7,
-              shrinkWrap: true,
-              physics: const NeverScrollableScrollPhysics(),
-              childAspectRatio: cellWidth / 64.0,
-              children: gridItems,
-            ),
-          ],
+            );
+          },
         ),
       ),
     );
@@ -157,8 +164,6 @@ class AttendanceCalendarView extends StatelessWidget {
                 : [],
             border: isToday ? Border.all(color: Colors.blue, width: 2) : null,
           ),
-          width: cellWidth,
-          height: 44,
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
@@ -183,7 +188,7 @@ class AttendanceCalendarView extends StatelessWidget {
                     overflow: TextOverflow.ellipsis,
                   ),
                 ),
-  
+
             ],
           ),
         ),
