@@ -210,6 +210,13 @@ class _StaffHomePageState extends State<StaffHomePage> {
             },
           ),
           IconButton(
+            icon: const Icon(Icons.toggle_on),
+            tooltip: '切換主題',
+            onPressed: () {
+              // Logic to toggle theme
+            },
+          ),
+          IconButton(
             icon: const Icon(Icons.logout),
             tooltip: '登出',
             onPressed: () async {

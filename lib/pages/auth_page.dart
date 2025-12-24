@@ -1,5 +1,6 @@
 import 'package:coselig_staff_portal/widgets/login_frame.dart';
 import 'package:coselig_staff_portal/widgets/register_frame.dart';
+import 'package:coselig_staff_portal/widgets/theme_toggle_switch.dart';
 import 'package:flutter/material.dart';
 
 class AuthPage extends StatefulWidget {
@@ -19,7 +20,10 @@ class _AuthPageState extends State<AuthPage> {
   Widget build(BuildContext context) {
 
     return Scaffold(
-      appBar: AppBar(title: const Text('員工入口')),
+      appBar: AppBar(
+        title: const Text('員工入口'),
+        actions: const [ThemeToggleSwitch()],
+      ),
       body: Padding(
         padding: const EdgeInsets.all(20.0),
         child: Center(
