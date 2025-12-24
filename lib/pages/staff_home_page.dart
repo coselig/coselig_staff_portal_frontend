@@ -25,7 +25,7 @@ class _StaffHomePageState extends State<StaffHomePage> {
     try {
       final holidayService = HolidayService();
       final holidays = await holidayService.fetchTaiwanHolidays(year);
-      debugPrint('[Holiday] ${year}年取得假日數量: ${holidays.length}');
+      debugPrint('[Holiday] $year年取得假日數量: ${holidays.length}');
       final Map<int, dynamic> map = {};
       for (final h in holidays) {
         final date = DateTime.parse(h.date);
@@ -34,7 +34,7 @@ class _StaffHomePageState extends State<StaffHomePage> {
           debugPrint('[Holiday] ${h.date} ${h.name} 加入本月假日');
         }
       }
-      debugPrint('[Holiday] ${month}月假日map: $map');
+      debugPrint('[Holiday] $month月假日map: $map');
       setState(() {
         _holidaysMap = map;
       });
