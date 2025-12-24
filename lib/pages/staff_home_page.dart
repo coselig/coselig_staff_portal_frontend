@@ -16,6 +16,42 @@ class StaffHomePage extends StatefulWidget {
 }
 
 class _StaffHomePageState extends State<StaffHomePage> {
+  List<Map<String, dynamic>> _workingStaff = [];
+  bool _loadingWorkingStaff = false;
+
+  Future<void> _fetchWorkingStaff() async {
+    setState(() => _loadingWorkingStaff = true);
+    try {
+      final authService = context.read<AuthService>();
+      final attendance = context.read<AttendanceService>();
+      final employees = await authService.getEmployees();
+      List<Map<String, dynamic>> working = [];
+      for (final emp in employees) {
+        final empId = emp['id']?.toString();
+        if (empId == null) continue;
+        await attendance.getTodayAttendance(empId);
+        final today = attendance.todayAttendance;
+        if (today != null &&
+            today['check_in_time'] != null &&
+            today['check_out_time'] == null) {
+          working.add({
+            'name': emp['name'] ?? '員工',
+            'id': empId,
+            'check_in_time': today['check_in_time'],
+          });
+        }
+      }
+      setState(() {
+        _workingStaff = working;
+      });
+    } catch (e) {
+      setState(() {
+        _workingStaff = [];
+      });
+    } finally {
+      setState(() => _loadingWorkingStaff = false);
+    }
+  }
   bool _requested = false;
   DateTime _selectedMonth = DateTime.now();
   Map<int, dynamic> _monthRecords = {};
@@ -25,6 +61,7 @@ class _StaffHomePageState extends State<StaffHomePage> {
   void initState() {
     super.initState();
     Future.microtask(_initUserAndAttendance);
+    Future.microtask(_fetchWorkingStaff);
   }
 
   Future<void> _initUserAndAttendance() async {
@@ -58,6 +95,62 @@ class _StaffHomePageState extends State<StaffHomePage> {
 
   @override
   Widget build(BuildContext context) {
+    // ...existing code...
+    Widget workingStaffBlock = Card(
+      margin: const EdgeInsets.only(bottom: 20),
+      child: Padding(
+        padding: const EdgeInsets.all(16.0),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Icon(Icons.people, color: Colors.green),
+                SizedBox(width: 8),
+                Text(
+                  '目前正在上班的員工',
+                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                ),
+                Spacer(),
+                IconButton(
+                  icon: Icon(Icons.refresh),
+                  tooltip: '刷新',
+                  onPressed: _loadingWorkingStaff ? null : _fetchWorkingStaff,
+                ),
+              ],
+            ),
+            _loadingWorkingStaff
+                ? Center(
+                    child: Padding(
+                      padding: EdgeInsets.all(12),
+                      child: CircularProgressIndicator(),
+                    ),
+                  )
+                : _workingStaff.isEmpty
+                ? Padding(
+                    padding: EdgeInsets.all(8),
+                    child: Text(
+                      '目前沒有員工正在上班',
+                      style: TextStyle(color: Colors.grey),
+                    ),
+                  )
+                : Column(
+                    children: _workingStaff
+                        .map(
+                          (emp) => ListTile(
+                            leading: Icon(Icons.person, color: Colors.blue),
+                            title: Text(emp['name'] ?? ''),
+                            subtitle: Text(
+                              '上班時間：${formatTime(emp['check_in_time'])}',
+                            ),
+                          ),
+                        )
+                        .toList(),
+                  ),
+          ],
+        ),
+      ),
+    );
     final authService = context.read<AuthService>();
     final attendance = context.watch<AttendanceService>();
     final userId = authService.userId;
@@ -123,6 +216,7 @@ class _StaffHomePageState extends State<StaffHomePage> {
       body: ListView(
         padding: const EdgeInsets.all(16.0),
         children: [
+          workingStaffBlock,
           Text(
             '歡迎，${authService.name ?? '員工'}！',
             style: const TextStyle(fontSize: 24),
