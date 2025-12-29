@@ -89,6 +89,25 @@ class _StaffHomePageState extends State<StaffHomePage> {
 
   int periodCount = 1; // 動態時段數量
 
+  void _updatePeriodCount() {
+    final attendance = context.read<AttendanceService>();
+    final today = attendance.todayAttendance;
+    if (today == null) {
+      setState(() => periodCount = 1);
+      return;
+    }
+    int maxPeriod = 1;
+    today.forEach((key, value) {
+      if (key.startsWith('period') && key.contains('_check_in_time')) {
+        final parts = key.split('period')[1].split('_');
+        final periodNum = int.tryParse(parts[0]);
+        if (periodNum != null && periodNum > maxPeriod) {
+          maxPeriod = periodNum;
+        }
+      }
+    });
+    setState(() => periodCount = maxPeriod);
+  }
   @override
   void initState() {
     super.initState();
@@ -105,6 +124,7 @@ class _StaffHomePageState extends State<StaffHomePage> {
     await authService.tryAutoLogin();
     if (authService.userId != null) {
       await attendance.getTodayAttendance(authService.userId!);
+      _updatePeriodCount();
       await _fetchMonthAttendance();
     }
   }
@@ -199,6 +219,7 @@ class _StaffHomePageState extends State<StaffHomePage> {
               debugPrint('[StaffHomePage][refresh] userId: $userId');
               if (userId != null) {
                 await attendance.getTodayAttendance(userId);
+                _updatePeriodCount();
                 await _fetchMonthAttendance();
                 debugPrint(
                   '[StaffHomePage][refresh] after getTodayAttendance & getMonthAttendance',
