@@ -262,12 +262,37 @@ class _AdminPageState extends State<AdminPage> {
                                           _selectedMonth.month,
                                           day,
                                         );
-                                        String? checkInTime;
-                                        String? checkOutTime;
+                                        // 準備 periodsData
+                                        final Map<String, Map<String, String?>>
+                                        periodsData = {};
                                         if (record is Map<String, dynamic>) {
-                                          checkInTime = record['check_in_time'];
-                                          checkOutTime =
-                                              record['check_out_time'];
+                                          final Set<String> periods = {};
+                                          record.forEach((key, value) {
+                                            if (key.startsWith('period')) {
+                                              final parts = key.split('_');
+                                              if (parts.length >= 2 &&
+                                                  parts[0].startsWith(
+                                                    'period',
+                                                  )) {
+                                                periods.add(parts[0]);
+                                              }
+                                            }
+                                          });
+                                          for (final period in periods) {
+                                            periodsData[period] = {
+                                              'check_in':
+                                                  record['${period}_check_in_time'],
+                                              'check_out':
+                                                  record['${period}_check_out_time'],
+                                            };
+                                          }
+                                        }
+                                        // 如果沒有任何 period，添加 period1
+                                        if (periodsData.isEmpty) {
+                                          periodsData['period1'] = {
+                                            'check_in': null,
+                                            'check_out': null,
+                                          };
                                         }
                                         await showDialog(
                                           context: context,
@@ -275,18 +300,36 @@ class _AdminPageState extends State<AdminPage> {
                                             employeeName:
                                                 employee['name'] ?? '員工',
                                             date: date,
-                                            checkInTime: checkInTime,
-                                            checkOutTime: checkOutTime,
-                                            onSubmit: (inTime, outTime) {
-                                              // TODO: 補打卡 API 呼叫
-                                              scaffoldMessengerKey.currentState!
-                                                  .showSnackBar(
-                                                    SnackBar(
-                                                      content: Text(
-                                                        '補打卡 $day: 上班 $inTime, 下班 $outTime',
+                                            periodsData: periodsData,
+                                            onSubmit: (periods) async {
+                                              try {
+                                                final attendance = context
+                                                    .read<AttendanceService>();
+                                                await attendance.manualPunch(
+                                                  _selectedEmployeeId!,
+                                                  date,
+                                                  periods,
+                                                );
+                                                scaffoldMessengerKey
+                                                    .currentState!
+                                                    .showSnackBar(
+                                                      const SnackBar(
+                                                        content: Text('補打卡成功'),
                                                       ),
-                                                    ),
-                                                  );
+                                                    );
+                                                // 重新載入數據
+                                                await _fetchEmployeeAttendance();
+                                              } catch (e) {
+                                                scaffoldMessengerKey
+                                                    .currentState!
+                                                    .showSnackBar(
+                                                      SnackBar(
+                                                        content: Text(
+                                                          '補打卡失敗: $e',
+                                                        ),
+                                                      ),
+                                                    );
+                                              }
                                             },
                                           ),
                                         );

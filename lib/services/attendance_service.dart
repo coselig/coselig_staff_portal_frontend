@@ -84,10 +84,7 @@ class AttendanceService extends ChangeNotifier {
           final latestCheckOut = checkOutTimes.isNotEmpty
               ? checkOutTimes.reduce((a, b) => a.compareTo(b) > 0 ? a : b)
               : null;
-          recordsMap[day] = {
-            'check_in_time': earliestCheckIn,
-            'check_out_time': latestCheckOut,
-          };
+          recordsMap[day] = record;
         }
       }
       debugPrint(
@@ -180,5 +177,37 @@ class AttendanceService extends ChangeNotifier {
     todayAttendance = null;
     errorMessage = null;
     notifyListeners();
+  }
+
+  /// 管理員補打卡
+  Future<void> manualPunch(
+    String employeeId,
+    DateTime date,
+    Map<String, Map<String, String?>> periods,
+  ) async {
+    debugPrint(
+      '[AttendanceService][manualPunch] employeeId: $employeeId, date: $date, periods: $periods',
+    );
+    final url = '$baseUrl/api/manual-punch';
+    final body = {
+      'employee_id': employeeId,
+      'date':
+          '${date.year}-${date.month.toString().padLeft(2, '0')}-${date.day.toString().padLeft(2, '0')}',
+      'periods': periods,
+    };
+    debugPrint('[AttendanceService][manualPunch] url: $url, body: $body');
+    final res = await _client.post(
+      Uri.parse(url),
+      headers: {'Content-Type': 'application/json'},
+      body: jsonEncode(body),
+    );
+    debugPrint(
+      '[AttendanceService][manualPunch] statusCode: ${res.statusCode}, response: ${res.body}',
+    );
+    if (res.statusCode == 200) {
+      // 成功
+    } else {
+      throw Exception('補打卡失敗: ${res.body}');
+    }
   }
 }

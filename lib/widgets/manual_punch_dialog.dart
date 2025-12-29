@@ -4,16 +4,14 @@ import 'package:flutter/material.dart';
 class ManualPunchDialog extends StatefulWidget {
   final String employeeName;
   final DateTime date;
-  final String? checkInTime;
-  final String? checkOutTime;
-  final void Function(String? checkIn, String? checkOut) onSubmit;
+  final Map<String, Map<String, String?>> periodsData;
+  final void Function(Map<String, Map<String, String?>> periods) onSubmit;
 
   const ManualPunchDialog({
     super.key,
     required this.employeeName,
     required this.date,
-    this.checkInTime,
-    this.checkOutTime,
+    required this.periodsData,
     required this.onSubmit,
   });
 
@@ -22,9 +20,38 @@ class ManualPunchDialog extends StatefulWidget {
 }
 
 class _ManualPunchDialogState extends State<ManualPunchDialog> {
-  TimeOfDay? _checkInTime;
-  TimeOfDay? _checkOutTime;
+  late Map<String, Map<String, TimeOfDay?>> _periodsTimes;
   final _formKey = GlobalKey<FormState>();
+
+  @override
+  void initState() {
+    super.initState();
+    _periodsTimes = {};
+    for (final entry in widget.periodsData.entries) {
+      final period = entry.key;
+      final data = entry.value;
+      _periodsTimes[period] = {
+        'check_in': _parseTime(data['check_in']),
+        'check_out': _parseTime(data['check_out']),
+      };
+    }
+  }
+
+  TimeOfDay? _parseTime(String? timeStr) {
+    if (timeStr == null || timeStr.isEmpty) return null;
+    // 如果是完整的 datetime 格式，如 "2025-12-29 05:22:59"，提取時間部分
+    final parts = timeStr.split(' ');
+    final timePart = parts.length > 1 ? parts[1] : timeStr;
+    final timeComponents = timePart.split(':');
+    if (timeComponents.length >= 2) {
+      final hour = int.tryParse(timeComponents[0]);
+      final minute = int.tryParse(timeComponents[1]);
+      if (hour != null && minute != null) {
+        return TimeOfDay(hour: hour, minute: minute);
+      }
+    }
+    return null;
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -32,42 +59,98 @@ class _ManualPunchDialogState extends State<ManualPunchDialog> {
       title: Text('補打卡 - ${widget.employeeName}'),
       content: Form(
         key: _formKey,
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Text('日期：${widget.date.year}/${widget.date.month}/${widget.date.day}'),
-            const SizedBox(height: 16),
-            Row(
-              children: [
-                Expanded(child: Text('上班時間：${_checkInTime != null ? _checkInTime!.format(context) : (widget.checkInTime ?? '未設定')}')),
-                TextButton(
-                  child: const Text('選擇'),
-                  onPressed: () async {
-                    final picked = await showTimePicker(
-                      context: context,
-                      initialTime: _checkInTime ?? TimeOfDay.now(),
-                    );
-                    if (picked != null) setState(() => _checkInTime = picked);
-                  },
-                ),
-              ],
-            ),
-            Row(
-              children: [
-                Expanded(child: Text('下班時間：${_checkOutTime != null ? _checkOutTime!.format(context) : (widget.checkOutTime ?? '未設定')}')),
-                TextButton(
-                  child: const Text('選擇'),
-                  onPressed: () async {
-                    final picked = await showTimePicker(
-                      context: context,
-                      initialTime: _checkOutTime ?? TimeOfDay.now(),
-                    );
-                    if (picked != null) setState(() => _checkOutTime = picked);
-                  },
-                ),
-              ],
-            ),
-          ],
+        child: SingleChildScrollView(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text(
+                '日期：${widget.date.year}/${widget.date.month}/${widget.date.day}',
+              ),
+              const SizedBox(height: 16),
+              ..._periodsTimes.entries.map((entry) {
+                final period = entry.key;
+                final times = entry.value;
+                final periodName = '時段${period.replaceAll('period', '')}';
+                return Column(
+                  children: [
+                    Text(
+                      periodName,
+                      style: TextStyle(fontWeight: FontWeight.bold),
+                    ),
+                    Row(
+                      children: [
+                        Expanded(
+                          child: Text(
+                            '上班：${times['check_in'] != null ? '${times['check_in']!.hour.toString().padLeft(2, '0')}:${times['check_in']!.minute.toString().padLeft(2, '0')}' : '未設定'}',
+                          ),
+                        ),
+                        TextButton(
+                          child: const Text('選擇'),
+                          onPressed: () async {
+                            final picked = await showTimePicker(
+                              context: context,
+                              initialTime: times['check_in'] ?? TimeOfDay.now(),
+                            );
+                            if (picked != null) {
+                              setState(
+                                () =>
+                                    _periodsTimes[period]!['check_in'] = picked,
+                              );
+                            }
+                          },
+                        ),
+                      ],
+                    ),
+                    Row(
+                      children: [
+                        Expanded(
+                          child: Text(
+                            '下班：${times['check_out'] != null ? '${times['check_out']!.hour.toString().padLeft(2, '0')}:${times['check_out']!.minute.toString().padLeft(2, '0')}' : '未設定'}',
+                          ),
+                        ),
+                        TextButton(
+                          child: const Text('選擇'),
+                          onPressed: () async {
+                            final picked = await showTimePicker(
+                              context: context,
+                              initialTime:
+                                  times['check_out'] ?? TimeOfDay.now(),
+                            );
+                            if (picked != null) {
+                              setState(
+                                () => _periodsTimes[period]!['check_out'] =
+                                    picked,
+                              );
+                            }
+                          },
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 16),
+                  ],
+                );
+              }),
+              ElevatedButton(
+                child: const Text('新增時段'),
+                onPressed: () {
+                  // 找到最大的 period 號碼
+                  int maxNum = 0;
+                  _periodsTimes.keys.forEach((key) {
+                    final numStr = key.replaceAll('period', '');
+                    final num = int.tryParse(numStr) ?? 0;
+                    if (num > maxNum) maxNum = num;
+                  });
+                  final newPeriod = 'period${maxNum + 1}';
+                  setState(() {
+                    _periodsTimes[newPeriod] = {
+                      'check_in': null,
+                      'check_out': null,
+                    };
+                  });
+                },
+              ),
+            ],
+          ),
         ),
       ),
       actions: [
@@ -78,10 +161,14 @@ class _ManualPunchDialogState extends State<ManualPunchDialog> {
         ElevatedButton(
           child: const Text('送出'),
           onPressed: () {
-            widget.onSubmit(
-              _checkInTime != null ? _checkInTime!.format(context) : widget.checkInTime,
-              _checkOutTime != null ? _checkOutTime!.format(context) : widget.checkOutTime,
-            );
+            final result = <String, Map<String, String?>>{};
+            _periodsTimes.forEach((period, times) {
+              result[period] = {
+                'check_in': times['check_in']?.format(context),
+                'check_out': times['check_out']?.format(context),
+              };
+            });
+            widget.onSubmit(result);
             Navigator.of(context).pop();
           },
         ),

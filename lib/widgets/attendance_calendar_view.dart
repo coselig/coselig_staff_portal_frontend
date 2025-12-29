@@ -121,6 +121,24 @@ class AttendanceCalendarView extends StatelessWidget {
       // 顯示上班/下班時間
       String checkIn = record['check_in_time'] ?? '';
       String checkOut = record['check_out_time'] ?? '';
+      // 如果沒有合併的時間，檢查 period 時間
+      if (checkIn.isEmpty && checkOut.isEmpty) {
+        final checkInTimes = <String>[];
+        final checkOutTimes = <String>[];
+        record.forEach((key, value) {
+          if (key.endsWith('_check_in_time') && value != null) {
+            checkInTimes.add(value as String);
+          } else if (key.endsWith('_check_out_time') && value != null) {
+            checkOutTimes.add(value as String);
+          }
+        });
+        if (checkInTimes.isNotEmpty) {
+          checkIn = checkInTimes.reduce((a, b) => a.compareTo(b) < 0 ? a : b);
+        }
+        if (checkOutTimes.isNotEmpty) {
+          checkOut = checkOutTimes.reduce((a, b) => a.compareTo(b) > 0 ? a : b);
+        }
+      }
       if (checkIn.isNotEmpty && checkOut.isNotEmpty) {
         status = '上:${formatTime(checkIn)}\n下:${formatTime(checkOut)}';
       } else if (checkIn.isNotEmpty) {
