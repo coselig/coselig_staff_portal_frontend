@@ -137,4 +137,11 @@ class AttendanceService extends ChangeNotifier {
 
   bool get hasCheckedOut =>
       todayAttendance?['check_out_time'] != null;
+
+  /// 清空打卡數據
+  void clear() {
+    todayAttendance = null;
+    errorMessage = null;
+    notifyListeners();
+  }
 }

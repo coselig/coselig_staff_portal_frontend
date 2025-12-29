@@ -1,6 +1,7 @@
 import 'package:coselig_staff_portal/services/holiday_service.dart';
 import 'package:coselig_staff_portal/utils/time_utils.dart';
 import 'package:coselig_staff_portal/services/attendance_service.dart';
+import 'package:coselig_staff_portal/widgets/theme_toggle_switch.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:coselig_staff_portal/services/auth_service.dart';
@@ -126,7 +127,6 @@ class _StaffHomePageState extends State<StaffHomePage> {
 
   @override
   Widget build(BuildContext context) {
-    // ...existing code...
     Widget workingStaffBlock = Card(
       margin: const EdgeInsets.only(bottom: 20),
       child: Padding(
@@ -209,17 +209,13 @@ class _StaffHomePageState extends State<StaffHomePage> {
               }
             },
           ),
-          IconButton(
-            icon: const Icon(Icons.toggle_on),
-            tooltip: '切換主題',
-            onPressed: () {
-              // Logic to toggle theme
-            },
-          ),
+          ThemeToggleSwitch(),
           IconButton(
             icon: const Icon(Icons.logout),
             tooltip: '登出',
             onPressed: () async {
+              final attendance = context.read<AttendanceService>();
+              attendance.clear();
               await authService.logout();
               navigatorKey.currentState!.pushReplacementNamed('/login');
             },
@@ -244,6 +240,8 @@ class _StaffHomePageState extends State<StaffHomePage> {
               leading: Icon(Icons.logout),
               title: Text('登出'),
               onTap: () async {
+                final attendance = context.read<AttendanceService>();
+                attendance.clear();
                 await authService.logout();
                 navigatorKey.currentState!.pushReplacementNamed('/login');
               },

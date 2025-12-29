@@ -8,19 +8,27 @@ class ThemeToggleSwitch extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final themeProvider = Provider.of<ThemeProvider>(context);
-    final isDark = themeProvider.themeMode == ThemeMode.dark;
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.center,
-      children: [
-        const Icon(Icons.light_mode),
-        Switch(
-          value: isDark,
-          onChanged: (value) {
-            themeProvider.setThemeMode(value ? ThemeMode.dark : ThemeMode.light);
-          },
+    final currentMode = themeProvider.themeMode;
+
+    return SegmentedButton<ThemeMode>(
+      segments: const [
+        ButtonSegment<ThemeMode>(
+          value: ThemeMode.light,
+          icon: Icon(Icons.light_mode),
         ),
-        const Icon(Icons.dark_mode),
+        ButtonSegment<ThemeMode>(
+          value: ThemeMode.dark,
+          icon: Icon(Icons.dark_mode),
+        ),
+        ButtonSegment<ThemeMode>(
+          value: ThemeMode.system,
+          icon: Icon(Icons.settings),
+        ),
       ],
+      selected: {currentMode},
+      onSelectionChanged: (Set<ThemeMode> selected) {
+        themeProvider.setThemeMode(selected.first);
+      },
     );
   }
 }
