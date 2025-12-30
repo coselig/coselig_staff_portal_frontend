@@ -1,3 +1,4 @@
+import 'package:coselig_staff_portal/pages/discovery_generate_page.dart';
 import 'package:coselig_staff_portal/services/attendance_service.dart';
 import 'package:coselig_staff_portal/services/auth_service.dart';
 import 'package:coselig_staff_portal/widgets/month_year_picker.dart';
@@ -99,6 +100,13 @@ class _AdminPageState extends State<AdminPage> {
           },
         ),
         actions: [
+          IconButton(
+            icon: const Icon(Icons.build),
+            tooltip: '裝置註冊表生成器',
+            onPressed: () {
+              navigatorKey.currentState!.pushNamed('/discovery_generate');
+            },
+          ),
           const ThemeToggleSwitch(),
           IconButton(
             icon: const Icon(Icons.logout),
