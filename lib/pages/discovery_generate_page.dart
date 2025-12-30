@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
+import 'package:coselig_staff_portal/widgets/theme_toggle_switch.dart';
 
 class Device {
   String brand;
@@ -7,6 +9,7 @@ class Device {
   String moduleId;
   String channel;
   String name;
+  String tcp;
 
   Device({
     required this.brand,
@@ -15,6 +18,7 @@ class Device {
     required this.moduleId,
     required this.channel,
     required this.name,
+    required this.tcp,
   });
 
   Map<String, dynamic> toJson() {
@@ -25,6 +29,7 @@ class Device {
       'module_id': moduleId,
       'channel': channel,
       'name': name,
+      'tcp': tcp,
     };
   }
 }
@@ -51,6 +56,7 @@ class _DiscoveryGeneratePageState extends State<DiscoveryGeneratePage> {
   String selectedChannel = '1';
   final TextEditingController moduleIdController = TextEditingController();
   final TextEditingController nameController = TextEditingController();
+  final TextEditingController tcpController = TextEditingController();
   String generatedOutput = '';
 
   List<String> getAvailableChannels(String brand, String model, String type) {
@@ -127,9 +133,11 @@ class _DiscoveryGeneratePageState extends State<DiscoveryGeneratePage> {
           moduleId: moduleIdController.text,
           channel: selectedChannel,
           name: nameController.text,
+            tcp: tcpController.text,
         ));
         moduleIdController.clear();
         nameController.clear();
+        tcpController.clear();
       });
     }
   }
@@ -145,7 +153,9 @@ class _DiscoveryGeneratePageState extends State<DiscoveryGeneratePage> {
     buffer.writeln('msg.devices = [');
     for (int i = 0; i < devices.length; i++) {
       var device = devices[i];
-      buffer.write('    { brand: "${device.brand}", model: "${device.model}", type: "${device.type}", module_id: "${device.moduleId}", channel: "${device.channel}", name: "${device.name}" }');
+      buffer.write(
+        '    { brand: "${device.brand}", model: "${device.model}", type: "${device.type}", module_id: "${device.moduleId}", channel: "${device.channel}", name: "${device.name}", tcp: "${device.tcp}" }',
+      );
       if (i < devices.length - 1) {
         buffer.writeln(',');
       } else {
@@ -159,11 +169,24 @@ class _DiscoveryGeneratePageState extends State<DiscoveryGeneratePage> {
     });
   }
 
+  void copyToClipboard() async {
+    if (generatedOutput.isNotEmpty) {
+      await Clipboard.setData(ClipboardData(text: generatedOutput));
+      // 使用 ScaffoldMessenger 顯示成功訊息
+      if (mounted) {
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(const SnackBar(content: Text('輸出內容已複製到剪貼簿')));
+      }
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
         title: const Text('裝置註冊表生成器'),
+        actions: const [ThemeToggleSwitch()],
       ),
       body: Padding(
         padding: const EdgeInsets.all(16.0),
@@ -279,6 +302,15 @@ class _DiscoveryGeneratePageState extends State<DiscoveryGeneratePage> {
                   ),
                 ),
                 const SizedBox(width: 8),
+                // TCP
+                Expanded(
+                  flex: 1,
+                  child: TextField(
+                    controller: tcpController,
+                    decoration: const InputDecoration(labelText: 'TCP'),
+                  ),
+                ),
+                const SizedBox(width: 8),
                 // Add Button
                 ElevatedButton(
                   onPressed: addDevice,
@@ -305,10 +337,24 @@ class _DiscoveryGeneratePageState extends State<DiscoveryGeneratePage> {
               ),
             ),
             const SizedBox(height: 16),
-            // Generate Button
-            ElevatedButton(
-              onPressed: generateOutput,
-              child: const Text('生成輸出'),
+            // Buttons Row
+            Row(
+              children: [
+                Expanded(
+                  child: ElevatedButton(
+                    onPressed: generateOutput,
+                    child: const Text('生成輸出'),
+                  ),
+                ),
+                const SizedBox(width: 16),
+                Expanded(
+                  child: ElevatedButton.icon(
+                    onPressed: copyToClipboard,
+                    icon: const Icon(Icons.copy),
+                    label: const Text('複製輸出'),
+                  ),
+                ),
+              ],
             ),
             const SizedBox(height: 16),
             // Output Display

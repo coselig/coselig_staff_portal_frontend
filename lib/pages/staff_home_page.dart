@@ -249,6 +249,13 @@ class _StaffHomePageState extends State<StaffHomePage> {
               const Divider(),
             ],
             ListTile(
+              leading: Icon(Icons.build),
+              title: Text('裝置註冊表生成器'),
+              onTap: () {
+                Navigator.of(context).pushNamed('/discovery_generate');
+              },
+            ),
+            ListTile(
               leading: Icon(Icons.logout),
               title: Text('登出'),
               onTap: () async {
