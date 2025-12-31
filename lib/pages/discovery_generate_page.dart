@@ -2,38 +2,7 @@ import 'dart:html' as html;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:coselig_staff_portal/widgets/theme_toggle_switch.dart';
-
-class Device {
-  String brand;
-  String model;
-  String type;
-  String moduleId;
-  String channel;
-  String name;
-  String tcp;
-
-  Device({
-    required this.brand,
-    required this.model,
-    required this.type,
-    required this.moduleId,
-    required this.channel,
-    required this.name,
-    required this.tcp,
-  });
-
-  Map<String, dynamic> toJson() {
-    return {
-      'brand': brand,
-      'model': model,
-      'type': type,
-      'module_id': moduleId,
-      'channel': channel,
-      'name': name,
-      'tcp': tcp,
-    };
-  }
-}
+import 'package:coselig_staff_portal/services/discovery_service.dart';
 
 class DiscoveryGeneratePage extends StatefulWidget {
   const DiscoveryGeneratePage({super.key});
@@ -43,66 +12,26 @@ class DiscoveryGeneratePage extends StatefulWidget {
 }
 
 class _DiscoveryGeneratePageState extends State<DiscoveryGeneratePage> {
-  final List<Device> devices = [];
-  List<String> get brands => deviceConfigs.keys.toList();
-  Map<String, List<String>> get models => deviceConfigs.map(
-    (brand, modelsMap) => MapEntry(brand, modelsMap.keys.toList()),
-  );
+  final DiscoveryService _service = DiscoveryService();
+  List<String> get brands => _service.brands;
+  Map<String, List<String>> get models => _service.models;
 
   @override
   void initState() {
     super.initState();
     html.document.title = '裝置註冊表生成器';
+    _service.addListener(_update);
   }
 
-  // Combined map for device configurations: brand -> model -> {'types': [...], 'channels': {type: [...]}}
-  final Map<String, Map<String, Map<String, dynamic>>> deviceConfigs = {
-    'sunwave': {
-      'p404': {
-        'types': ['dual', 'single', 'wrgb', 'rgb'],
-        'channels': {
-          'dual': ['a', 'b'],
-          'single': ['1', '2', '3', '4'],
-          'wrgb': ['x'],
-          'rgb': ['x'],
-        },
-      },
-      'p210': {
-        'types': ['dual', 'single'],
-        'channels': {
-          'dual': ['a'],
-          'single': ['1', '2'],
-        },
-      },
-      'U4': {
-        'types': ['dual', 'single', 'wrgb', 'rgb'],
-        'channels': {
-          'dual': ['a', 'b'],
-          'single': ['1', '2', '3', '4'],
-          'wrgb': ['x'],
-          'rgb': ['x'],
-        },
-      },
-      'R8A': {
-        'types': ['relay'],
-        'channels': {
-          'relay': ['1', '2', '3', '4', '5', '6', '7', '8'],
-        },
-      },
-      'R410': {
-        'types': ['relay'],
-        'channels': {
-          'relay': ['1', '2', '3', '4'],
-        },
-      },
-    },
-    'guo': {
-      'p805': {
-        'types': ['dual', 'single'],
-        'channels': {},
-      },
-    },
-  };
+  @override
+  void dispose() {
+    _service.removeListener(_update);
+    super.dispose();
+  }
+
+  void _update() {
+    setState(() {});
+  }
 
   String selectedBrand = 'sunwave';
   String selectedModel = 'p404';
@@ -111,68 +40,46 @@ class _DiscoveryGeneratePageState extends State<DiscoveryGeneratePage> {
   final TextEditingController moduleIdController = TextEditingController();
   final TextEditingController nameController = TextEditingController();
   final TextEditingController tcpController = TextEditingController();
-  String generatedOutput = '';
 
   List<String> getAvailableChannels(String brand, String model, String type) {
-    final channelsMap =
-        deviceConfigs[brand]?[model]?['channels'] as Map<String, List<String>>;
-    return channelsMap[type] ?? ['1'];
+    return _service.getAvailableChannels(brand, model, type);
   }
 
   List<String> getAvailableTypes(String brand, String model) {
-    return deviceConfigs[brand]?[model]?['types'] as List<String>;
+    return _service.getAvailableTypes(brand, model);
   }
 
   void addDevice() {
     if (moduleIdController.text.isNotEmpty &&
         nameController.text.isNotEmpty) {
-      setState(() {
-        devices.add(Device(
+      _service.addDevice(
+        Device(
           brand: selectedBrand,
           model: selectedModel,
           type: selectedType,
           moduleId: moduleIdController.text,
           channel: selectedChannel,
           name: nameController.text,
-            tcp: tcpController.text,
-        ));
-        moduleIdController.clear();
-        nameController.clear();
-        tcpController.clear();
-      });
+          tcp: tcpController.text,
+        ),
+      );
+      moduleIdController.clear();
+      nameController.clear();
+      tcpController.clear();
     }
   }
 
   void removeDevice(int index) {
-    setState(() {
-      devices.removeAt(index);
-    });
+    _service.removeDevice(index);
   }
 
   void generateOutput() {
-    StringBuffer buffer = StringBuffer();
-    buffer.writeln('msg.devices = [');
-    for (int i = 0; i < devices.length; i++) {
-      var device = devices[i];
-      buffer.write(
-        '    { brand: "${device.brand}", model: "${device.model}", type: "${device.type}", module_id: "${device.moduleId}", channel: "${device.channel}", name: "${device.name}", tcp: "${device.tcp}" }',
-      );
-      if (i < devices.length - 1) {
-        buffer.writeln(',');
-      } else {
-        buffer.writeln();
-      }
-    }
-    buffer.writeln('];');
-    buffer.writeln('return msg;');
-    setState(() {
-      generatedOutput = buffer.toString();
-    });
+    _service.generateOutput();
   }
 
   void copyToClipboard() async {
-    if (generatedOutput.isNotEmpty) {
-      await Clipboard.setData(ClipboardData(text: generatedOutput));
+    if (_service.generatedOutput.isNotEmpty) {
+      await Clipboard.setData(ClipboardData(text: _service.generatedOutput));
       // 使用 ScaffoldMessenger 顯示成功訊息
       if (mounted) {
         ScaffoldMessenger.of(
@@ -323,9 +230,9 @@ class _DiscoveryGeneratePageState extends State<DiscoveryGeneratePage> {
             // Device List
             Expanded(
               child: ListView.builder(
-                itemCount: devices.length,
+                itemCount: _service.devices.length,
                 itemBuilder: (context, index) {
-                  var device = devices[index];
+                  var device = _service.devices[index];
                   return ListTile(
                     title: Text('${device.brand} ${device.model} - ${device.type} - ${device.name}'),
                     subtitle: Text('Module: ${device.moduleId}, Channel: ${device.channel}'),
@@ -362,7 +269,7 @@ class _DiscoveryGeneratePageState extends State<DiscoveryGeneratePage> {
             Expanded(
               child: SingleChildScrollView(
                 child: Text(
-                  generatedOutput,
+                  _service.generatedOutput,
                   style: const TextStyle(fontFamily: 'monospace'),
                 ),
               ),
