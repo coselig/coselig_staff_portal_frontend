@@ -24,3 +24,13 @@ Widget logoutButton(BuildContext context) {
     },
   );
 }
+
+Widget blePageButton() {
+  return IconButton(
+    icon: const Icon(Icons.bluetooth),
+    tooltip: '附近低功耗藍芽裝置',
+    onPressed: () {
+      navigatorKey.currentState!.pushNamed('/ble');
+    },
+  );
+}

@@ -1,5 +1,6 @@
 import 'package:coselig_staff_portal/pages/admin_page.dart';
 import 'package:coselig_staff_portal/pages/auth_page.dart';
+import 'package:coselig_staff_portal/pages/ble_page.dart';
 import 'package:coselig_staff_portal/pages/discovery_generate_page.dart';
 import 'package:coselig_staff_portal/pages/splash_screen.dart';
 import 'package:coselig_staff_portal/pages/staff_home_page.dart';
@@ -49,6 +50,7 @@ class MainApp extends StatelessWidget {
         '/register': (context) => const RegisterFrame(),
         '/admin': (context) => const AdminPage(),
         '/discovery_generate': (context) => const DiscoveryGeneratePage(),
+        '/ble': (context) => const BlePage(),
       },
     );
   }

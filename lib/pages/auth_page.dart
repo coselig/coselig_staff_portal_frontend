@@ -30,7 +30,11 @@ class _AuthPageState extends State<AuthPage> {
     return Scaffold(
       appBar: AppBar(
         title: const Text('員工入口'),
-        actions: [ThemeToggleSwitch(), registerGenerateButton()],
+        actions: [
+          ThemeToggleSwitch(),
+          registerGenerateButton(),
+          blePageButton(),
+        ],
       ),
       body: Padding(
         padding: const EdgeInsets.all(20.0),
