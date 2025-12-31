@@ -71,7 +71,7 @@ class DiscoveryService extends ChangeNotifier {
   bool get isLoading => _isLoading;
   String? get error => _error;
 
-  // Combined map for device configurations: brand -> model -> {'types': [...], 'channels': {type: [...]}}
+  // Combined map for device configurations: brand -> model -> {'types': [...], 'channels': {type: [...]}, 'channel_map': {token: [atomics]}}
   final Map<String, Map<String, Map<String, dynamic>>> deviceConfigs = {
     'sunwave': {
       'p404': {
@@ -81,12 +81,20 @@ class DiscoveryService extends ChangeNotifier {
           'single': ['1', '2', '3', '4'],
           'rgb': ['x'],
         },
+        'channel_map': {
+          'a': ['1', '2'],
+          'b': ['3', '4'],
+          'x': ['1', '2', '3'],
+        },
       },
       'p210': {
         'types': ['dual', 'single'],
         'channels': {
           'dual': ['a'],
           'single': ['1', '2'],
+        },
+        'channel_map': {
+          'a': ['1', '2'],
         },
       },
       'U4': {
@@ -96,18 +104,25 @@ class DiscoveryService extends ChangeNotifier {
           'single': ['1', '2', '3', '4'],
           'rgb': ['x'],
         },
+        'channel_map': {
+          'a': ['1', '2'],
+          'b': ['3', '4'],
+          'x': ['1', '2', '3'],
+        },
       },
       'R8A': {
         'types': ['relay'],
         'channels': {
           'relay': ['1', '2', '3', '4', '5', '6', '7', '8'],
         },
+        'channel_map': {},
       },
       'R410': {
         'types': ['relay'],
         'channels': {
           'relay': ['1', '2', '3', '4'],
         },
+        'channel_map': {},
       },
     },
     'guo': {
@@ -116,6 +131,10 @@ class DiscoveryService extends ChangeNotifier {
         'channels': {
           'dual': ['a', 'b'],
           'single': ['1', '2', '3', '4'],
+        },
+        'channel_map': {
+          'a': ['1', '2'],
+          'b': ['3', '4'],
         },
       },
     },

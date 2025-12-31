@@ -38,6 +38,23 @@ class _DiscoveryGeneratePageState extends State<DiscoveryGeneratePage> {
     moduleIdController.addListener(() {
       setState(() {
         _currentModuleId = moduleIdController.text;
+        if (_currentModuleId.isNotEmpty) {
+          final selectable = _service.getSelectableChannelsForModule(
+            selectedBrand,
+            selectedModel,
+            selectedType,
+            _currentModuleId,
+          );
+          if (!selectable.contains(selectedChannel)) {
+            selectedChannel = selectable.isNotEmpty
+                ? selectable.first
+                : getAvailableChannels(
+                    selectedBrand,
+                    selectedModel,
+                    selectedType,
+                  ).first;
+          }
+        }
       });
     });
   }
@@ -111,31 +128,26 @@ class _DiscoveryGeneratePageState extends State<DiscoveryGeneratePage> {
   }
 
   /// 獲取指定模組ID的channel使用情況
-  Map<String, dynamic> getModuleChannelStatus(String moduleId) {
+  Map<String, dynamic> getModuleChannelStatus(String moduleId, String type) {
     final existingDevices = _service.devices
         .where((d) => d.moduleId == moduleId)
         .toList();
     final usedChannels = existingDevices.map((d) => d.channel).toSet();
 
-    // 獲取所有可用channel（基於當前選擇的model）
-    final allAvailableChannels = <String>{};
-    final modelConfig = _service.deviceConfigs[selectedBrand]?[selectedModel];
-    if (modelConfig != null) {
-      final channelsMap = modelConfig['channels'] as Map<String, dynamic>;
-      for (final channels in channelsMap.values) {
-        if (channels is List) {
-          allAvailableChannels.addAll(channels.cast<String>());
-        }
-      }
-    }
-
-    final availableChannels =
-        allAvailableChannels.difference(usedChannels).toList()..sort();
+    final availableChannels = _service.getSelectableChannelsForModule(
+      selectedBrand,
+      selectedModel,
+      type,
+      moduleId,
+    );
+    final allTokens = _service
+        .getAvailableChannels(selectedBrand, selectedModel, type)
+        .toSet();
 
     return {
       'usedChannels': usedChannels.toList()..sort(),
       'availableChannels': availableChannels,
-      'totalChannels': allAvailableChannels.length,
+      'totalChannels': allTokens.length,
       'usedCount': usedChannels.length,
     };
   }
@@ -257,6 +269,7 @@ class _DiscoveryGeneratePageState extends State<DiscoveryGeneratePage> {
                           builder: (context) {
                             final status = getModuleChannelStatus(
                               _currentModuleId,
+                              selectedType,
                             );
                             final usedChannels =
                                 status['usedChannels'] as List<String>;
@@ -292,7 +305,19 @@ class _DiscoveryGeneratePageState extends State<DiscoveryGeneratePage> {
                         selectedChannel = newValue!;
                       });
                     },
-                    items: getAvailableChannels(selectedBrand, selectedModel, selectedType)
+                    items:
+                        (_currentModuleId.isNotEmpty
+                                ? _service.getSelectableChannelsForModule(
+                                    selectedBrand,
+                                    selectedModel,
+                                    selectedType,
+                                    _currentModuleId,
+                                  )
+                                : getAvailableChannels(
+                                    selectedBrand,
+                                    selectedModel,
+                                    selectedType,
+                                  ))
                         .map<DropdownMenuItem<String>>((String value) {
                       return DropdownMenuItem<String>(
                         value: value,
