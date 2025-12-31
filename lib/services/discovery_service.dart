@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:http/http.dart' as http;
 import 'package:http/browser_client.dart';
 import 'dart:convert';
 import 'package:coselig_staff_portal/main.dart';

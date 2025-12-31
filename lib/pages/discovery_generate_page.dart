@@ -267,7 +267,7 @@ class _DiscoveryGeneratePageState extends State<DiscoveryGeneratePage> {
                             final usedCount = status['usedCount'] as int;
 
                             return Text(
-                              '已使用: ${usedChannels.join(', ')} | 可用: ${availableChannels.join(', ')} (${usedCount}/${totalChannels})',
+                              '已使用: ${usedChannels.join(', ')} | 可用: ${availableChannels.join(', ')} ($usedCount/$totalChannels)',
                               style: TextStyle(
                                 fontSize: 12,
                                 color: availableChannels.isEmpty
