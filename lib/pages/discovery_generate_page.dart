@@ -330,19 +330,39 @@ class _DiscoveryGeneratePageState extends State<DiscoveryGeneratePage> {
             const SizedBox(height: 16),
             // Device List
             Expanded(
-              child: ListView.builder(
-                itemCount: _service.devices.length,
-                itemBuilder: (context, index) {
-                  var device = _service.devices[index];
-                  return ListTile(
-                    title: Text('${device.brand} ${device.model} - ${device.type} - ${device.name}'),
-                    subtitle: Text('Module: ${device.moduleId}, Channel: ${device.channel}'),
-                    trailing: IconButton(
-                      icon: const Icon(Icons.delete),
-                      onPressed: () => removeDevice(device.id!),
-                    ),
-                  );
-                },
+              child: SingleChildScrollView(
+                scrollDirection: Axis.horizontal,
+                child: DataTable(
+                  columns: const [
+                    DataColumn(label: Text('Brand')),
+                    DataColumn(label: Text('Model')),
+                    DataColumn(label: Text('Type')),
+                    DataColumn(label: Text('Module ID')),
+                    DataColumn(label: Text('Channel')),
+                    DataColumn(label: Text('Name')),
+                    DataColumn(label: Text('TCP')),
+                    DataColumn(label: Text('Action')),
+                  ],
+                  rows: _service.devices.map((device) {
+                    return DataRow(
+                      cells: [
+                        DataCell(Text(device.brand)),
+                        DataCell(Text(device.model)),
+                        DataCell(Text(device.type)),
+                        DataCell(Text(device.moduleId)),
+                        DataCell(Text(device.channel)),
+                        DataCell(Text(device.name)),
+                        DataCell(Text(device.tcp)),
+                        DataCell(
+                          IconButton(
+                            icon: const Icon(Icons.delete),
+                            onPressed: () => removeDevice(device.id!),
+                          ),
+                        ),
+                      ],
+                    );
+                  }).toList(),
+                ),
               ),
             ),
             const SizedBox(height: 16),
