@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'package:http/browser_client.dart';
 import 'dart:convert';
+import 'package:coselig_staff_portal/main.dart';
 
 class Device {
   String? id; // 數據庫ID，對於新裝置為 null
@@ -132,7 +133,54 @@ class DiscoveryService extends ChangeNotifier {
     return deviceConfigs[brand]?[model]?['types'] as List<String>? ?? ['dual', 'single'];
   }
 
+  /// 檢查是否可以添加指定的裝置
+  /// 規則：同一個模組ID的所有可用channel都必須被使用完才能阻止添加
+  bool canAddDevice(Device newDevice) {
+    // 獲取該模組ID的所有現有裝置
+    final existingDevices = _devices
+        .where((d) => d.moduleId == newDevice.moduleId)
+        .toList();
+
+    if (existingDevices.isEmpty) {
+      // 如果沒有現有裝置，可以添加
+      return true;
+    }
+
+    // 獲取該model的所有可用channel（所有type的channel的聯集）
+    final allAvailableChannels = <String>{};
+    final modelConfig = deviceConfigs[newDevice.brand]?[newDevice.model];
+    if (modelConfig != null) {
+      final channelsMap = modelConfig['channels'] as Map<String, dynamic>;
+      for (final channels in channelsMap.values) {
+        if (channels is List) {
+          allAvailableChannels.addAll(channels.cast<String>());
+        }
+      }
+    }
+
+    // 如果沒有配置，默認允許
+    if (allAvailableChannels.isEmpty) {
+      return true;
+    }
+
+    // 獲取已被使用的channel
+    final usedChannels = existingDevices.map((d) => d.channel).toSet();
+
+    // 檢查是否還有未使用的channel
+    final availableChannels = allAvailableChannels.difference(usedChannels);
+
+    // 如果還有可用的channel，就可以添加新裝置
+    return availableChannels.isNotEmpty;
+  }
+
   Future<void> addDevice(Device device) async {
+    // 在發送API請求前進行邏輯檢查
+    if (!canAddDevice(device)) {
+      _error = '無法添加裝置：模組ID的所有通道都已被使用';
+      notifyListeners();
+      return;
+    }
+
     _isLoading = true;
     _error = null;
     notifyListeners();
@@ -149,6 +197,9 @@ class DiscoveryService extends ChangeNotifier {
         final newDevice = Device.fromJson(data['device']);
         _devices.add(newDevice);
         notifyListeners();
+      } else if (response.statusCode == 401) {
+        _error = 'Unauthorized';
+        navigatorKey.currentState?.pushReplacementNamed('/login');
       } else {
         final error = jsonDecode(response.body);
         _error = error['error'] ?? 'Failed to add device';
@@ -176,6 +227,9 @@ class DiscoveryService extends ChangeNotifier {
       if (response.statusCode == 200) {
         _devices.removeWhere((device) => device.id == deviceId);
         notifyListeners();
+      } else if (response.statusCode == 401) {
+        _error = 'Unauthorized';
+        navigatorKey.currentState?.pushReplacementNamed('/login');
       } else {
         final error = jsonDecode(response.body);
         _error = error['error'] ?? 'Failed to delete device';
@@ -225,6 +279,10 @@ class DiscoveryService extends ChangeNotifier {
         _devices.clear();
         _devices.addAll(devicesData.map((json) => Device.fromJson(json)));
         notifyListeners();
+      } else if (response.statusCode == 401) {
+        _error = 'Unauthorized';
+        // Redirect to login
+        navigatorKey.currentState?.pushReplacementNamed('/login');
       } else {
         final error = jsonDecode(response.body);
         _error = error['error'] ?? 'Failed to load devices';
