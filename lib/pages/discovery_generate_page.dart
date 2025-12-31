@@ -21,6 +21,7 @@ class _DiscoveryGeneratePageState extends State<DiscoveryGeneratePage> {
     super.initState();
     html.document.title = '裝置註冊表生成器';
     _service.addListener(_update);
+    _service.loadDevices(); // 加載裝置列表
   }
 
   @override
@@ -69,8 +70,8 @@ class _DiscoveryGeneratePageState extends State<DiscoveryGeneratePage> {
     }
   }
 
-  void removeDevice(int index) {
-    _service.removeDevice(index);
+  void removeDevice(String deviceId) {
+    _service.removeDevice(deviceId);
   }
 
   void generateOutput() {
@@ -238,7 +239,7 @@ class _DiscoveryGeneratePageState extends State<DiscoveryGeneratePage> {
                     subtitle: Text('Module: ${device.moduleId}, Channel: ${device.channel}'),
                     trailing: IconButton(
                       icon: const Icon(Icons.delete),
-                      onPressed: () => removeDevice(index),
+                      onPressed: () => removeDevice(device.id!),
                     ),
                   );
                 },
