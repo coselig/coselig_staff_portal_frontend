@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_blue_plus/flutter_blue_plus.dart';
 import 'package:flutter/foundation.dart' show kIsWeb;
+import 'package:permission_handler/permission_handler.dart';
 
 class BlePage extends StatefulWidget {
   const BlePage({super.key});
@@ -22,22 +23,43 @@ class _BlePageState extends State<BlePage> {
   }
 
   void startScan() async {
-    setState(() {
-      isScanning = true;
-      scanResults.clear();
-    });
+    // 請求權限（僅適用於移動裝置）
+    if (!kIsWeb) {
+      var scanStatus = await Permission.bluetoothScan.request();
+      var connectStatus = await Permission.bluetoothConnect.request();
+      if (!scanStatus.isGranted || !connectStatus.isGranted) {
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(const SnackBar(content: Text('需要藍芽權限才能掃描裝置')));
+        return;
+      }
+    }
 
-    FlutterBluePlus.scanResults.listen((results) {
+    try {
       setState(() {
-        scanResults = results;
+        isScanning = true;
+        scanResults.clear();
       });
-    });
 
-    await FlutterBluePlus.startScan(timeout: const Duration(seconds: 10));
+      FlutterBluePlus.scanResults.listen((results) {
+        setState(() {
+          scanResults = results;
+        });
+      });
 
-    setState(() {
-      isScanning = false;
-    });
+      await FlutterBluePlus.startScan(timeout: const Duration(seconds: 10));
+
+      setState(() {
+        isScanning = false;
+      });
+    } catch (e) {
+      setState(() {
+        isScanning = false;
+      });
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('掃描失敗: $e')));
+    }
   }
 
   @override
