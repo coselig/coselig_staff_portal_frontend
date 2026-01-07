@@ -222,6 +222,8 @@ class _DiscoveryGeneratePageState extends State<DiscoveryGeneratePage> {
 
   @override
   Widget build(BuildContext context) {
+    final double baseWidth =
+        (MediaQuery.of(context).size.width - 20 - 8 * 80) / 9;
     return Scaffold(
       appBar: AppBar(
         title: const Text('裝置註冊表生成器'),
@@ -231,222 +233,6 @@ class _DiscoveryGeneratePageState extends State<DiscoveryGeneratePage> {
         padding: const EdgeInsets.all(16.0),
         child: Column(
           children: [
-            // Add Device Form
-            Row(
-              children: [
-                // Brand
-                Expanded(
-                  flex: 1,
-                  child: DropdownButton<String>(
-                    value: selectedBrand,
-                    onChanged: (String? newValue) {
-                      setState(() {
-                        selectedBrand = newValue!;
-                        selectedModel = models[selectedBrand]!.first;
-                        List<String> availableTypes = getAvailableTypes(selectedBrand, selectedModel);
-                        if (!availableTypes.contains(selectedType)) {
-                          selectedType = availableTypes.first;
-                        }
-                        selectedChannel = getAvailableChannels(selectedBrand, selectedModel, selectedType).first;
-                      });
-                    },
-                    items: brands.map<DropdownMenuItem<String>>((String value) {
-                      return DropdownMenuItem<String>(
-                        value: value,
-                        child: Text(value),
-                      );
-                    }).toList(),
-                  ),
-                ),
-                const SizedBox(width: 8),
-                // Model
-                Expanded(
-                  flex: 1,
-                  child: DropdownButton<String>(
-                    value: selectedModel,
-                    onChanged: (String? newValue) {
-                      setState(() {
-                        selectedModel = newValue!;
-                        List<String> availableTypes = getAvailableTypes(selectedBrand, selectedModel);
-                        if (!availableTypes.contains(selectedType)) {
-                          selectedType = availableTypes.first;
-                        }
-                        selectedChannel = getAvailableChannels(selectedBrand, selectedModel, selectedType).first;
-                      });
-                    },
-                    items: models[selectedBrand]!.map<DropdownMenuItem<String>>((String value) {
-                      return DropdownMenuItem<String>(
-                        value: value,
-                        child: Text(value),
-                      );
-                    }).toList(),
-                  ),
-                ),
-                const SizedBox(width: 8),
-                // Type
-                Expanded(
-                  flex: 1,
-                  child: DropdownButton<String>(
-                    value: selectedType,
-                    onChanged: (String? newValue) {
-                      setState(() {
-                        selectedType = newValue!;
-                        selectedChannel = getAvailableChannels(selectedBrand, selectedModel, selectedType).first;
-                      });
-                    },
-                    items: getAvailableTypes(selectedBrand, selectedModel).map<DropdownMenuItem<String>>((String value) {
-                      return DropdownMenuItem<String>(
-                        value: value,
-                        child: Text(value),
-                      );
-                    }).toList(),
-                  ),
-                ),
-                const SizedBox(width: 8),
-                // Module ID
-                Expanded(
-                  flex: 1,
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      TextField(
-                        controller: moduleIdController,
-                        decoration: const InputDecoration(
-                          labelText: 'Module ID',
-                        ),
-                      ),
-                      if (_currentModuleId.isNotEmpty) ...[
-                        const SizedBox(height: 4),
-                        Builder(
-                          builder: (context) {
-                            final status = getModuleChannelStatus(
-                              _currentModuleId,
-                              selectedType,
-                            );
-                            final usedChannels =
-                                status['usedChannels'] as List<String>;
-                            final availableChannels =
-                                status['availableChannels'] as List<String>;
-                            final totalChannels =
-                                status['totalChannels'] as int;
-                            final usedCount = status['usedCount'] as int;
-
-                            return Text(
-                              '已使用: ${usedChannels.join(', ')} | 可用: ${availableChannels.join(', ')} ($usedCount/$totalChannels)',
-                              style: TextStyle(
-                                fontSize: 12,
-                                color: availableChannels.isEmpty
-                                    ? Colors.red
-                                    : Colors.green,
-                              ),
-                            );
-                          },
-                        ),
-                      ],
-                    ],
-                  ),
-                ),
-                const SizedBox(width: 8),
-                // Channel
-                Expanded(
-                  flex: 1,
-                  child: DropdownButton<String>(
-                    value: selectedChannel,
-                    onChanged: (String? newValue) {
-                      setState(() {
-                        selectedChannel = newValue!;
-                      });
-                    },
-                    items:
-                        (_currentModuleId.isNotEmpty
-                                ? _service.getSelectableChannelsForModule(
-                                    selectedBrand,
-                                    selectedModel,
-                                    selectedType,
-                                    _currentModuleId,
-                                  )
-                                : getAvailableChannels(
-                                    selectedBrand,
-                                    selectedModel,
-                                    selectedType,
-                                  ))
-                        .map<DropdownMenuItem<String>>((String value) {
-                      return DropdownMenuItem<String>(
-                        value: value,
-                        child: Text(value),
-                      );
-                    }).toList(),
-                  ),
-                ),
-                const SizedBox(width: 8),
-                // Name
-                Expanded(
-                  flex: 1,
-                  child: TextField(
-                    controller: nameController,
-                    decoration: const InputDecoration(labelText: 'Name'),
-                  ),
-                ),
-                const SizedBox(width: 8),
-                // TCP
-                Expanded(
-                  flex: 1,
-                  child: TextField(
-                    controller: tcpController,
-                    decoration: const InputDecoration(labelText: 'TCP'),
-                  ),
-                ),
-                const SizedBox(width: 8),
-                // Add Button
-                ElevatedButton(
-                  onPressed: addDevice,
-                  child: const Text('添加'),
-                ),
-              ],
-            ),
-            const SizedBox(height: 16),
-            // Device List
-            SingleChildScrollView(
-              scrollDirection: Axis.horizontal,
-              child: DataTable(
-                columns: const [
-                  DataColumn(label: Text('Brand')),
-                  DataColumn(label: Text('Model')),
-                  DataColumn(label: Text('Type')),
-                  DataColumn(label: Text('Module ID')),
-                  DataColumn(label: Text('Channel')),
-                  DataColumn(label: Text('Name')),
-                  DataColumn(label: Text('TCP')),
-                  DataColumn(label: Text('Edit')),
-                  DataColumn(label: Text('Delete')),
-                ],
-                rows: _service.devices.map((device) {
-                  return DataRow(
-                    cells: [
-                      DataCell(Text(device.brand)),
-                      DataCell(Text(device.model)),
-                      DataCell(Text(device.type)),
-                      DataCell(Text(device.moduleId)),
-                      DataCell(Text(device.channel)),
-                      DataCell(Text(device.name)),
-                      DataCell(Text(device.tcp)),
-                      DataCell(
-                        IconButton(
-                          icon: const Icon(Icons.edit),
-                          onPressed: () => editDevice(device),
-                        ),
-                      ),
-                      DataCell(
-                        IconButton(
-                          icon: const Icon(Icons.delete),
-                          onPressed: () => removeDevice(device.id!),
-                        ),
-                      ),
-                    ],
-                  );
-                }).toList(),
-              ),
-            ),
             const SizedBox(height: 16),
             // Buttons Row
             Row(
@@ -459,6 +245,295 @@ class _DiscoveryGeneratePageState extends State<DiscoveryGeneratePage> {
                   ),
                 ),
               ],
+            ),
+            const SizedBox(height: 16),
+            // Device List
+            SizedBox(
+              width: MediaQuery.of(context).size.width - 20,
+              child: SingleChildScrollView(
+                scrollDirection: Axis.horizontal,
+                child: DataTable(
+                  columnSpacing: 80.0,
+                  columns: const [
+                    DataColumn(label: Text('Brand')),
+                    DataColumn(label: Text('Model')),
+                    DataColumn(label: Text('Type')),
+                    DataColumn(label: Text('Module ID')),
+                    DataColumn(label: Text('Channel')),
+                    DataColumn(label: Text('Name')),
+                    DataColumn(label: Text('TCP')),
+                    DataColumn(label: Text('Edit')),
+                    DataColumn(label: Text('Delete')),
+                  ],
+                  rows: [
+                    DataRow(
+                      cells: [
+                        DataCell(
+                          Container(
+                            width:
+                                (MediaQuery.of(context).size.width -
+                                    20 -
+                                    8 * 80) /
+                                9,
+                            child: DropdownButton<String>(
+                              value: selectedBrand,
+                              onChanged: (String? newValue) {
+                                setState(() {
+                                  selectedBrand = newValue!;
+                                  selectedModel = models[selectedBrand]!.first;
+                                  List<String> availableTypes =
+                                      getAvailableTypes(
+                                        selectedBrand,
+                                        selectedModel,
+                                      );
+                                  if (!availableTypes.contains(selectedType)) {
+                                    selectedType = availableTypes.first;
+                                  }
+                                  selectedChannel = getAvailableChannels(
+                                    selectedBrand,
+                                    selectedModel,
+                                    selectedType,
+                                  ).first;
+                                });
+                              },
+                              items: brands.map<DropdownMenuItem<String>>((
+                                String value,
+                              ) {
+                                return DropdownMenuItem<String>(
+                                  value: value,
+                                  child: Text(value),
+                                );
+                              }).toList(),
+                            ),
+                          ),
+                        ),
+                        DataCell(
+                          Container(
+                            width:
+                                (MediaQuery.of(context).size.width -
+                                    20 -
+                                    8 * 80) /
+                                9,
+                            child: DropdownButton<String>(
+                              value: selectedModel,
+                              onChanged: (String? newValue) {
+                                setState(() {
+                                  selectedModel = newValue!;
+                                  List<String> availableTypes =
+                                      getAvailableTypes(
+                                        selectedBrand,
+                                        selectedModel,
+                                      );
+                                  if (!availableTypes.contains(selectedType)) {
+                                    selectedType = availableTypes.first;
+                                  }
+                                  selectedChannel = getAvailableChannels(
+                                    selectedBrand,
+                                    selectedModel,
+                                    selectedType,
+                                  ).first;
+                                });
+                              },
+                              items: models[selectedBrand]!
+                                  .map<DropdownMenuItem<String>>((
+                                    String value,
+                                  ) {
+                                    return DropdownMenuItem<String>(
+                                      value: value,
+                                      child: Text(value),
+                                    );
+                                  })
+                                  .toList(),
+                            ),
+                          ),
+                        ),
+                        DataCell(
+                          Container(
+                            width:
+                                (MediaQuery.of(context).size.width -
+                                    20 -
+                                    8 * 80) /
+                                9,
+                            child: DropdownButton<String>(
+                              value: selectedType,
+                              onChanged: (String? newValue) {
+                                setState(() {
+                                  selectedType = newValue!;
+                                  selectedChannel = getAvailableChannels(
+                                    selectedBrand,
+                                    selectedModel,
+                                    selectedType,
+                                  ).first;
+                                });
+                              },
+                              items:
+                                  getAvailableTypes(
+                                    selectedBrand,
+                                    selectedModel,
+                                  ).map<DropdownMenuItem<String>>((
+                                    String value,
+                                  ) {
+                                    return DropdownMenuItem<String>(
+                                      value: value,
+                                      child: Text(value),
+                                    );
+                                  }).toList(),
+                            ),
+                          ),
+                        ),
+                        DataCell(
+                          Container(
+                            width:
+                                (MediaQuery.of(context).size.width -
+                                    20 -
+                                    8 * 80) /
+                                9,
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                TextField(
+                                  controller: moduleIdController,
+                                  decoration: const InputDecoration(
+                                    labelText: 'Module ID',
+                                  ),
+                                ),
+                                if (_currentModuleId.isNotEmpty) ...[
+                                  const SizedBox(height: 4),
+                                  Builder(
+                                    builder: (context) {
+                                      final status = getModuleChannelStatus(
+                                        _currentModuleId,
+                                        selectedType,
+                                      );
+                                      final usedChannels =
+                                          status['usedChannels']
+                                              as List<String>;
+                                      final availableChannels =
+                                          status['availableChannels']
+                                              as List<String>;
+                                      final totalChannels =
+                                          status['totalChannels'] as int;
+                                      final usedCount =
+                                          status['usedCount'] as int;
+
+                                      return Text(
+                                        '已使用: ${usedChannels.join(', ')} | 可用: ${availableChannels.join(', ')} ($usedCount/$totalChannels)',
+                                        style: TextStyle(
+                                          fontSize: 12,
+                                          color: availableChannels.isEmpty
+                                              ? Colors.red
+                                              : Colors.green,
+                                        ),
+                                      );
+                                    },
+                                  ),
+                                ],
+                              ],
+                            ),
+                          ),
+                        ),
+                        DataCell(
+                          Container(
+                            width: baseWidth * 0.4,
+                            child: DropdownButton<String>(
+                              value: selectedChannel,
+                              onChanged: (String? newValue) {
+                                setState(() {
+                                  selectedChannel = newValue!;
+                                });
+                              },
+                              items:
+                                  (_currentModuleId.isNotEmpty
+                                          ? _service
+                                                .getSelectableChannelsForModule(
+                                                  selectedBrand,
+                                                  selectedModel,
+                                                  selectedType,
+                                                  _currentModuleId,
+                                                )
+                                          : getAvailableChannels(
+                                              selectedBrand,
+                                              selectedModel,
+                                              selectedType,
+                                            ))
+                                      .map<DropdownMenuItem<String>>((
+                                        String value,
+                                      ) {
+                                        return DropdownMenuItem<String>(
+                                          value: value,
+                                          child: Text(value),
+                                        );
+                                      })
+                                      .toList(),
+                            ),
+                          ),
+                        ),
+                        DataCell(
+                          Container(
+                            width:
+                                (MediaQuery.of(context).size.width -
+                                    20 -
+                                    8 * 80) /
+                                9,
+                            child: TextField(
+                              controller: nameController,
+                              decoration: const InputDecoration(
+                                labelText: 'Name',
+                              ),
+                            ),
+                          ),
+                        ),
+                        DataCell(
+                          Container(
+                            width: baseWidth * 0.4,
+                            child: TextField(
+                              controller: tcpController,
+                              decoration: const InputDecoration(
+                                labelText: 'TCP',
+                              ),
+                            ),
+                          ),
+                        ),
+                        DataCell(
+                          ElevatedButton(
+                            onPressed: addDevice,
+                            child: const Text('添加'),
+                          ),
+                        ),
+                        const DataCell(SizedBox.shrink()),
+                      ],
+                    ),
+                  
+                    // Device Rows
+                    ..._service.devices.map((device) {
+                      return DataRow(
+                        cells: [
+                          DataCell(Text(device.brand)),
+                          DataCell(Text(device.model)),
+                          DataCell(Text(device.type)),
+                          DataCell(Text(device.moduleId)),
+                          DataCell(Text(device.channel)),
+                          DataCell(Text(device.name)),
+                          DataCell(Text(device.tcp)),
+                          DataCell(
+                            IconButton(
+                              icon: const Icon(Icons.edit),
+                              onPressed: () => editDevice(device),
+                            ),
+                          ),
+                          DataCell(
+                            IconButton(
+                              icon: const Icon(Icons.delete),
+                              onPressed: () => removeDevice(device.id!),
+                            ),
+                          ),
+                        ],
+                      );
+                    }).toList(),
+                    // Input Row
+                  ],
+                ),
+              ),
             ),
             const SizedBox(height: 16),
             // Output Display
