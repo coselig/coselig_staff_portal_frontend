@@ -127,6 +127,57 @@ class _DiscoveryGeneratePageState extends State<DiscoveryGeneratePage> {
     _service.removeDevice(deviceId);
   }
 
+  void editDevice(Device device) {
+    // 創建臨時控制器
+    final nameController = TextEditingController(text: device.name);
+    final tcpController = TextEditingController(text: device.tcp);
+
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: const Text('編輯裝置'),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              TextField(
+                controller: nameController,
+                decoration: const InputDecoration(labelText: 'Name'),
+              ),
+              TextField(
+                controller: tcpController,
+                decoration: const InputDecoration(labelText: 'TCP'),
+              ),
+            ],
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(),
+              child: const Text('取消'),
+            ),
+            TextButton(
+              onPressed: () {
+                final updatedDevice = Device(
+                  id: device.id,
+                  brand: device.brand,
+                  model: device.model,
+                  type: device.type,
+                  moduleId: device.moduleId,
+                  channel: device.channel,
+                  name: nameController.text,
+                  tcp: tcpController.text,
+                );
+                _service.updateDevice(updatedDevice);
+                Navigator.of(context).pop();
+              },
+              child: const Text('保存'),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
   /// 獲取指定模組ID的channel使用情況
   Map<String, dynamic> getModuleChannelStatus(String moduleId, String type) {
     final existingDevices = _service.devices
@@ -156,14 +207,15 @@ class _DiscoveryGeneratePageState extends State<DiscoveryGeneratePage> {
     _service.generateOutput();
   }
 
-  void copyToClipboard() async {
+  void generateAndCopyOutput() async {
+    generateOutput();
     if (_service.generatedOutput.isNotEmpty) {
       await Clipboard.setData(ClipboardData(text: _service.generatedOutput));
       // 使用 ScaffoldMessenger 顯示成功訊息
       if (mounted) {
         ScaffoldMessenger.of(
           context,
-        ).showSnackBar(const SnackBar(content: Text('輸出內容已複製到剪貼簿')));
+        ).showSnackBar(const SnackBar(content: Text('輸出內容已生成並複製到剪貼簿')));
       }
     }
   }
@@ -175,7 +227,7 @@ class _DiscoveryGeneratePageState extends State<DiscoveryGeneratePage> {
         title: const Text('裝置註冊表生成器'),
         actions: const [ThemeToggleSwitch()],
       ),
-      body: Padding(
+      body: SingleChildScrollView(
         padding: const EdgeInsets.all(16.0),
         child: Column(
           children: [
@@ -354,40 +406,45 @@ class _DiscoveryGeneratePageState extends State<DiscoveryGeneratePage> {
             ),
             const SizedBox(height: 16),
             // Device List
-            Expanded(
-              child: SingleChildScrollView(
-                scrollDirection: Axis.horizontal,
-                child: DataTable(
-                  columns: const [
-                    DataColumn(label: Text('Brand')),
-                    DataColumn(label: Text('Model')),
-                    DataColumn(label: Text('Type')),
-                    DataColumn(label: Text('Module ID')),
-                    DataColumn(label: Text('Channel')),
-                    DataColumn(label: Text('Name')),
-                    DataColumn(label: Text('TCP')),
-                    DataColumn(label: Text('Action')),
-                  ],
-                  rows: _service.devices.map((device) {
-                    return DataRow(
-                      cells: [
-                        DataCell(Text(device.brand)),
-                        DataCell(Text(device.model)),
-                        DataCell(Text(device.type)),
-                        DataCell(Text(device.moduleId)),
-                        DataCell(Text(device.channel)),
-                        DataCell(Text(device.name)),
-                        DataCell(Text(device.tcp)),
-                        DataCell(
-                          IconButton(
-                            icon: const Icon(Icons.delete),
-                            onPressed: () => removeDevice(device.id!),
-                          ),
+            SingleChildScrollView(
+              scrollDirection: Axis.horizontal,
+              child: DataTable(
+                columns: const [
+                  DataColumn(label: Text('Brand')),
+                  DataColumn(label: Text('Model')),
+                  DataColumn(label: Text('Type')),
+                  DataColumn(label: Text('Module ID')),
+                  DataColumn(label: Text('Channel')),
+                  DataColumn(label: Text('Name')),
+                  DataColumn(label: Text('TCP')),
+                  DataColumn(label: Text('Edit')),
+                  DataColumn(label: Text('Delete')),
+                ],
+                rows: _service.devices.map((device) {
+                  return DataRow(
+                    cells: [
+                      DataCell(Text(device.brand)),
+                      DataCell(Text(device.model)),
+                      DataCell(Text(device.type)),
+                      DataCell(Text(device.moduleId)),
+                      DataCell(Text(device.channel)),
+                      DataCell(Text(device.name)),
+                      DataCell(Text(device.tcp)),
+                      DataCell(
+                        IconButton(
+                          icon: const Icon(Icons.edit),
+                          onPressed: () => editDevice(device),
                         ),
-                      ],
-                    );
-                  }).toList(),
-                ),
+                      ),
+                      DataCell(
+                        IconButton(
+                          icon: const Icon(Icons.delete),
+                          onPressed: () => removeDevice(device.id!),
+                        ),
+                      ),
+                    ],
+                  );
+                }).toList(),
               ),
             ),
             const SizedBox(height: 16),
@@ -395,24 +452,18 @@ class _DiscoveryGeneratePageState extends State<DiscoveryGeneratePage> {
             Row(
               children: [
                 Expanded(
-                  child: ElevatedButton(
-                    onPressed: generateOutput,
-                    child: const Text('生成輸出'),
-                  ),
-                ),
-                const SizedBox(width: 16),
-                Expanded(
                   child: ElevatedButton.icon(
-                    onPressed: copyToClipboard,
+                    onPressed: generateAndCopyOutput,
                     icon: const Icon(Icons.copy),
-                    label: const Text('複製輸出'),
+                    label: const Text('生成並複製輸出'),
                   ),
                 ),
               ],
             ),
             const SizedBox(height: 16),
             // Output Display
-            Expanded(
+            Container(
+              height: 300, // 固定高度以便滾動
               child: SingleChildScrollView(
                 child: Text(
                   _service.generatedOutput,

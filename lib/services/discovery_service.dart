@@ -316,6 +316,45 @@ class DiscoveryService extends ChangeNotifier {
     }
   }
 
+  Future<void> updateDevice(Device device) async {
+    if (device.id == null) return;
+
+    _isLoading = true;
+    _error = null;
+    notifyListeners();
+
+    try {
+      final response = await _client.put(
+        Uri.parse('$baseUrl/api/devices'),
+        headers: {'Content-Type': 'application/json'},
+        body: jsonEncode(device.toJson()),
+      );
+
+      if (response.statusCode == 200) {
+        final data = jsonDecode(response.body);
+        final updatedDevice = Device.fromJson(data['device']);
+        final index = _devices.indexWhere((d) => d.id == device.id);
+        if (index != -1) {
+          _devices[index] = updatedDevice;
+        }
+        notifyListeners();
+      } else if (response.statusCode == 401) {
+        _error = 'Unauthorized';
+        navigatorKey.currentState?.pushReplacementNamed('/login');
+      } else {
+        final error = jsonDecode(response.body);
+        _error = error['error'] ?? 'Failed to update device';
+        notifyListeners();
+      }
+    } catch (e) {
+      _error = 'Network error: $e';
+      notifyListeners();
+    } finally {
+      _isLoading = false;
+      notifyListeners();
+    }
+  }
+
   String generateOutput() {
     StringBuffer buffer = StringBuffer();
     buffer.writeln('msg.devices = [');
