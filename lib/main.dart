@@ -10,12 +10,14 @@ import 'package:coselig_staff_portal/services/theme_provider.dart';
 import 'package:coselig_staff_portal/widgets/register_frame.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:url_strategy/url_strategy.dart';
 
 final GlobalKey<NavigatorState> navigatorKey = GlobalKey<NavigatorState>();
 final GlobalKey<ScaffoldMessengerState> scaffoldMessengerKey =
     GlobalKey<ScaffoldMessengerState>();
 
 void main() {
+  setPathUrlStrategy();
   runApp(
     MultiProvider(
       providers: [
@@ -42,8 +44,13 @@ class MainApp extends StatelessWidget {
       theme: lightTheme,
       darkTheme: darkTheme,
       themeMode: themeProvider.themeMode,
-      initialRoute: '/splash',
+      initialRoute: '/',
+      onUnknownRoute: (settings) {
+        // 對於未知路由，重定向到 splash，讓它處理
+        return MaterialPageRoute(builder: (context) => const SplashScreen());
+      },
       routes: {
+        '/': (context) => const SplashScreen(),
         '/splash': (context) => const SplashScreen(),
         '/login': (context) => const AuthPage(),
         '/home': (context) => const StaffHomePage(),

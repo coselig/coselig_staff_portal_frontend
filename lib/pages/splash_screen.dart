@@ -40,11 +40,21 @@ class _SplashScreenState extends State<SplashScreen> {
     if (!mounted) return;
     if (!_navigated) {
       _navigated = true;
+      String targetRoute;
       if (authService.isLoggedIn) {
-        Navigator.of(context).pushReplacementNamed('/home');
+        // 檢查當前 URL 路徑
+        final currentPath = html.window.location.pathname;
+        if (currentPath == '/discovery_generate' ||
+            currentPath == '/admin' ||
+            currentPath == '/ble') {
+          targetRoute = currentPath!;
+        } else {
+          targetRoute = '/home';
+        }
       } else {
-        Navigator.of(context).pushReplacementNamed('/login');
+        targetRoute = '/login';
       }
+      Navigator.of(context).pushReplacementNamed(targetRoute);
     }
   }
 

@@ -16,6 +16,7 @@ dependencies:
   universal_html: ^2.3.0
   flutter_blue_plus: ^1.32.8
   permission_handler: ^11.3.1
+  url_strategy: ^0.2.0
 
 
 

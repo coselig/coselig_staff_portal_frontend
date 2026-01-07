@@ -3,8 +3,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:coselig_staff_portal/widgets/theme_toggle_switch.dart';
 import 'package:coselig_staff_portal/services/discovery_service.dart';
-import 'package:coselig_staff_portal/services/auth_service.dart';
-import 'package:provider/provider.dart';
 
 class DiscoveryGeneratePage extends StatefulWidget {
   const DiscoveryGeneratePage({super.key});
@@ -26,11 +24,6 @@ class _DiscoveryGeneratePageState extends State<DiscoveryGeneratePage> {
 
     // 檢查是否已登入
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      final authService = context.read<AuthService>();
-      if (!authService.isLoggedIn) {
-        Navigator.of(context).pushReplacementNamed('/login');
-        return;
-      }
       _service.loadDevices(); // 加載裝置列表
       _loadConfigurationNames(); // 加載配置名稱列表
     });
