@@ -391,7 +391,7 @@ class _DiscoveryGeneratePageState extends State<DiscoveryGeneratePage> {
                   columnSpacing: 80.0,
                   columns: [
                     DataColumn(
-                      label: Container(
+                      label: SizedBox(
                         width:
                             (MediaQuery.of(context).size.width - 20 - 8 * 80) /
                             9,
@@ -427,7 +427,7 @@ class _DiscoveryGeneratePageState extends State<DiscoveryGeneratePage> {
                       ),
                     ),
                     DataColumn(
-                      label: Container(
+                      label: SizedBox(
                             width:
                                 (MediaQuery.of(context).size.width -
                                     20 -
@@ -467,7 +467,7 @@ class _DiscoveryGeneratePageState extends State<DiscoveryGeneratePage> {
                           ),
                         ),
                     DataColumn(
-                      label: Container(
+                      label: SizedBox(
                             width:
                                 (MediaQuery.of(context).size.width -
                                     20 -
@@ -501,7 +501,7 @@ class _DiscoveryGeneratePageState extends State<DiscoveryGeneratePage> {
                           ),
                         ),
                     DataColumn(
-                      label: Container(
+                      label: SizedBox(
                             width:
                                 (MediaQuery.of(context).size.width -
                                     20 -
@@ -552,7 +552,7 @@ class _DiscoveryGeneratePageState extends State<DiscoveryGeneratePage> {
                           ),
                         ),
                     DataColumn(
-                      label: Container(
+                      label: SizedBox(
                             width: baseWidth * 0.4,
                             child: DropdownButton<String>(
                               value: selectedChannel,
@@ -588,7 +588,7 @@ class _DiscoveryGeneratePageState extends State<DiscoveryGeneratePage> {
                           ),
                         ),
                     DataColumn(
-                      label: Container(
+                      label: SizedBox(
                             width:
                                 (MediaQuery.of(context).size.width -
                                     20 -
@@ -603,7 +603,7 @@ class _DiscoveryGeneratePageState extends State<DiscoveryGeneratePage> {
                           ),
                         ),
                     DataColumn(
-                      label: Container(
+                      label: SizedBox(
                             width: baseWidth * 0.4,
                             child: TextField(
                               controller: tcpController,
@@ -657,7 +657,7 @@ class _DiscoveryGeneratePageState extends State<DiscoveryGeneratePage> {
             ),
             const SizedBox(height: 16),
             // Output Display
-            Container(
+            SizedBox(
               height: 300, // 固定高度以便滾動
               child: SingleChildScrollView(
                 child: Text(
