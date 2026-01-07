@@ -413,4 +413,129 @@ class DiscoveryService extends ChangeNotifier {
     // This method can be used for any additional save operations if needed
     notifyListeners();
   }
+
+  // Configuration management
+  Future<void> saveConfiguration(String name) async {
+    _isLoading = true;
+    _error = null;
+    notifyListeners();
+
+    try {
+      final devicesData = _devices.map((d) => d.toJson()).toList();
+      final response = await _client.post(
+        Uri.parse('$baseUrl/api/configurations'),
+        headers: {'Content-Type': 'application/json'},
+        body: jsonEncode({'name': name, 'devices': devicesData}),
+      );
+
+      if (response.statusCode == 200) {
+        // Success
+      } else if (response.statusCode == 401) {
+        _error = 'Unauthorized';
+        navigatorKey.currentState?.pushReplacementNamed('/login');
+      } else {
+        final error = jsonDecode(response.body);
+        _error = error['error'] ?? 'Failed to save configuration';
+        notifyListeners();
+      }
+    } catch (e) {
+      _error = 'Network error: $e';
+      notifyListeners();
+    } finally {
+      _isLoading = false;
+      notifyListeners();
+    }
+  }
+
+  Future<void> loadConfiguration(String name) async {
+    _isLoading = true;
+    _error = null;
+    notifyListeners();
+
+    try {
+      final response = await _client.get(
+        Uri.parse('$baseUrl/api/configurations/load?name=$name'),
+      );
+
+      if (response.statusCode == 200) {
+        final data = jsonDecode(response.body);
+        final devicesData = data['devices'] as List;
+        _devices.clear();
+        _devices.addAll(
+          devicesData.map((json) => Device.fromJson(json)).toList(),
+        );
+        notifyListeners();
+      } else if (response.statusCode == 401) {
+        _error = 'Unauthorized';
+        navigatorKey.currentState?.pushReplacementNamed('/login');
+      } else {
+        final error = jsonDecode(response.body);
+        _error = error['error'] ?? 'Failed to load configuration';
+        notifyListeners();
+      }
+    } catch (e) {
+      _error = 'Network error: $e';
+      notifyListeners();
+    } finally {
+      _isLoading = false;
+      notifyListeners();
+    }
+  }
+
+  Future<List<String>> getConfigurationNames() async {
+    try {
+      final response = await _client.get(
+        Uri.parse('$baseUrl/api/configurations'),
+      );
+
+      if (response.statusCode == 200) {
+        final data = jsonDecode(response.body);
+        final configs = data['configurations'] as List;
+        return configs.map((config) => config['name'] as String).toList();
+      } else if (response.statusCode == 401) {
+        navigatorKey.currentState?.pushReplacementNamed('/login');
+        throw Exception('Unauthorized');
+      } else {
+        final error = jsonDecode(response.body);
+        throw Exception(error['error'] ?? 'Failed to get configurations');
+      }
+    } catch (e) {
+      throw Exception('Network error: $e');
+    }
+  }
+
+  Future<void> deleteConfiguration(String name) async {
+    _isLoading = true;
+    _error = null;
+    notifyListeners();
+
+    try {
+      final response = await _client.delete(
+        Uri.parse('$baseUrl/api/configurations?name=$name'),
+      );
+
+      if (response.statusCode == 200) {
+        // Success
+      } else if (response.statusCode == 401) {
+        _error = 'Unauthorized';
+        navigatorKey.currentState?.pushReplacementNamed('/login');
+      } else {
+        final error = jsonDecode(response.body);
+        _error = error['error'] ?? 'Failed to delete configuration';
+        notifyListeners();
+      }
+    } catch (e) {
+      _error = 'Network error: $e';
+      notifyListeners();
+    } finally {
+      _isLoading = false;
+      notifyListeners();
+    }
+  }
+
+  // 清空設備列表
+  void clearDevices() {
+    _devices.clear();
+    notifyListeners();
+  }
 }

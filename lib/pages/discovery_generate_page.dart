@@ -32,6 +32,7 @@ class _DiscoveryGeneratePageState extends State<DiscoveryGeneratePage> {
         return;
       }
       _service.loadDevices(); // 加載裝置列表
+      _loadConfigurationNames(); // 加載配置名稱列表
     });
 
     // 監聽Module ID輸入變化
@@ -62,12 +63,39 @@ class _DiscoveryGeneratePageState extends State<DiscoveryGeneratePage> {
   @override
   void dispose() {
     moduleIdController.dispose();
+    nameController.dispose();
+    tcpController.dispose();
+    configNameController.dispose();
     _service.removeListener(_update);
     super.dispose();
   }
 
   void _update() {
     setState(() {});
+  }
+
+  Future<void> _loadConfigurationNames() async {
+    try {
+      final names = await _service.getConfigurationNames();
+      setState(() {
+        _configurationNames = ['新配置', ...names];
+        // 如果當前選擇的配置不在列表中，重置為新配置
+        if (!_configurationNames.contains(_selectedConfiguration)) {
+          _selectedConfiguration = '新配置';
+        }
+      });
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('無法加載配置: $e')),
+        );
+      }
+      // 即使加載失敗，也要提供新配置選項
+      setState(() {
+        _configurationNames = ['新配置'];
+        _selectedConfiguration = '新配置';
+      });
+    }
   }
 
   String selectedBrand = 'sunwave';
@@ -77,6 +105,11 @@ class _DiscoveryGeneratePageState extends State<DiscoveryGeneratePage> {
   final TextEditingController moduleIdController = TextEditingController();
   final TextEditingController nameController = TextEditingController();
   final TextEditingController tcpController = TextEditingController();
+  final TextEditingController configNameController = TextEditingController();
+
+  // Configuration management
+  List<String> _configurationNames = [];
+  String? _selectedConfiguration = '新配置';
 
   // 用於跟踪Module ID輸入的狀態
   String _currentModuleId = '';
@@ -234,7 +267,128 @@ class _DiscoveryGeneratePageState extends State<DiscoveryGeneratePage> {
         child: Column(
           children: [
             const SizedBox(height: 16),
-
+            // Configuration Management
+            Row(
+              children: [
+                Expanded(
+                  flex: 2,
+                  child: TextField(
+                    controller: configNameController,
+                    decoration: const InputDecoration(labelText: '配置名稱'),
+                  ),
+                ),
+                const SizedBox(width: 8),
+                ElevatedButton(
+                  onPressed: () async {
+                    if (configNameController.text.isNotEmpty) {
+                      if (configNameController.text == '新配置') {
+                        if (mounted) {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            const SnackBar(content: Text('無法使用預設配置名稱')),
+                          );
+                        }
+                        return;
+                      }
+                      try {
+                        await _service.saveConfiguration(configNameController.text);
+                        configNameController.clear();
+                        await _loadConfigurationNames();
+                        if (mounted) {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            const SnackBar(content: Text('配置保存成功')),
+                          );
+                        }
+                      } catch (e) {
+                        if (mounted) {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            SnackBar(content: Text('保存配置失敗: $e')),
+                          );
+                        }
+                      }
+                    }
+                  },
+                  child: const Text('保存配置'),
+                ),
+                const SizedBox(width: 8),
+                Expanded(
+                  flex: 2,
+                  child: DropdownButton<String>(
+                    hint: const Text('選擇配置'),
+                    value: _selectedConfiguration,
+                    onChanged: (String? newValue) async {
+                      if (newValue != null) {
+                        setState(() {
+                          _selectedConfiguration = newValue;
+                        });
+                        if (newValue == '新配置') {
+                          // 清空設備列表
+                          _service.clearDevices();
+                          if (mounted) {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              const SnackBar(content: Text('已清空配置')),
+                            );
+                          }
+                        } else {
+                          try {
+                            await _service.loadConfiguration(newValue);
+                            if (mounted) {
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                const SnackBar(content: Text('配置加載成功')),
+                              );
+                            }
+                          } catch (e) {
+                            if (mounted) {
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                SnackBar(content: Text('加載配置失敗: $e')),
+                              );
+                            }
+                          }
+                        }
+                      }
+                    },
+                    items: _configurationNames.map<DropdownMenuItem<String>>((String value) {
+                      return DropdownMenuItem<String>(
+                        value: value,
+                        child: Text(value),
+                      );
+                    }).toList(),
+                  ),
+                ),
+                const SizedBox(width: 8),
+                ElevatedButton(
+                  onPressed: () async {
+                    if (configNameController.text.isNotEmpty) {
+                      if (configNameController.text == '新配置') {
+                        if (mounted) {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            const SnackBar(content: Text('無法刪除預設配置')),
+                          );
+                        }
+                        return;
+                      }
+                      try {
+                        await _service.deleteConfiguration(configNameController.text);
+                        configNameController.clear();
+                        await _loadConfigurationNames();
+                        if (mounted) {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            const SnackBar(content: Text('配置刪除成功')),
+                          );
+                        }
+                      } catch (e) {
+                        if (mounted) {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            SnackBar(content: Text('刪除配置失敗: $e')),
+                          );
+                        }
+                      }
+                    }
+                  },
+                  child: const Text('刪除配置'),
+                ),
+              ],
+            ),
+            const SizedBox(height: 16),
             // Device List
             SizedBox(
               width: MediaQuery.of(context).size.width - 20,
