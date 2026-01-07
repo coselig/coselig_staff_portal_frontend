@@ -234,19 +234,7 @@ class _DiscoveryGeneratePageState extends State<DiscoveryGeneratePage> {
         child: Column(
           children: [
             const SizedBox(height: 16),
-            // Buttons Row
-            Row(
-              children: [
-                Expanded(
-                  child: ElevatedButton.icon(
-                    onPressed: generateAndCopyOutput,
-                    icon: const Icon(Icons.copy),
-                    label: const Text('生成並複製輸出'),
-                  ),
-                ),
-              ],
-            ),
-            const SizedBox(height: 16),
+
             // Device List
             SizedBox(
               width: MediaQuery.of(context).size.width - 20,
@@ -254,61 +242,45 @@ class _DiscoveryGeneratePageState extends State<DiscoveryGeneratePage> {
                 scrollDirection: Axis.horizontal,
                 child: DataTable(
                   columnSpacing: 80.0,
-                  columns: const [
-                    DataColumn(label: Text('Brand')),
-                    DataColumn(label: Text('Model')),
-                    DataColumn(label: Text('Type')),
-                    DataColumn(label: Text('Module ID')),
-                    DataColumn(label: Text('Channel')),
-                    DataColumn(label: Text('Name')),
-                    DataColumn(label: Text('TCP')),
-                    DataColumn(label: Text('Edit')),
-                    DataColumn(label: Text('Delete')),
-                  ],
-                  rows: [
-                    DataRow(
-                      cells: [
-                        DataCell(
-                          Container(
-                            width:
-                                (MediaQuery.of(context).size.width -
-                                    20 -
-                                    8 * 80) /
-                                9,
-                            child: DropdownButton<String>(
-                              value: selectedBrand,
-                              onChanged: (String? newValue) {
-                                setState(() {
-                                  selectedBrand = newValue!;
-                                  selectedModel = models[selectedBrand]!.first;
-                                  List<String> availableTypes =
-                                      getAvailableTypes(
-                                        selectedBrand,
-                                        selectedModel,
-                                      );
-                                  if (!availableTypes.contains(selectedType)) {
-                                    selectedType = availableTypes.first;
-                                  }
-                                  selectedChannel = getAvailableChannels(
-                                    selectedBrand,
-                                    selectedModel,
-                                    selectedType,
-                                  ).first;
-                                });
-                              },
-                              items: brands.map<DropdownMenuItem<String>>((
-                                String value,
-                              ) {
-                                return DropdownMenuItem<String>(
-                                  value: value,
-                                  child: Text(value),
-                                );
-                              }).toList(),
-                            ),
-                          ),
+                  columns: [
+                    DataColumn(
+                      label: Container(
+                        width:
+                            (MediaQuery.of(context).size.width - 20 - 8 * 80) /
+                            9,
+                        child: DropdownButton<String>(
+                          value: selectedBrand,
+                          onChanged: (String? newValue) {
+                            setState(() {
+                              selectedBrand = newValue!;
+                              selectedModel = models[selectedBrand]!.first;
+                              List<String> availableTypes = getAvailableTypes(
+                                selectedBrand,
+                                selectedModel,
+                              );
+                              if (!availableTypes.contains(selectedType)) {
+                                selectedType = availableTypes.first;
+                              }
+                              selectedChannel = getAvailableChannels(
+                                selectedBrand,
+                                selectedModel,
+                                selectedType,
+                              ).first;
+                            });
+                          },
+                          items: brands.map<DropdownMenuItem<String>>((
+                            String value,
+                          ) {
+                            return DropdownMenuItem<String>(
+                              value: value,
+                              child: Text(value),
+                            );
+                          }).toList(),
                         ),
-                        DataCell(
-                          Container(
+                      ),
+                    ),
+                    DataColumn(
+                      label: Container(
                             width:
                                 (MediaQuery.of(context).size.width -
                                     20 -
@@ -347,8 +319,8 @@ class _DiscoveryGeneratePageState extends State<DiscoveryGeneratePage> {
                             ),
                           ),
                         ),
-                        DataCell(
-                          Container(
+                    DataColumn(
+                      label: Container(
                             width:
                                 (MediaQuery.of(context).size.width -
                                     20 -
@@ -381,8 +353,8 @@ class _DiscoveryGeneratePageState extends State<DiscoveryGeneratePage> {
                             ),
                           ),
                         ),
-                        DataCell(
-                          Container(
+                    DataColumn(
+                      label: Container(
                             width:
                                 (MediaQuery.of(context).size.width -
                                     20 -
@@ -432,8 +404,8 @@ class _DiscoveryGeneratePageState extends State<DiscoveryGeneratePage> {
                             ),
                           ),
                         ),
-                        DataCell(
-                          Container(
+                    DataColumn(
+                      label: Container(
                             width: baseWidth * 0.4,
                             child: DropdownButton<String>(
                               value: selectedChannel,
@@ -468,8 +440,8 @@ class _DiscoveryGeneratePageState extends State<DiscoveryGeneratePage> {
                             ),
                           ),
                         ),
-                        DataCell(
-                          Container(
+                    DataColumn(
+                      label: Container(
                             width:
                                 (MediaQuery.of(context).size.width -
                                     20 -
@@ -483,8 +455,8 @@ class _DiscoveryGeneratePageState extends State<DiscoveryGeneratePage> {
                             ),
                           ),
                         ),
-                        DataCell(
-                          Container(
+                    DataColumn(
+                      label: Container(
                             width: baseWidth * 0.4,
                             child: TextField(
                               controller: tcpController,
@@ -494,18 +466,21 @@ class _DiscoveryGeneratePageState extends State<DiscoveryGeneratePage> {
                             ),
                           ),
                         ),
-                        DataCell(
-                          ElevatedButton(
+                    DataColumn(
+                      label: ElevatedButton(
                             onPressed: addDevice,
                             child: const Text('添加'),
-                          ),
-                        ),
-                        const DataCell(SizedBox.shrink()),
-                      ],
+                      ),
                     ),
-                  
-                    // Device Rows
-                    ..._service.devices.map((device) {
+                    DataColumn(
+                      label: ElevatedButton.icon(
+                            onPressed: generateAndCopyOutput,
+                            icon: const Icon(Icons.copy),
+                            label: const Text('生成並複製輸出'),
+                      ),
+                    ),
+                  ],
+                  rows: _service.devices.map((device) {
                       return DataRow(
                         cells: [
                           DataCell(Text(device.brand)),
@@ -529,9 +504,7 @@ class _DiscoveryGeneratePageState extends State<DiscoveryGeneratePage> {
                           ),
                         ],
                       );
-                    }).toList(),
-                    // Input Row
-                  ],
+                  }).toList(),
                 ),
               ),
             ),
