@@ -81,6 +81,7 @@ class ExcelExportService {
     // 寫入資料
     print('開始寫入資料...');
     var rowIndex = 1;
+    double totalSeconds = 0.0;
 
     for (var day = 1; day <= daysInMonth; day++) {
       final record = monthRecords[day];
@@ -122,6 +123,7 @@ class ExcelExportService {
             if (checkInTime != null && checkOutTime != null) {
               workHours = _calculateWorkHours(checkInTime, checkOutTime);
               status = '已打卡';
+              totalSeconds += workHours;
             } else if (checkInTime != null && checkOutTime == null) {
               status = '上班未下班';
             } else if (checkInTime == null && checkOutTime != null) {
@@ -159,6 +161,10 @@ class ExcelExportService {
         rowIndex++;
       }
     }
+
+    // 寫入總計行
+    _writeTotalRow(sheet, rowIndex, totalSeconds);
+    rowIndex++;
 
     print('✓ 打卡記錄工作表創建完成');
   }
@@ -225,8 +231,8 @@ class ExcelExportService {
     if (workHours != null) {
       sheet
           .cell(CellIndex.indexByColumnRow(columnIndex: 6, rowIndex: rowIndex))
-          .value = DoubleCellValue(
-        workHours,
+          .value = TextCellValue(
+        _formatDuration(workHours),
       );
     }
 
@@ -235,6 +241,22 @@ class ExcelExportService {
         .cell(CellIndex.indexByColumnRow(columnIndex: 7, rowIndex: rowIndex))
         .value = TextCellValue(
       status,
+    );
+  }
+
+  void _writeTotalRow(Sheet sheet, int rowIndex, double totalSeconds) {
+    // 狀態
+    sheet
+        .cell(CellIndex.indexByColumnRow(columnIndex: 7, rowIndex: rowIndex))
+        .value = TextCellValue(
+      '總計',
+    );
+
+    // 工作時數
+    sheet
+        .cell(CellIndex.indexByColumnRow(columnIndex: 6, rowIndex: rowIndex))
+        .value = TextCellValue(
+      _formatDuration(totalSeconds),
     );
   }
 
@@ -273,29 +295,21 @@ class ExcelExportService {
     return DateFormat('yyyy/MM/dd').format(dateTime);
   }
 
+  /// 格式化持續時間為 HH:MM
+  String _formatDuration(double seconds) {
+    int totalSeconds = seconds.toInt();
+    int hours = totalSeconds ~/ 3600;
+    int minutes = (totalSeconds % 3600) ~/ 60;
+    return '${hours.toString().padLeft(2, '0')}:${minutes.toString().padLeft(2, '0')}';
+  }
+
   /// 計算工作時數
   double _calculateWorkHours(String checkInTime, String checkOutTime) {
     try {
-      // 時間格式為 yyyy-MM-dd HH:mm:ss，提取 HH:mm
-      final checkInTimePart = checkInTime.split(' ')[1];
-      final checkOutTimePart = checkOutTime.split(' ')[1];
-
-      final checkInParts = checkInTimePart.split(':');
-      final checkOutParts = checkOutTimePart.split(':');
-
-      final checkInHour = int.parse(checkInParts[0]);
-      final checkInMinute = int.parse(checkInParts[1]);
-
-      final checkOutHour = int.parse(checkOutParts[0]);
-      final checkOutMinute = int.parse(checkOutParts[1]);
-
-      final checkInTotalMinutes = checkInHour * 60 + checkInMinute;
-      final checkOutTotalMinutes = checkOutHour * 60 + checkOutMinute;
-
-      final durationMinutes = checkOutTotalMinutes - checkInTotalMinutes;
-      final hours = durationMinutes / 60.0;
-
-      return hours > 0 ? hours : 0.0;
+      final checkIn = DateTime.parse(checkInTime);
+      final checkOut = DateTime.parse(checkOutTime);
+      final duration = checkOut.difference(checkIn);
+      return duration.inSeconds.toDouble();
     } catch (e) {
       print('計算工作時數失敗: $e');
       return 0.0;
