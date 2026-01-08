@@ -516,37 +516,37 @@ class _DiscoveryGeneratePageState extends State<DiscoveryGeneratePage> {
                                     labelText: 'Module ID',
                                   ),
                                 ),
-                                if (_currentModuleId.isNotEmpty) ...[
-                                  const SizedBox(height: 4),
-                                  Builder(
-                                    builder: (context) {
-                                      final status = getModuleChannelStatus(
-                                        _currentModuleId,
-                                        selectedType,
-                                      );
-                                      final usedChannels =
-                                          status['usedChannels']
-                                              as List<String>;
-                                      final availableChannels =
-                                          status['availableChannels']
-                                              as List<String>;
-                                      final totalChannels =
-                                          status['totalChannels'] as int;
-                                      final usedCount =
-                                          status['usedCount'] as int;
+                            // if (_currentModuleId.isNotEmpty) ...[
+                            //   const SizedBox(height: 4),
+                            //   Builder(
+                            //     builder: (context) {
+                            //       final status = getModuleChannelStatus(
+                            //         _currentModuleId,
+                            //         selectedType,
+                            //       );
+                            //       final usedChannels =
+                            //           status['usedChannels']
+                            //               as List<String>;
+                            //       final availableChannels =
+                            //           status['availableChannels']
+                            //               as List<String>;
+                            //       final totalChannels =
+                            //           status['totalChannels'] as int;
+                            //       final usedCount =
+                            //           status['usedCount'] as int;
 
-                                      return Text(
-                                        '已使用: ${usedChannels.join(', ')} | 可用: ${availableChannels.join(', ')} ($usedCount/$totalChannels)',
-                                        style: TextStyle(
-                                          fontSize: 12,
-                                          color: availableChannels.isEmpty
-                                              ? Colors.red
-                                              : Colors.green,
-                                        ),
-                                      );
-                                    },
-                                  ),
-                                ],
+                            //       return Text(
+                            //         '已使用: ${usedChannels.join(', ')} | 可用: ${availableChannels.join(', ')} ($usedCount/$totalChannels)',
+                            //         style: TextStyle(
+                            //           fontSize: 12,
+                            //           color: availableChannels.isEmpty
+                            //               ? Colors.red
+                            //               : Colors.green,
+                            //         ),
+                            //       );
+                            //     },
+                            //   ),
+                            // ],
                               ],
                             ),
                           ),
