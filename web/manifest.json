@@ -1,11 +1,11 @@
 {
-    "name": "coselig_staff_portal",
-    "short_name": "coselig_staff_portal",
+    "name": "光悅員工系統",
+    "short_name": "光悅員工",
     "start_url": ".",
     "display": "standalone",
-    "background_color": "#0175C2",
-    "theme_color": "#0175C2",
-    "description": "A new Flutter project.",
+    "background_color": "#CD8A62",
+    "theme_color": "#CD8A62",
+    "description": "光悅科技員工入口系統",
     "orientation": "portrait-primary",
     "prefer_related_applications": false,
     "icons": [
