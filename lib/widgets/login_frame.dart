@@ -23,10 +23,14 @@ class _LoginFrameState extends State<LoginFrame> {
       ),
       padding: const EdgeInsets.all(16.0),
       width: MediaQuery.of(context).size.width * 0.4,
-      height: MediaQuery.of(context).size.height * 0.22,
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
+      constraints: BoxConstraints(
+        minHeight: 250,
+        maxHeight: MediaQuery.of(context).size.height * 0.8,
+      ),
+      child: SingleChildScrollView(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
           TextField(
             controller: accountController,
             decoration: const InputDecoration(labelText: '電子郵件/帳號'),
@@ -36,21 +40,40 @@ class _LoginFrameState extends State<LoginFrame> {
             decoration: const InputDecoration(labelText: '密碼'),
             obscureText: true,
           ),
-          SizedBox(height: 16),
-          ElevatedButton(
-            onPressed: () async {
-              final success = await authService.login(
-                accountController.text,
-                passwordController.text,
-              );
-              if (success) {
-                if (mounted) {
-                  navigatorKey.currentState!.pushReplacementNamed('/home');
-                }
-              }
-              setState(() {});
-            },
-            child: const Text('登入'),
+            SizedBox(height: 20),
+            SizedBox(
+              width: double.infinity,
+              height: 56,
+              child: ElevatedButton(
+                onPressed: () async {
+                  final success = await authService.login(
+                    accountController.text,
+                    passwordController.text,
+                  );
+                  if (success) {
+                    if (mounted) {
+                      navigatorKey.currentState!.pushReplacementNamed('/home');
+                    }
+                  }
+                  setState(() {});
+                },
+                style: ElevatedButton.styleFrom(
+                  padding: const EdgeInsets.symmetric(
+                    vertical: 16,
+                    horizontal: 32,
+                  ),
+                  textStyle: const TextStyle(
+                    fontSize: 18,
+                    fontWeight: FontWeight.bold,
+                  ),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  elevation: 3,
+                  tapTargetSize: MaterialTapTargetSize.padded,
+                ),
+                child: const Text('登入'),
+              ),
           ),
           // SizedBox(height: 8),
           // Expanded(
@@ -61,7 +84,8 @@ class _LoginFrameState extends State<LoginFrame> {
           //     ),
           //   ),
           // ),
-        ],
+          ],
+        ),
       ),
     );
   }

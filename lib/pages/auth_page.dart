@@ -43,16 +43,28 @@ class _AuthPageState extends State<AuthPage> {
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
               mode == "login" ? const LoginFrame() : const RegisterFrame(),
-              TextButton(
-                style: TextButton.styleFrom(
-                  backgroundColor: Color.fromARGB(40, 200, 100, 100),
+              SizedBox(width: 8),
+              SizedBox(
+                width: 60,
+                height: 150,
+                child: TextButton(
+                  style: TextButton.styleFrom(
+                    backgroundColor: Color.fromARGB(40, 200, 100, 100),
+                    padding: const EdgeInsets.symmetric(
+                      vertical: 16,
+                      horizontal: 12,
+                    ),
+                  ),
+                  onPressed: () {
+                    setState(() {
+                      mode = mode == "login" ? "register" : "login";
+                    });
+                  },
+                  child: Text(
+                    mode == "login" ? "\n註\n冊\n" : "\n登\n入\n",
+                    style: const TextStyle(fontSize: 16),
+                  ),
                 ),
-                onPressed: () {
-                  setState(() {
-                    mode = mode == "login" ? "register" : "login";
-                  });
-                },
-                child: Text(mode == "login" ? "\n註\n冊\n" : "\n登\n入\n"),
               ),
             ],
           ),
