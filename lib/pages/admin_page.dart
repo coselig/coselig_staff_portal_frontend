@@ -121,9 +121,13 @@ class _AdminPageState extends State<AdminPage> {
                       border: OutlineInputBorder(),
                     ),
                     items: _employees.map((employee) {
+                      final role = employee['role'] ?? 'employee';
+                      final displayName = employee['name'] ?? '未知員工';
+                      final roleText = role == 'admin' ? ' (管理員)' : '';
+                      
                       return DropdownMenuItem<String>(
                         value: employee['id']?.toString(),
-                        child: Text(employee['name'] ?? '未知員工'),
+                        child: Text('$displayName$roleText'),
                       );
                     }).toList(),
                     onChanged: (value) {
