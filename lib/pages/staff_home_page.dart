@@ -1,4 +1,5 @@
 import 'package:universal_html/html.dart' as html;
+import 'package:coselig_staff_portal/constants/app_constants.dart';
 import 'package:coselig_staff_portal/services/holiday_service.dart';
 import 'package:coselig_staff_portal/utils/time_utils.dart';
 import 'package:coselig_staff_portal/services/attendance_service.dart';
@@ -21,20 +22,45 @@ class StaffHomePage extends StatefulWidget {
 
 class _StaffHomePageState extends State<StaffHomePage> {
   Map<int, dynamic> _holidaysMap = {};
+  Map<String, List<Holiday>> _holidaysCache = {}; // 假日快取 {year: holidays}
+  bool _loadingHolidays = false;
 
   Future<void> _fetchHolidays() async {
+    if (_loadingHolidays) return; // 防止重複請求
+    
     final year = _selectedMonth.year;
     final month = _selectedMonth.month;
+    final cacheKey = year.toString();
+
+    debugPrint('[Holiday] 開始取得 $year 年 $month 月假日');
+
+    setState(() => _loadingHolidays = true);
+    
     try {
-      final holidayService = HolidayService();
-      final holidays = await holidayService.fetchTaiwanHolidays(year);
-      debugPrint('[Holiday] $year年取得假日數量: ${holidays.length}');
+      List<Holiday> holidays;
+
+      // 先檢查快取
+      if (_holidaysCache.containsKey(cacheKey)) {
+        holidays = _holidaysCache[cacheKey]!;
+        debugPrint('[Holiday] 使用快取，$year年假日數量: ${holidays.length}');
+      } else {
+        // 沒有快取，請求 API
+        final holidayService = HolidayService();
+        holidays = await holidayService.fetchTaiwanHolidays(year);
+        _holidaysCache[cacheKey] = holidays; // 儲存到快取
+        debugPrint('[Holiday] API請求完成，$year年假日數量: ${holidays.length}');
+      }
+      
       final Map<int, dynamic> map = {};
       for (final h in holidays) {
-        final date = DateTime.parse(h.date);
-        if (date.month == month) {
-          map[date.day] = h.name;
-          debugPrint('[Holiday] ${h.date} ${h.name} 加入本月假日');
+        try {
+          final date = DateTime.parse(h.date);
+          if (date.month == month) {
+            map[date.day] = h.name;
+            debugPrint('[Holiday] ${h.date} ${h.name} 加入本月假日');
+          }
+        } catch (e) {
+          debugPrint('[Holiday] 解析日期失敗: ${h.date}, 錯誤: $e');
         }
       }
       debugPrint('[Holiday] $month月假日map: $map');
@@ -46,6 +72,8 @@ class _StaffHomePageState extends State<StaffHomePage> {
       setState(() {
         _holidaysMap = {};
       });
+    } finally {
+      setState(() => _loadingHolidays = false);
     }
   }
 
@@ -374,7 +402,26 @@ class _StaffHomePageState extends State<StaffHomePage> {
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('員工系統'),
+        title: Row(
+          children: [
+            const Text('員工系統'),
+            const SizedBox(width: 8),
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+              decoration: BoxDecoration(
+                color: Colors.grey.withOpacity(0.3),
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: Text(
+                AppConstants.fullVersion,
+                style: const TextStyle(
+                  fontSize: 10,
+                  fontWeight: FontWeight.normal,
+                ),
+              ),
+            ),
+          ],
+        ),
         actions: [
           IconButton(
             icon: const Icon(Icons.refresh),
