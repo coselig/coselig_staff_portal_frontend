@@ -613,7 +613,7 @@ class _StaffHomePageState extends State<StaffHomePage> {
         children: [
           workingStaffBlock,
           Text(
-            '歡迎，${authService.name ?? '員工'}！',
+            '歡迎，${authService.chineseName ?? authService.name ?? '員工'}！',
             style: const TextStyle(fontSize: 24),
           ),
           const SizedBox(height: 20),

@@ -11,6 +11,7 @@ class AuthService extends ChangeNotifier {
       'https://employeeservice.coseligtest.workers.dev';
 
   String? name;
+  String? chineseName;
   String? email;
   String? role;
   String? userId;
@@ -86,6 +87,8 @@ class AuthService extends ChangeNotifier {
 
       if (res.statusCode == 200 && data['user'] != null) {
         name = data['user']['name'];
+        chineseName = data['user']['chinese_name'];
+        chineseName = data['user']['chinese_name'];
         email = data['user']['email'];
         role = data['user']['role'];
         userId = data['user']['id']?.toString();
@@ -213,6 +216,7 @@ class AuthService extends ChangeNotifier {
    * ========= */
   void _clearUser() {
     name = null;
+    chineseName = null;
     email = null;
     role = null;
     userId = null;

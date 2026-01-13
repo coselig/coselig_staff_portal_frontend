@@ -122,7 +122,12 @@ class _AdminPageState extends State<AdminPage> {
                     ),
                     items: _employees.map((employee) {
                       final role = employee['role'] ?? 'employee';
-                      final displayName = employee['name'] ?? '未知員工';
+                      final chineseName = employee['chinese_name'];
+                      final englishName = employee['name'] ?? '未知員工';
+                      final displayName =
+                          chineseName != null && chineseName.isNotEmpty
+                          ? chineseName
+                          : englishName;
                       final roleText = role == 'admin' ? ' (管理員)' : '';
                       
                       return DropdownMenuItem<String>(
