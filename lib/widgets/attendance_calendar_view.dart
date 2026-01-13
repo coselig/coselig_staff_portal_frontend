@@ -121,7 +121,7 @@ class AttendanceCalendarView extends StatelessWidget {
     if (holiday != null) {
       backgroundColor = Theme.of(context).colorScheme.errorContainer;
       textColor = Theme.of(context).colorScheme.onErrorContainer;
-      status = '假日';
+      status = holiday.toString();
     } else if (leaveRequests != null && leaveRequests.isNotEmpty) {
       backgroundColor = Theme.of(context).colorScheme.secondaryContainer;
       textColor = Theme.of(context).colorScheme.onSecondaryContainer;

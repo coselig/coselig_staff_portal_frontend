@@ -22,11 +22,16 @@ class HolidayService {
           if (item is Map) {
             final isHoliday = item['isHoliday'] == true;
             final dateStr = item['date']?.toString();
-            final description = item['description']?.toString();
+            final description = item['description'];
 
             // 檢查是否為假日
             if (isHoliday) {
-              String? holidayName = description;
+              String holidayName = '';
+
+              // 先檢查是否有具體名稱
+              if (description != null && description.toString().isNotEmpty) {
+                holidayName = description.toString();
+              }
 
               if (dateStr != null && dateStr.length == 8) {
                 // 格式化日期從 "20260101" 到 "2026-01-01"
@@ -35,8 +40,8 @@ class HolidayService {
                 final day = dateStr.substring(6, 8);
                 final formattedDate = '$year-$month-$day';
 
-                // 如果沒有 description 或為空字符串，則根據日期判斷是否為週末
-                if (holidayName == null || holidayName.isEmpty) {
+                // 如果沒有具體名稱，則根據日期判斷是否為週末
+                if (holidayName.isEmpty) {
                   try {
                     final date = DateTime.parse(formattedDate);
                     if (date.weekday == DateTime.saturday ||
