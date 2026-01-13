@@ -12,12 +12,7 @@ class ExcelExportService {
     required DateTime month,
   }) async {
     try {
-      print('========== 開始匯出Excel ==========');
-      print('員工: $employeeName ($employeeId)');
-      print('月份: ${month.year}/${month.month}');
-
       // 創建Excel檔案
-      print('開始創建Excel檔案...');
       var excel = Excel.createExcel();
 
       // 創建打卡記錄工作表
@@ -26,13 +21,11 @@ class ExcelExportService {
       // 刪除預設的空白Sheet1
       if (excel.tables.containsKey('Sheet1')) {
         excel.delete('Sheet1');
-        print('✓ 已刪除預設的空白工作表 Sheet1');
       }
 
       // 下載檔案
       _downloadExcelFile(excel, '${employeeName}_打卡記錄_${month.year}_${month.month}');
     } catch (e) {
-      print('匯出Excel失敗: $e');
       rethrow;
     }
   }
@@ -45,7 +38,6 @@ class ExcelExportService {
     Map<int, dynamic> monthRecords,
     DateTime month,
   ) {
-    print('創建打卡記錄工作表，共 ${monthRecords.length} 筆記錄');
     var sheet = excel['打卡記錄'];
 
     // 設定標題列
@@ -59,8 +51,6 @@ class ExcelExportService {
       '工作時數',
       '狀態',
     ];
-
-    print('設定標題列...');
 
     // 寫入標題
     for (var i = 0; i < headers.length; i++) {
@@ -79,7 +69,6 @@ class ExcelExportService {
     final daysInMonth = DateTime(month.year, month.month + 1, 0).day;
 
     // 寫入資料
-    print('開始寫入資料...');
     var rowIndex = 1;
     double totalSeconds = 0.0;
 
@@ -164,8 +153,6 @@ class ExcelExportService {
     // 寫入總計行
     _writeTotalRow(sheet, rowIndex, totalSeconds);
     rowIndex++;
-
-    print('✓ 打卡記錄工作表創建完成');
   }
 
   void _writeRow(
@@ -261,20 +248,13 @@ class ExcelExportService {
 
   /// 下載Excel檔案
   void _downloadExcelFile(Excel excel, String baseName) {
-    print('開始編碼Excel檔案...');
-
     final bytes = excel.encode();
     if (bytes == null) {
-      print('❌ Excel編碼失敗');
       throw Exception('無法編碼Excel檔案');
     }
 
-    print('✓ Excel檔案大小: ${bytes.length} bytes');
-
     final timestamp = DateFormat('yyyyMMdd_HHmmss').format(DateTime.now());
     final fileName = '${baseName}_$timestamp.xlsx';
-
-    print('準備下載檔案: $fileName');
 
     // 創建Blob並下載
     final blob = html.Blob([
@@ -285,8 +265,6 @@ class ExcelExportService {
       ..setAttribute('download', fileName)
       ..click();
     html.Url.revokeObjectUrl(url);
-
-    print('✓ Excel檔案已下載');
   }
 
   /// 格式化日期
@@ -310,7 +288,6 @@ class ExcelExportService {
       final duration = checkOut.difference(checkIn);
       return duration.inSeconds.toDouble();
     } catch (e) {
-      print('計算工作時數失敗: $e');
       return 0.0;
     }
   }
