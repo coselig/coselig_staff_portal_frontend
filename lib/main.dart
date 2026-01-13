@@ -19,16 +19,9 @@ final GlobalKey<ScaffoldMessengerState> scaffoldMessengerKey =
     GlobalKey<ScaffoldMessengerState>();
 
 void main() {
-  // 顯示版本信息 - 使用console.log確保在瀏覽器中顯示
+  // 顯示版本信息
   final currentTime = DateTime.now().toIso8601String();
 
-  print('=== Coselig 員工系統啟動 ===');
-  print('版本: ${AppConstants.appVersion}');
-  print('構建: ${AppConstants.buildNumber}');
-  print('時間: $currentTime');
-  print('=======================');
-
-  // 確保在web瀏覽器console中顯示
   html.window.console.log('=== Coselig 員工系統啟動 ===');
   html.window.console.log('版本: ${AppConstants.appVersion}');
   html.window.console.log('構建: ${AppConstants.buildNumber}');

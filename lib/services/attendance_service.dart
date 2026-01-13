@@ -5,13 +5,6 @@ import 'package:http/browser_client.dart';
 class AttendanceService extends ChangeNotifier {
   /// Flutter Web 必須用 BrowserClient 才能送 Cookie
   final BrowserClient _client = BrowserClient()..withCredentials = true;
-  // Debug print
-  void debugPrintAttendance([String tag = '']) {
-    debugPrint(
-      '[AttendanceService][$tag] todayAttendance: '
-      '${todayAttendance != null ? todayAttendance.toString() : 'null'}',
-    );
-  }
 
   static const String baseUrl =
       'https://employeeservice.coseligtest.workers.dev';
@@ -25,21 +18,11 @@ class AttendanceService extends ChangeNotifier {
     int year,
     int month,
   ) async {
-    debugPrint(
-      '[AttendanceService][getMonthAttendance] userId: $userId, year: $year, month: $month',
-    );
     final url =
         '$baseUrl/api/attendance/month?user_id=$userId&year=$year&month=$month';
-    debugPrint('[AttendanceService][getMonthAttendance] url: $url');
     final res = await _client.get(
       Uri.parse(url),
       headers: {'Content-Type': 'application/json'},
-    );
-    debugPrint(
-      '[AttendanceService][getMonthAttendance] statusCode: ${res.statusCode}',
-    );
-    debugPrint(
-      '[AttendanceService][getMonthAttendance] response body: ${res.body}',
     );
     if (res.statusCode == 200) {
       // 假設 API 回傳格式: { "records": [ { "day": 1, "period1_check_in_time": ..., ... }, ... ] }
@@ -52,19 +35,14 @@ class AttendanceService extends ChangeNotifier {
           recordsMap[day] = record;
         }
       }
-      debugPrint(
-        '[AttendanceService][getMonthAttendance] recordsMap: $recordsMap',
-      );
       return recordsMap;
     } else {
-      debugPrint('[AttendanceService][getMonthAttendance] error: ${res.body}');
       return {};
     }
   }
 
   /// 上班打卡
   Future<bool> checkIn(String userId, {String period = 'morning'}) async {
-    debugPrint('[AttendanceService][checkIn] userId: $userId, period: $period');
     final res = await _client.post(
       Uri.parse('$baseUrl/api/attendance/check-in'),
       headers: {'Content-Type': 'application/json'},
@@ -83,9 +61,6 @@ class AttendanceService extends ChangeNotifier {
 
   /// 下班打卡
   Future<bool> checkOut(String userId, {String period = 'morning'}) async {
-    debugPrint(
-      '[AttendanceService][checkOut] userId: $userId, period: $period',
-    );
     final res = await _client.post(
       Uri.parse('$baseUrl/api/attendance/check-out'),
       headers: {'Content-Type': 'application/json'},
@@ -104,7 +79,6 @@ class AttendanceService extends ChangeNotifier {
 
   /// 取得今天打卡狀態（⚠️ GET）
   Future<void> getTodayAttendance(String userId) async {
-    debugPrint('[AttendanceService][getTodayAttendance] userId: $userId');
     final res = await _client.get(
       Uri.parse('$baseUrl/api/attendance/today?user_id=$userId'),
       headers: {'Content-Type': 'application/json'},
@@ -113,7 +87,6 @@ class AttendanceService extends ChangeNotifier {
     if (res.statusCode == 200) {
       todayAttendance = jsonDecode(res.body);
       errorMessage = null;
-      debugPrintAttendance('getTodayAttendance');
       notifyListeners();
     } else {
       throw Exception('Failed to load attendance data');
@@ -150,9 +123,6 @@ class AttendanceService extends ChangeNotifier {
     DateTime date,
     Map<String, Map<String, String?>> periods,
   ) async {
-    debugPrint(
-      '[AttendanceService][manualPunch] employeeId: $employeeId, date: $date, periods: $periods',
-    );
     final url = '$baseUrl/api/manual-punch';
     final body = {
       'employee_id': employeeId,
@@ -160,14 +130,10 @@ class AttendanceService extends ChangeNotifier {
           '${date.year}-${date.month.toString().padLeft(2, '0')}-${date.day.toString().padLeft(2, '0')}',
       'periods': periods,
     };
-    debugPrint('[AttendanceService][manualPunch] url: $url, body: $body');
     final res = await _client.post(
       Uri.parse(url),
       headers: {'Content-Type': 'application/json'},
       body: jsonEncode(body),
-    );
-    debugPrint(
-      '[AttendanceService][manualPunch] statusCode: ${res.statusCode}, response: ${res.body}',
     );
     if (res.statusCode == 200) {
       // 成功

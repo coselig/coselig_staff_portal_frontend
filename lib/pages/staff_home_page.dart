@@ -32,8 +32,6 @@ class _StaffHomePageState extends State<StaffHomePage> {
     final month = _selectedMonth.month;
     final cacheKey = year.toString();
 
-    debugPrint('[Holiday] 開始取得 $year 年 $month 月假日');
-
     setState(() => _loadingHolidays = true);
     
     try {
@@ -42,13 +40,11 @@ class _StaffHomePageState extends State<StaffHomePage> {
       // 先檢查快取
       if (_holidaysCache.containsKey(cacheKey)) {
         holidays = _holidaysCache[cacheKey]!;
-        debugPrint('[Holiday] 使用快取，$year年假日數量: ${holidays.length}');
       } else {
         // 沒有快取，請求 API
         final holidayService = HolidayService();
         holidays = await holidayService.fetchTaiwanHolidays(year);
         _holidaysCache[cacheKey] = holidays; // 儲存到快取
-        debugPrint('[Holiday] API請求完成，$year年假日數量: ${holidays.length}');
       }
       
       final Map<int, dynamic> map = {};
@@ -57,18 +53,15 @@ class _StaffHomePageState extends State<StaffHomePage> {
           final date = DateTime.parse(h.date);
           if (date.month == month) {
             map[date.day] = h.name;
-            debugPrint('[Holiday] ${h.date} ${h.name} 加入本月假日');
           }
         } catch (e) {
-          debugPrint('[Holiday] 解析日期失敗: ${h.date}, 錯誤: $e');
+          // 忽略無效日期
         }
       }
-      debugPrint('[Holiday] $month月假日map: $map');
       setState(() {
         _holidaysMap = map;
       });
     } catch (e) {
-      debugPrint('[Holiday] 取得假日失敗: $e');
       setState(() {
         _holidaysMap = {};
       });
@@ -90,6 +83,7 @@ class _StaffHomePageState extends State<StaffHomePage> {
             .map(
               (emp) => {
                 'name': emp['name'] ?? '員工',
+                'chinese_name': emp['chinese_name'],
                 'id': emp['user_id']?.toString() ?? '',
                 'check_in_time': emp['check_in_time'],
               },
@@ -201,7 +195,6 @@ class _StaffHomePageState extends State<StaffHomePage> {
       );
       setState(() {
         _monthRecords = records;
-        debugPrint('[StaffHomePage][_monthRecords] $_monthRecords');
       });
       await _fetchHolidays();
     }
@@ -509,14 +502,13 @@ class _StaffHomePageState extends State<StaffHomePage> {
                     ),
                   )
                 : Column(
-                    children: _workingStaff
-                        .map(
-                          (emp) {
+                    children: _workingStaff.map((emp) {
                       final chineseName = emp['chinese_name'];
                       final englishName = emp['name'] ?? '';
                       final displayName =
-                          chineseName != null && chineseName.isNotEmpty
-                          ? chineseName
+                          chineseName != null &&
+                              chineseName.toString().isNotEmpty
+                          ? chineseName.toString()
                           : englishName;
                       return ListTile(
                         leading: Icon(Icons.person, color: Colors.blue),
@@ -525,9 +517,7 @@ class _StaffHomePageState extends State<StaffHomePage> {
                           '上班時間：${formatTime(emp['check_in_time'])}',
                         ),
                       );
-                    },
-                        )
-                        .toList(),
+                    }).toList(),
                   ),
           ],
         ),
@@ -564,14 +554,10 @@ class _StaffHomePageState extends State<StaffHomePage> {
             icon: const Icon(Icons.refresh),
             tooltip: '手動刷新',
             onPressed: () async {
-              debugPrint('[StaffHomePage][refresh] userId: $userId');
               if (userId != null) {
                 await attendance.getTodayAttendance(userId);
                 _updatePeriodCount();
                 await _fetchMonthAttendance();
-                debugPrint(
-                  '[StaffHomePage][refresh] after getTodayAttendance & getMonthAttendance',
-                );
                 scaffoldMessengerKey.currentState!.showSnackBar(
                   const SnackBar(content: Text('已手動刷新打卡資料')),
                 );

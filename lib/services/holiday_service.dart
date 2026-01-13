@@ -13,38 +13,16 @@ class HolidayService {
         final data = jsonDecode(response.body);
         final List<Holiday> holidays = [];
         
-        // 調試：印出原始數據的前幾項
-        print('[HolidayService] 原始響應類型: ${data.runtimeType}');
-        if (data is List && data.isNotEmpty) {
-          print('[HolidayService] 第一項數據: ${data.first}');
-          if (data.length > 1) print('[HolidayService] 第二項數據: ${data[1]}');
-        } else if (data is Map) {
-          print('[HolidayService] Map數據鍵: ${data.keys}');
-          if (data.containsKey('days') && data['days'] is List) {
-            final daysList = data['days'] as List;
-            if (daysList.isNotEmpty) {
-              print('[HolidayService] days第一項: ${daysList.first}');
-            }
-          }
-        }
-        
         // 新版格式直接是 List，舊版是 {"days": List}
         final List<dynamic> daysList = data is List
             ? data
             : (data['days'] as List<dynamic>? ?? []);
 
-        print('[HolidayService] 解析資料格式，項目數: ${daysList.length}');
-
         for (final item in daysList) {
           if (item is Map) {
-            // 調試：印出每一項的結構
             final isHoliday = item['isHoliday'] == true;
             final dateStr = item['date']?.toString();
             final description = item['description']?.toString();
-
-            print(
-              '[HolidayService] 項目調試 - date: $dateStr, isHoliday: $isHoliday, description: $description, 原始item: $item',
-            );
 
             // 檢查是否為假日
             if (isHoliday) {
@@ -74,19 +52,16 @@ class HolidayService {
 
                 holidays.add(Holiday(
                   date: formattedDate, name: holidayName));
-                print('[HolidayService] 添加假日: $formattedDate - $holidayName');
               }
             }
           }
         }
 
-        print('[HolidayService] 總共找到假日: ${holidays.length}');
         return holidays;
       } else {
         throw Exception('HTTP ${response.statusCode}: 無法取得國定假日資料');
       }
     } catch (e) {
-      print('[HolidayService] 錯誤: $e');
       // 如果 API 失敗，返回基本的台灣國定假日
       return _getFallbackHolidays(year);
     }
