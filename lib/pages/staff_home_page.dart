@@ -511,13 +511,21 @@ class _StaffHomePageState extends State<StaffHomePage> {
                 : Column(
                     children: _workingStaff
                         .map(
-                          (emp) => ListTile(
-                            leading: Icon(Icons.person, color: Colors.blue),
-                            title: Text(emp['name'] ?? ''),
-                            subtitle: Text(
-                              '上班時間：${formatTime(emp['check_in_time'])}',
-                            ),
-                          ),
+                          (emp) {
+                      final chineseName = emp['chinese_name'];
+                      final englishName = emp['name'] ?? '';
+                      final displayName =
+                          chineseName != null && chineseName.isNotEmpty
+                          ? chineseName
+                          : englishName;
+                      return ListTile(
+                        leading: Icon(Icons.person, color: Colors.blue),
+                        title: Text(displayName),
+                        subtitle: Text(
+                          '上班時間：${formatTime(emp['check_in_time'])}',
+                        ),
+                      );
+                    },
                         )
                         .toList(),
                   ),

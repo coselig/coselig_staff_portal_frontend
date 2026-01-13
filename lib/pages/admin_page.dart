@@ -180,7 +180,8 @@ class _AdminPageState extends State<AdminPage> {
                     final records = Map<int, dynamic>.from(
                       employeeData['records'] as Map,
                     );
-                    final employeeName = employee['name'] ?? '員工';
+                    final employeeName =
+                        employee['chinese_name'] ?? employee['name'] ?? '員工';
                     final employeeId = employee['id']?.toString() ?? userId;
                     try {
                       await _excelExportService.exportAttendanceRecords(
@@ -241,7 +242,7 @@ class _AdminPageState extends State<AdminPage> {
                                   children: [
                                     Text(
                                       employee.isNotEmpty 
-                                        ? '${employee['name'] ?? '未知員工'} (${employee['email'] ?? ''})'
+                                      ? '${employee['chinese_name'] ?? employee['name'] ?? '未知員工'} (${employee['email'] ?? ''})'
                                         : '未知員工 ($userId)',
                                       style: const TextStyle(
                                         fontSize: 18,
@@ -303,7 +304,9 @@ class _AdminPageState extends State<AdminPage> {
                                           context: context,
                                           builder: (context) => ManualPunchDialog(
                                             employeeName:
-                                                employee['name'] ?? '員工',
+                                                employee['chinese_name'] ??
+                                                employee['name'] ??
+                                                '員工',
                                             date: date,
                                             periodsData: periodsData,
                                             onSubmit: (periods) async {
