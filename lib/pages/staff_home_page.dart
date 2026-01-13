@@ -207,7 +207,102 @@ class _StaffHomePageState extends State<StaffHomePage> {
     }
   }
 
-  // 編輯時段名稱
+  // 編輯任何時段名稱
+  Future<void> _editPeriodNameForAnyPeriod(
+    String currentPeriod,
+    String currentDisplayName,
+  ) async {
+    final TextEditingController controller = TextEditingController(
+      text: currentDisplayName,
+    );
+
+    final result = await showDialog<String>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Text('編輯時段名稱'),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text('請輸入新的時段名稱：'),
+            SizedBox(height: 16),
+            TextField(
+              controller: controller,
+              decoration: InputDecoration(
+                labelText: '時段名稱',
+                hintText: '例如：HomeAssistant端打卡、上午班、下午班',
+                border: OutlineInputBorder(),
+              ),
+              maxLength: 20,
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            child: Text('取消'),
+            onPressed: () => Navigator.of(context).pop(),
+          ),
+          ElevatedButton(
+            child: Text('確定'),
+            onPressed: () {
+              final newName = controller.text.trim();
+              if (newName.isNotEmpty) {
+                Navigator.of(context).pop(newName);
+              }
+            },
+          ),
+        ],
+      ),
+    );
+
+    if (result != null && result.isNotEmpty) {
+      try {
+        // 調用後端 API 更新時段名稱
+        final attendanceService = context.read<AttendanceService>();
+
+        final success = await attendanceService.updatePeriodName(
+          currentPeriod,
+          result,
+        );
+
+        if (success) {
+          // 如果是 period 格式，也更新本地快取
+          if (currentPeriod.startsWith('period')) {
+            final num = int.tryParse(currentPeriod.substring(6));
+            if (num != null) {
+              setState(() {
+                _periodNames[num] = result;
+              });
+            }
+          }
+
+          // 刷新今日打卡資料
+          final authService = context.read<AuthService>();
+          if (authService.userId != null) {
+            await attendanceService.getTodayAttendance(authService.userId!);
+            _updatePeriodCount();
+            await _fetchMonthAttendance();
+          }
+
+          scaffoldMessengerKey.currentState!.showSnackBar(
+            SnackBar(content: Text('時段名稱已更新為：$result')),
+          );
+        } else {
+          scaffoldMessengerKey.currentState!.showSnackBar(
+            SnackBar(
+              content: Text('更新失敗：${attendanceService.errorMessage ?? '未知錯誤'}'),
+              backgroundColor: Colors.red,
+            ),
+          );
+        }
+      } catch (e) {
+        scaffoldMessengerKey.currentState!.showSnackBar(
+          SnackBar(content: Text('更新失敗：$e'), backgroundColor: Colors.red),
+        );
+      }
+    }
+  }
+
+  // 編輯時段名稱（保留舊方法以防向後相容）
   Future<void> _editPeriodName(int periodIndex) async {
     final TextEditingController controller = TextEditingController(
       text: _periodNames[periodIndex] ?? '時段$periodIndex',
@@ -252,12 +347,46 @@ class _StaffHomePageState extends State<StaffHomePage> {
     );
 
     if (result != null && result.isNotEmpty) {
-      setState(() {
-        _periodNames[periodIndex] = result;
-      });
-      scaffoldMessengerKey.currentState!.showSnackBar(
-        SnackBar(content: Text('時段名稱已更新為：$result')),
-      );
+      try {
+        // 調用後端 API 更新時段名稱
+        final attendanceService = context.read<AttendanceService>();
+        final oldPeriod = 'period$periodIndex';
+        final newPeriod = result;
+
+        final success = await attendanceService.updatePeriodName(
+          oldPeriod,
+          newPeriod,
+        );
+
+        if (success) {
+          setState(() {
+            _periodNames[periodIndex] = result;
+          });
+          
+          // 刷新今日打卡資料
+          final authService = context.read<AuthService>();
+          if (authService.userId != null) {
+            await attendanceService.getTodayAttendance(authService.userId!);
+            _updatePeriodCount();
+            await _fetchMonthAttendance();
+          }
+          
+          scaffoldMessengerKey.currentState!.showSnackBar(
+            SnackBar(content: Text('時段名稱已更新為：$result')),
+          );
+        } else {
+          scaffoldMessengerKey.currentState!.showSnackBar(
+            SnackBar(
+              content: Text('更新失敗：${attendanceService.errorMessage ?? '未知錯誤'}'),
+              backgroundColor: Colors.red,
+            ),
+          );
+        }
+      } catch (e) {
+        scaffoldMessengerKey.currentState!.showSnackBar(
+          SnackBar(content: Text('更新失敗：$e'), backgroundColor: Colors.red),
+        );
+      }
     }
   }
 
@@ -527,13 +656,15 @@ class _StaffHomePageState extends State<StaffHomePage> {
                               ),
                             ),
                           ),
-                          // 只有 period 格式的才能編輯名稱
-                          if (period.startsWith('period'))
-                            IconButton(
-                              icon: Icon(Icons.edit, size: 20),
-                              tooltip: '編輯時段名稱',
-                              onPressed: () => _editPeriodName(periodIndex),
+                          // 所有時段都可以編輯名稱
+                          IconButton(
+                            icon: Icon(Icons.edit, size: 20),
+                            tooltip: '編輯時段名稱',
+                            onPressed: () => _editPeriodNameForAnyPeriod(
+                              period,
+                              displayName,
                             ),
+                          ),
                         ],
                       ),
                       SizedBox(height: 8),

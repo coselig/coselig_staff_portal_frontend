@@ -175,4 +175,34 @@ class AttendanceService extends ChangeNotifier {
       throw Exception('補打卡失敗: ${res.body}');
     }
   }
+
+  /// 更新時段名稱
+  Future<bool> updatePeriodName(String oldPeriod, String newPeriod) async {
+    debugPrint(
+      '[AttendanceService][updatePeriodName] oldPeriod: $oldPeriod, newPeriod: $newPeriod',
+    );
+
+    final res = await _client.put(
+      Uri.parse('$baseUrl/api/attendance/period'),
+      headers: {'Content-Type': 'application/json'},
+      body: jsonEncode({'oldPeriod': oldPeriod, 'newPeriod': newPeriod}),
+    );
+
+    debugPrint(
+      '[AttendanceService][updatePeriodName] statusCode: ${res.statusCode}, response: ${res.body}',
+    );
+
+    if (res.statusCode == 200) {
+      final data = jsonDecode(res.body);
+      debugPrint(
+        '[AttendanceService][updatePeriodName] success: ${data['message']}',
+      );
+      return true;
+    } else {
+      final errorData = jsonDecode(res.body);
+      errorMessage = errorData['error'] ?? '更新失敗';
+      notifyListeners();
+      return false;
+    }
+  }
 }
