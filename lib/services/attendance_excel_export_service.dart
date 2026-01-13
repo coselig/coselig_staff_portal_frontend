@@ -88,17 +88,17 @@ class ExcelExportService {
       final date = DateTime(month.year, month.month, day);
 
       if (record != null) {
-        // 提取所有 period
+        // 提取所有時段（找出所有 _check_in_time 結尾的欄位）
         final periods = <String>[];
         record.forEach((key, value) {
-          if (key.startsWith('period') && key.contains('_check_in_time')) {
-            final period = key.split('_check_in_time')[0];
+          if (key is String && key.endsWith('_check_in_time')) {
+            final period = key.replaceAll('_check_in_time', '');
             periods.add(period);
           }
         });
 
         if (periods.isEmpty) {
-          // 如果沒有 period，當作未打卡
+          // 如果沒有任何時段打卡記錄，當作未打卡
           _writeRow(
             sheet,
             rowIndex,
@@ -112,11 +112,10 @@ class ExcelExportService {
           );
           rowIndex++;
         } else {
-          // 為每個 period 寫一行
+          // 為每個時段寫一行
           for (final period in periods) {
             final checkInTime = record['${period}_check_in_time'];
             final checkOutTime = record['${period}_check_out_time'];
-            final periodName = '時段${period.replaceAll('period', '')}';
 
             String status = '已打卡';
             double? workHours;
@@ -136,7 +135,7 @@ class ExcelExportService {
               date,
               employeeId,
               employeeName,
-              periodName,
+              period, // 直接使用時段名稱
               checkInTime,
               checkOutTime,
               status,
