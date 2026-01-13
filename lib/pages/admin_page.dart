@@ -25,6 +25,7 @@ class _AdminPageState extends State<AdminPage> {
   bool _isLoading = false;
   List<Map<String, dynamic>> _employees = [];
   String? _selectedEmployeeId;
+  bool _showInactive = false;
 
   @override
   void initState() {
@@ -111,6 +112,21 @@ class _AdminPageState extends State<AdminPage> {
         child: Column(
           children: [
             Row(
+              mainAxisAlignment: MainAxisAlignment.start,
+              children: [
+                Checkbox(
+                  value: _showInactive,
+                  onChanged: (value) {
+                    setState(() {
+                      _showInactive = value ?? false;
+                    });
+                  },
+                ),
+                const Text('顯示離職員工'),
+              ],
+            ),
+            const SizedBox(height: 8),
+            Row(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
                 Expanded(
@@ -120,7 +136,19 @@ class _AdminPageState extends State<AdminPage> {
                       labelText: '選擇員工',
                       border: OutlineInputBorder(),
                     ),
-                    items: _employees.map((employee) {
+                    items: _employees
+                        .where((employee) {
+                          // 過濾離職員工
+                          if (!_showInactive) {
+                            final isActive = employee['is_active'];
+                            // is_active 可能是 int (0/1) 或 bool
+                            if (isActive == 0 || isActive == false) {
+                              return false;
+                            }
+                          }
+                          return true;
+                        })
+                        .map((employee) {
                       final role = employee['role'] ?? 'employee';
                       final chineseName = employee['chinese_name'];
                       final englishName = employee['name'] ?? '未知員工';
@@ -129,10 +157,15 @@ class _AdminPageState extends State<AdminPage> {
                           ? chineseName
                           : englishName;
                       final roleText = role == 'admin' ? ' (管理員)' : '';
+                          final isActive = employee['is_active'];
+                          final statusText =
+                              (isActive == 0 || isActive == false)
+                              ? ' (離職)'
+                              : '';
                       
                       return DropdownMenuItem<String>(
                         value: employee['id']?.toString(),
-                        child: Text('$displayName$roleText'),
+                            child: Text('$displayName$roleText$statusText'),
                       );
                     }).toList(),
                     onChanged: (value) {
