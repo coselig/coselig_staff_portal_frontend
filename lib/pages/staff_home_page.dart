@@ -580,18 +580,28 @@ class _StaffHomePageState extends State<StaffHomePage> {
                         Container(
                           padding: EdgeInsets.all(12),
                           decoration: BoxDecoration(
-                            color: Colors.green.shade50,
+                            color: Theme.of(
+                              context,
+                            ).colorScheme.tertiaryContainer,
                             borderRadius: BorderRadius.circular(8),
                           ),
                           child: Row(
                             children: [
-                              Icon(Icons.check_circle, color: Colors.green),
+                              Icon(
+                                Icons.check_circle,
+                                color: Theme.of(
+                                  context,
+                                ).colorScheme.onTertiaryContainer,
+                              ),
                               SizedBox(width: 8),
                               Text(
                                 '${formatTime(checkInTime)} ~ ${formatTime(checkOutTime)}',
                                 style: TextStyle(
                                   fontSize: 16,
                                   fontWeight: FontWeight.w500,
+                                  color: Theme.of(
+                                    context,
+                                  ).colorScheme.onTertiaryContainer,
                                 ),
                               ),
                             ],

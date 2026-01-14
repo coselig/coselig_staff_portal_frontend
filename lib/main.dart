@@ -18,7 +18,13 @@ final GlobalKey<NavigatorState> navigatorKey = GlobalKey<NavigatorState>();
 final GlobalKey<ScaffoldMessengerState> scaffoldMessengerKey =
     GlobalKey<ScaffoldMessengerState>();
 
-void main() {
+void main() async {
+  // 確保 Flutter binding 已初始化
+  WidgetsFlutterBinding.ensureInitialized();
+
+  // 初始化 AppConstants（讀取版本信息）
+  await AppConstants.init();
+  
   // 顯示版本信息
   final currentTime = DateTime.now().toIso8601String();
 
