@@ -503,6 +503,21 @@ class _StaffHomePageState extends State<StaffHomePage> {
                 navigatorKey.currentState!.pushNamed('/discovery_generate');
               },
             ),
+            if (authService.isAdmin)
+              ListTile(
+                leading: Icon(Icons.people),
+                title: Text('用戶資料預覽'),
+                onTap: () {
+                  navigatorKey.currentState!.pushNamed('/admin_user_preview');
+                },
+              ),
+            ListTile(
+              leading: Icon(Icons.person),
+              title: Text('我的資料'),
+              onTap: () {
+                navigatorKey.currentState!.pushNamed('/user_data');
+              },
+            ),
             ListTile(
               leading: Icon(Icons.logout),
               title: Text('登出'),

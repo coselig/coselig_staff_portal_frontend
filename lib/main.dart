@@ -1,10 +1,12 @@
 import 'package:coselig_staff_portal/constants/app_constants.dart';
 import 'package:coselig_staff_portal/pages/admin_page.dart';
+import 'package:coselig_staff_portal/pages/admin_user_preview_page.dart';
 import 'package:coselig_staff_portal/pages/auth_page.dart';
 import 'package:coselig_staff_portal/pages/ble_page.dart';
 import 'package:coselig_staff_portal/pages/discovery_generate_page.dart';
 import 'package:coselig_staff_portal/pages/splash_screen.dart';
 import 'package:coselig_staff_portal/pages/staff_home_page.dart';
+import 'package:coselig_staff_portal/pages/user_data_page.dart';
 import 'package:coselig_staff_portal/services/attendance_service.dart';
 import 'package:coselig_staff_portal/services/auth_service.dart';
 import 'package:coselig_staff_portal/services/theme_provider.dart';
@@ -75,6 +77,8 @@ class MainApp extends StatelessWidget {
         '/admin': (context) => const AdminPage(),
         '/discovery_generate': (context) => const DiscoveryGeneratePage(),
         '/ble': (context) => const BlePage(),
+        '/user_data': (context) => const UserDataPage(),
+        '/admin_user_preview': (context) => const AdminUserPreviewPage(),
       },
     );
   }
