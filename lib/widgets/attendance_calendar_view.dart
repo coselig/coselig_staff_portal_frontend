@@ -1,14 +1,14 @@
 import 'package:coselig_staff_portal/utils/time_utils.dart';
+import 'package:coselig_staff_portal/services/holiday_service.dart';
 import 'package:flutter/material.dart';
 
 /// 月曆視圖元件，顯示一個月的打卡、請假、假日狀態
 typedef OnManualPunch = void Function(int day, dynamic record);
 
-class AttendanceCalendarView extends StatelessWidget {
+class AttendanceCalendarView extends StatefulWidget {
   final DateTime month;
   final Map<int, dynamic> recordsMap; // day -> record
   final Map<int, List<dynamic>> leaveDaysMap; // day -> leave list
-  final Map<int, dynamic> holidaysMap; // day -> holiday
   final int? todayDay;
   final Map<int, String>? periodNames; // 時段名稱映射
 
@@ -19,18 +19,97 @@ class AttendanceCalendarView extends StatelessWidget {
     required this.month,
     required this.recordsMap,
     required this.leaveDaysMap,
-    required this.holidaysMap,
     this.todayDay,
     this.onManualPunch,
     this.periodNames,
   });
 
   @override
+  State<AttendanceCalendarView> createState() => _AttendanceCalendarViewState();
+}
+
+class _AttendanceCalendarViewState extends State<AttendanceCalendarView> {
+  Map<int, dynamic> _holidaysMap = {};
+  static Map<String, List<Holiday>> _holidaysCache = {}; // 全局快取
+  bool _isLoading = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _fetchHolidays();
+  }
+
+  @override
+  void didUpdateWidget(AttendanceCalendarView oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    // 當月份改變時重新載入節假日
+    if (oldWidget.month.year != widget.month.year ||
+        oldWidget.month.month != widget.month.month) {
+      _fetchHolidays();
+    }
+  }
+
+  Future<void> _fetchHolidays() async {
+    if (_isLoading) return;
+
+    final year = widget.month.year;
+    final month = widget.month.month;
+    final cacheKey = year.toString();
+
+    setState(() => _isLoading = true);
+
+    try {
+      List<Holiday> holidays;
+
+      // 先檢查快取
+      if (_holidaysCache.containsKey(cacheKey)) {
+        holidays = _holidaysCache[cacheKey]!;
+      } else {
+        // 沒有快取，請求 API
+        final holidayService = HolidayService();
+        holidays = await holidayService.fetchTaiwanHolidays(year);
+        _holidaysCache[cacheKey] = holidays;
+      }
+
+      final Map<int, dynamic> map = {};
+      for (final h in holidays) {
+        try {
+          final date = DateTime.parse(h.date);
+          if (date.month == month) {
+            map[date.day] = h.name;
+          }
+        } catch (e) {
+          // 忽略無效日期
+        }
+      }
+      if (mounted) {
+        setState(() {
+          _holidaysMap = map;
+        });
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() {
+          _holidaysMap = {};
+        });
+      }
+    } finally {
+      if (mounted) {
+        setState(() => _isLoading = false);
+      }
+    }
+  }
+
+  @override
   Widget build(BuildContext context) {
     // 取得本月1號的日期
-    final firstDayOfMonth = DateTime(month.year, month.month, 1);
+    final firstDayOfMonth = DateTime(widget.month.year, widget.month.month, 1);
     // 取得本月最後一天的日期
-    final lastDayOfMonth = DateTime(month.year, month.month + 1, 0);
+    final lastDayOfMonth = DateTime(
+      widget.month.year,
+      widget.month.month + 1,
+      0,
+    );
     // 1號是星期幾（1=週一, 7=週日，若為7則轉成0，讓1號對齊在週日）
     final firstWeekday = firstDayOfMonth.weekday == 7
         ? 0
@@ -49,10 +128,10 @@ class AttendanceCalendarView extends StatelessWidget {
       } else {
         // 計算當前格子是幾號
         final day = i - firstWeekday + 1;
-        final record = recordsMap[day];
-        final leave = leaveDaysMap[day];
-        final holiday = holidaysMap[day];
-        final isToday = todayDay == day;
+        final record = widget.recordsMap[day];
+        final leave = widget.leaveDaysMap[day];
+        final holiday = _holidaysMap[day]; // 使用內部的節假日數據
+        final isToday = widget.todayDay == day;
         // 判斷是否為週末（週日或週六）
         final isWeekend = (i % 7 == 0) || (i % 7 == 6);
         gridItems.add(
@@ -265,8 +344,8 @@ class AttendanceCalendarView extends StatelessWidget {
       child: GestureDetector(
         onTap: () {},
         onLongPress: () {
-          if (onManualPunch != null) {
-            onManualPunch!(day, record);
+          if (widget.onManualPunch != null) {
+            widget.onManualPunch!(day, record);
           }
         },
         child: AnimatedContainer(

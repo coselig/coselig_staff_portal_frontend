@@ -193,7 +193,9 @@ class _AdminPageState extends State<AdminPage> {
                 ),
                 const SizedBox(width: 16),
                 ElevatedButton(
-                  onPressed: _fetchEmployeeAttendance,
+                  onPressed: () async {
+                    await _fetchEmployeeAttendance();
+                  },
                   child: Text('查詢'),
                 ),
               ],
@@ -292,8 +294,7 @@ class _AdminPageState extends State<AdminPage> {
                                         child: AttendanceCalendarView(
                                           month: _selectedMonth,
                                           recordsMap: records,
-                                          leaveDaysMap: const {},
-                                          holidaysMap: const {},
+                                      leaveDaysMap: const {},
                                           todayDay: null,
                                       onManualPunch: (day, record) async {
                                         final date = DateTime(
