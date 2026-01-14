@@ -284,7 +284,11 @@ class ExcelExportService {
   double _calculateWorkHours(String checkInTime, String checkOutTime) {
     try {
       final checkIn = DateTime.parse(checkInTime);
-      final checkOut = DateTime.parse(checkOutTime);
+      var checkOut = DateTime.parse(checkOutTime);
+      // 若下班時間早於上班時間，視為跨日班次，將下班時間加一天
+      if (checkOut.isBefore(checkIn)) {
+        checkOut = checkOut.add(Duration(days: 1));
+      }
       final duration = checkOut.difference(checkIn);
       return duration.inSeconds.toDouble();
     } catch (e) {
