@@ -9,6 +9,7 @@ import 'package:provider/provider.dart';
 import 'package:coselig_staff_portal/services/auth_service.dart';
 import 'package:coselig_staff_portal/widgets/month_year_picker.dart';
 import 'package:coselig_staff_portal/widgets/attendance_calendar_view.dart';
+import 'package:coselig_staff_portal/widgets/attendance_punch_card.dart';
 import 'package:coselig_staff_portal/main.dart';
 import 'package:coselig_staff_portal/services/attendance_excel_export_service.dart';
 
@@ -203,19 +204,21 @@ class _StaffHomePageState extends State<StaffHomePage> {
     }
   }
 
-  // 上班打卡
-  Future<void> _performCheckIn(
-    String? userId,
-    String period,
-    String periodName,
-  ) async {
+  // 通用打卡方法
+  Future<void> _performPunch({
+    required String? userId,
+    required String period,
+    required String periodName,
+    required bool isCheckIn,
+  }) async {
     if (userId == null) return;
 
+    final actionName = isCheckIn ? '上班' : '下班';
     final result = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
-        title: Text('$periodName - 上班打卡'),
-        content: Text('確定要進行上班打卡嗎？'),
+        title: Text('$periodName - $actionName打卡'),
+        content: Text('確定要進行$actionName打卡嗎？'),
         actions: [
           TextButton(
             child: Text('取消'),
@@ -231,50 +234,16 @@ class _StaffHomePageState extends State<StaffHomePage> {
 
     if (result == true) {
       final attendance = context.read<AttendanceService>();
-      await attendance.checkIn(userId, period: period);
+      if (isCheckIn) {
+        await attendance.checkIn(userId, period: period);
+      } else {
+        await attendance.checkOut(userId, period: period);
+      }
       // 打卡後自動刷新
       await attendance.getTodayAttendance(userId);
       await attendance.fetchAndCacheMonthAttendance(userId, _selectedMonth);
       scaffoldMessengerKey.currentState!.showSnackBar(
-        SnackBar(content: Text('$periodName 上班打卡成功')),
-      );
-    }
-  }
-
-  // 下班打卡
-  Future<void> _performCheckOut(
-    String? userId,
-    String period,
-    String periodName,
-  ) async {
-    if (userId == null) return;
-
-    final result = await showDialog<bool>(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: Text('$periodName - 下班打卡'),
-        content: Text('確定要進行下班打卡嗎？'),
-        actions: [
-          TextButton(
-            child: Text('取消'),
-            onPressed: () => Navigator.of(context).pop(false),
-          ),
-          ElevatedButton(
-            child: Text('確定'),
-            onPressed: () => Navigator.of(context).pop(true),
-          ),
-        ],
-      ),
-    );
-
-    if (result == true) {
-      final attendance = context.read<AttendanceService>();
-      await attendance.checkOut(userId, period: period);
-      // 打卡後自動刷新
-      await attendance.getTodayAttendance(userId);
-      await attendance.fetchAndCacheMonthAttendance(userId, _selectedMonth);
-      scaffoldMessengerKey.currentState!.showSnackBar(
-        SnackBar(content: Text('$periodName 下班打卡成功')),
+        SnackBar(content: Text('$periodName $actionName打卡成功')),
       );
     }
   }
@@ -465,155 +434,27 @@ class _StaffHomePageState extends State<StaffHomePage> {
                   attendance.todayAttendance?['${period}_check_in_time'];
               final checkOutTime =
                   attendance.todayAttendance?['${period}_check_out_time'];
-              final hasCheckedIn = checkInTime != null;
-              final hasCheckedOut = checkOutTime != null;
-              return Card(
-                margin: EdgeInsets.symmetric(vertical: 8),
-                child: Padding(
-                  padding: EdgeInsets.all(16),
-                  child: Column(
-                    children: [
-                      // 時段名稱編輯行
-                      Row(
-                        children: [
-                          Expanded(
-                            child: Text(
-                              displayName,
-                              style: TextStyle(
-                                fontSize: 18,
-                                fontWeight: FontWeight.bold,
-                              ),
-                            ),
-                          ),
-                          // 所有時段都可以編輯名稱
-                          IconButton(
-                            icon: Icon(Icons.edit, size: 20),
-                            tooltip: '編輯時段名稱',
-                            onPressed: () => _editPeriodNameForAnyPeriod(
-                              period,
-                              displayName,
-                            ),
-                          ),
-                        ],
-                      ),
-                      SizedBox(height: 8),
-                      // 打卡狀態和按鈕
-                      if (hasCheckedIn && hasCheckedOut)
-                        Container(
-                          padding: EdgeInsets.all(12),
-                          decoration: BoxDecoration(
-                            color: Theme.of(
-                              context,
-                            ).colorScheme.tertiaryContainer,
-                            borderRadius: BorderRadius.circular(8),
-                          ),
-                          child: Row(
-                            children: [
-                              Icon(
-                                Icons.check_circle,
-                                color: Theme.of(
-                                  context,
-                                ).colorScheme.onTertiaryContainer,
-                              ),
-                              SizedBox(width: 8),
-                              Text(
-                                '${formatTime(checkInTime)} ~ ${formatTime(checkOutTime)}',
-                                style: TextStyle(
-                                  fontSize: 16,
-                                  fontWeight: FontWeight.w500,
-                                  color: Theme.of(
-                                    context,
-                                  ).colorScheme.onTertiaryContainer,
-                                ),
-                              ),
-                            ],
-                          ),
-                        )
-                      else if (hasCheckedIn)
-                        // 下班打卡
-                        Row(
-                          children: [
-                            Expanded(
-                              child: Container(
-                                padding: EdgeInsets.all(12),
-                                decoration: BoxDecoration(
-                                  color: Theme.of(
-                                    context,
-                                  ).colorScheme.primaryContainer,
-                                  borderRadius: BorderRadius.circular(8),
-                                ),
-                                child: Row(
-                                  children: [
-                                    Icon(
-                                      Icons.login,
-                                      color: Theme.of(
-                                        context,
-                                      ).colorScheme.primary,
-                                    ),
-                                    SizedBox(width: 8),
-                                    Text(
-                                      '上班時間：${formatTime(checkInTime)}',
-                                      style: TextStyle(fontSize: 14),
-                                    ),
-                                  ],
-                                ),
-                              ),
-                            ),
-                            SizedBox(width: 16),
-                            ElevatedButton.icon(
-                              icon: Icon(Icons.logout),
-                              label: Text('下班打卡'),
-                              onPressed: () =>
-                                  _performCheckOut(userId, period, displayName),
-                            ),
-                          ],
-                        )
-                      else
-                        // 上班打卡
-                        Row(
-                          children: [
-                            Expanded(
-                              child: Container(
-                                padding: EdgeInsets.all(12),
-                                decoration: BoxDecoration(
-                                  color: Theme.of(
-                                    context,
-                                  ).colorScheme.surfaceContainerHighest,
-                                  borderRadius: BorderRadius.circular(8),
-                                ),
-                                child: Row(
-                                  children: [
-                                    Icon(
-                                      Icons.schedule,
-                                      color: Theme.of(
-                                        context,
-                                      ).colorScheme.onSurfaceVariant,
-                                    ),
-                                    SizedBox(width: 8),
-                                    Text(
-                                      '尚未打卡',
-                                      style: TextStyle(
-                                        fontSize: 14,
-                                        color: Theme.of(
-                                          context,
-                                        ).colorScheme.onSurfaceVariant,
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                              ),
-                            ),
-                            SizedBox(width: 16),
-                            ElevatedButton.icon(
-                              icon: Icon(Icons.login),
-                              label: Text('上班打卡'),
-                              onPressed: () =>
-                                  _performCheckIn(userId, period, displayName),
-                            ),
-                          ],
-                        ),
-                    ],
-                  ),
+
+              return AttendancePunchCard(
+                period: period,
+                displayName: displayName,
+                checkInTime: checkInTime,
+                checkOutTime: checkOutTime,
+                onEditName: () => _editPeriodNameForAnyPeriod(
+                  period,
+                  displayName,
+                ),
+                onCheckIn: () => _performPunch(
+                  userId: userId,
+                  period: period,
+                  periodName: displayName,
+                  isCheckIn: true,
+                ),
+                onCheckOut: () => _performPunch(
+                  userId: userId,
+                  period: period,
+                  periodName: displayName,
+                  isCheckIn: false,
                 ),
               );
             }),
@@ -669,6 +510,8 @@ class _StaffHomePageState extends State<StaffHomePage> {
                 setState(() {
                   periodCount++;
                   _periodNames[newPeriodIndex] = result;
+                  // 將新時段加入動態時段列表
+                  _dynamicPeriods.add('period$newPeriodIndex');
                 });
                 scaffoldMessengerKey.currentState!.showSnackBar(
                   SnackBar(content: Text('已新增時段：$result')),
