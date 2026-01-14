@@ -429,10 +429,12 @@ class DiscoveryService extends ChangeNotifier {
       } else if (response.statusCode == 401) {
         _error = 'Unauthorized';
         navigatorKey.currentState?.pushReplacementNamed('/login');
+        throw Exception('Unauthorized');
       } else {
         final error = jsonDecode(response.body);
         _error = error['error'] ?? 'Failed to load configuration';
         notifyListeners();
+        throw Exception(_error);
       }
     } catch (e) {
       _error = 'Network error: $e';
