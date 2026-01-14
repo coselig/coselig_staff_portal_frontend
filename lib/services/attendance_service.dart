@@ -11,6 +11,15 @@ class AttendanceService extends ChangeNotifier {
 
   Map<String, dynamic>? todayAttendance;
   String? errorMessage;
+  
+  // 月度打卡記錄快取
+  Map<int, dynamic> currentMonthRecords = {};
+  DateTime? currentMonthDate;
+  String? currentMonthUserId;
+
+  // 正在上班的員工列表快取
+  List<Map<String, dynamic>> workingStaffList = [];
+  bool isLoadingWorkingStaff = false;
 
   /// 取得指定月份的打卡記錄
   Future<Map<int, dynamic>> getMonthAttendance(
@@ -38,6 +47,65 @@ class AttendanceService extends ChangeNotifier {
       return recordsMap;
     } else {
       return {};
+    }
+  }
+
+  /// 取得並快取月份打卡記錄（帶狀態管理）
+  Future<void> fetchAndCacheMonthAttendance(
+    String userId,
+    DateTime month,
+  ) async {
+    final records = await getMonthAttendance(userId, month.year, month.month);
+    currentMonthRecords = records;
+    currentMonthDate = month;
+    currentMonthUserId = userId;
+    notifyListeners();
+  }
+
+  /// 獲取正在上班的員工列表
+  Future<List<Map<String, dynamic>>> getWorkingStaff() async {
+    try {
+      final res = await _client.get(
+        Uri.parse('$baseUrl/api/working-staff'),
+        headers: {'Content-Type': 'application/json'},
+      );
+
+      if (res.statusCode == 200) {
+        final data = jsonDecode(res.body);
+        final workingStaff = data['working_staff'] as List<dynamic>? ?? [];
+        return workingStaff.map((e) => e as Map<String, dynamic>).toList();
+      } else {
+        throw Exception('獲取正在工作的員工列表失敗: ${res.body}');
+      }
+    } catch (e) {
+      print('獲取正在工作的員工列表錯誤: $e');
+      rethrow;
+    }
+  }
+
+  /// 獲取並快取正在上班的員工列表（帶狀態管理）
+  Future<void> fetchAndCacheWorkingStaff() async {
+    isLoadingWorkingStaff = true;
+    notifyListeners();
+
+    try {
+      final workingStaff = await getWorkingStaff();
+      workingStaffList = workingStaff
+          .map(
+            (emp) => {
+              'name': emp['name'] ?? '員工',
+              'chinese_name': emp['chinese_name'],
+              'id': emp['user_id']?.toString() ?? '',
+              'check_in_time': emp['check_in_time'],
+            },
+          )
+          .toList();
+    } catch (e) {
+      workingStaffList = [];
+      print('獲取正在上班員工失敗: $e');
+    } finally {
+      isLoadingWorkingStaff = false;
+      notifyListeners();
     }
   }
 

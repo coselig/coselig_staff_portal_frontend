@@ -10,7 +10,6 @@ class AttendanceCalendarView extends StatefulWidget {
   final Map<int, dynamic> recordsMap; // day -> record
   final Map<int, List<dynamic>> leaveDaysMap; // day -> leave list
   final int? todayDay;
-  final Map<int, String>? periodNames; // 時段名稱映射
 
   final OnManualPunch? onManualPunch;
 
@@ -21,7 +20,6 @@ class AttendanceCalendarView extends StatefulWidget {
     required this.leaveDaysMap,
     this.todayDay,
     this.onManualPunch,
-    this.periodNames,
   });
 
   @override

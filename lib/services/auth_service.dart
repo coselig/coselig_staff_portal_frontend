@@ -48,29 +48,6 @@ class AuthService extends ChangeNotifier {
   }
 
   /* ========================
-   * 獲取正在工作的員工列表
-   * ======================== */
-  Future<List<Map<String, dynamic>>> getWorkingStaff() async {
-    try {
-      final res = await _client.get(
-        Uri.parse('$baseUrl/api/working-staff'),
-        headers: {'Content-Type': 'application/json'},
-      );
-
-      if (res.statusCode == 200) {
-        final data = jsonDecode(res.body);
-        final workingStaff = data['working_staff'] as List<dynamic>? ?? [];
-        return workingStaff.map((e) => e as Map<String, dynamic>).toList();
-      } else {
-        throw Exception('獲取正在工作的員工列表失敗: ${res.body}');
-      }
-    } catch (e) {
-      print('獲取正在工作的員工列表錯誤: $e');
-      rethrow;
-    }
-  }
-
-  /* ========================
    * 自動登入（讀取 session）
    * ======================== */
   Future<void> tryAutoLogin() async {

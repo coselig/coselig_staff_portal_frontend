@@ -20,38 +20,8 @@ class StaffHomePage extends StatefulWidget {
 }
 
 class _StaffHomePageState extends State<StaffHomePage> {
-  List<Map<String, dynamic>> _workingStaff = [];
-  bool _loadingWorkingStaff = false;
-
-  Future<void> _fetchWorkingStaff() async {
-    setState(() => _loadingWorkingStaff = true);
-    try {
-      final authService = context.read<AuthService>();
-      final workingStaff = await authService.getWorkingStaff();
-      setState(() {
-        _workingStaff = workingStaff
-            .map(
-              (emp) => {
-                'name': emp['name'] ?? '員工',
-                'chinese_name': emp['chinese_name'],
-                'id': emp['user_id']?.toString() ?? '',
-                'check_in_time': emp['check_in_time'],
-              },
-            )
-            .toList();
-      });
-    } catch (e) {
-      setState(() {
-        _workingStaff = [];
-      });
-    } finally {
-      setState(() => _loadingWorkingStaff = false);
-    }
-  }
-
   bool _requested = false;
   DateTime _selectedMonth = DateTime.now();
-  Map<int, dynamic> _monthRecords = {};
   final ExcelExportService _excelExportService = ExcelExportService();
 
   int periodCount = 1; // 動態時段數量
@@ -69,7 +39,7 @@ class _StaffHomePageState extends State<StaffHomePage> {
       setState(() => periodCount = 1);
       return;
     }
-    
+
     // 收集所有時段（包含動態時段名稱）
     final Set<String> allPeriods = {};
     today.forEach((key, value) {
@@ -85,7 +55,7 @@ class _StaffHomePageState extends State<StaffHomePage> {
         }
       }
     });
-    
+
     // 更新動態時段列表
     setState(() {
       if (allPeriods.isEmpty) {
@@ -116,7 +86,7 @@ class _StaffHomePageState extends State<StaffHomePage> {
     super.initState();
     html.document.title = '員工系統';
     Future.microtask(_initUserAndAttendance);
-    Future.microtask(_fetchWorkingStaff);
+    Future.microtask(() => context.read<AttendanceService>().fetchAndCacheWorkingStaff());
   }
 
   Future<void> _initUserAndAttendance() async {
@@ -128,23 +98,10 @@ class _StaffHomePageState extends State<StaffHomePage> {
     if (authService.userId != null) {
       await attendance.getTodayAttendance(authService.userId!);
       _updatePeriodCount();
-      await _fetchMonthAttendance();
-    }
-  }
-
-  Future<void> _fetchMonthAttendance() async {
-    final authService = context.read<AuthService>();
-    final attendance = context.read<AttendanceService>();
-    final userId = authService.userId;
-    if (userId != null) {
-      final records = await attendance.getMonthAttendance(
-        userId,
-        _selectedMonth.year,
-        _selectedMonth.month,
+      await attendance.fetchAndCacheMonthAttendance(
+        authService.userId!,
+        _selectedMonth,
       );
-      setState(() {
-        _monthRecords = records;
-      });
     }
   }
 
@@ -221,7 +178,10 @@ class _StaffHomePageState extends State<StaffHomePage> {
           if (authService.userId != null) {
             await attendanceService.getTodayAttendance(authService.userId!);
             _updatePeriodCount();
-            await _fetchMonthAttendance();
+            await attendanceService.fetchAndCacheMonthAttendance(
+              authService.userId!,
+              _selectedMonth,
+            );
           }
 
           scaffoldMessengerKey.currentState!.showSnackBar(
@@ -274,7 +234,7 @@ class _StaffHomePageState extends State<StaffHomePage> {
       await attendance.checkIn(userId, period: period);
       // 打卡後自動刷新
       await attendance.getTodayAttendance(userId);
-      await _fetchMonthAttendance();
+      await attendance.fetchAndCacheMonthAttendance(userId, _selectedMonth);
       scaffoldMessengerKey.currentState!.showSnackBar(
         SnackBar(content: Text('$periodName 上班打卡成功')),
       );
@@ -312,7 +272,7 @@ class _StaffHomePageState extends State<StaffHomePage> {
       await attendance.checkOut(userId, period: period);
       // 打卡後自動刷新
       await attendance.getTodayAttendance(userId);
-      await _fetchMonthAttendance();
+      await attendance.fetchAndCacheMonthAttendance(userId, _selectedMonth);
       scaffoldMessengerKey.currentState!.showSnackBar(
         SnackBar(content: Text('$periodName 下班打卡成功')),
       );
@@ -321,6 +281,10 @@ class _StaffHomePageState extends State<StaffHomePage> {
 
   @override
   Widget build(BuildContext context) {
+    final authService = context.read<AuthService>();
+    final attendance = context.watch<AttendanceService>();
+    final userId = authService.userId;
+
     Widget workingStaffBlock = Card(
       margin: const EdgeInsets.only(bottom: 20),
       child: Padding(
@@ -340,18 +304,20 @@ class _StaffHomePageState extends State<StaffHomePage> {
                 IconButton(
                   icon: Icon(Icons.refresh),
                   tooltip: '刷新',
-                  onPressed: _loadingWorkingStaff ? null : _fetchWorkingStaff,
+                  onPressed: attendance.isLoadingWorkingStaff
+                      ? null
+                      : () => attendance.fetchAndCacheWorkingStaff(),
                 ),
               ],
             ),
-            _loadingWorkingStaff
+            attendance.isLoadingWorkingStaff
                 ? Center(
                     child: Padding(
                       padding: EdgeInsets.all(12),
                       child: CircularProgressIndicator(),
                     ),
                   )
-                : _workingStaff.isEmpty
+                : attendance.workingStaffList.isEmpty
                 ? Padding(
                     padding: EdgeInsets.all(8),
                     child: Text(
@@ -364,7 +330,7 @@ class _StaffHomePageState extends State<StaffHomePage> {
                     ),
                   )
                 : Column(
-                    children: _workingStaff.map((emp) {
+                    children: attendance.workingStaffList.map((emp) {
                       final chineseName = emp['chinese_name'];
                       final englishName = emp['name'] ?? '';
                       final displayName =
@@ -385,9 +351,6 @@ class _StaffHomePageState extends State<StaffHomePage> {
         ),
       ),
     );
-    final authService = context.read<AuthService>();
-    final attendance = context.watch<AttendanceService>();
-    final userId = authService.userId;
 
     return Scaffold(
       appBar: AppBar(
@@ -419,7 +382,10 @@ class _StaffHomePageState extends State<StaffHomePage> {
               if (userId != null) {
                 await attendance.getTodayAttendance(userId);
                 _updatePeriodCount();
-                await _fetchMonthAttendance();
+                await attendance.fetchAndCacheMonthAttendance(
+                  userId,
+                  _selectedMonth,
+                );
                 scaffoldMessengerKey.currentState!.showSnackBar(
                   const SnackBar(content: Text('已手動刷新打卡資料')),
                 );
@@ -442,16 +408,6 @@ class _StaffHomePageState extends State<StaffHomePage> {
                   navigatorKey.currentState!.pushNamed('/admin');
                 },
               ),
-              const Divider(),
-            ],
-            ListTile(
-              leading: Icon(Icons.build),
-              title: Text('裝置註冊表生成器'),
-              onTap: () {
-                navigatorKey.currentState!.pushNamed('/discovery_generate');
-              },
-            ),
-            if (authService.isAdmin)
               ListTile(
                 leading: Icon(Icons.people),
                 title: Text('用戶資料預覽'),
@@ -459,6 +415,15 @@ class _StaffHomePageState extends State<StaffHomePage> {
                   navigatorKey.currentState!.pushNamed('/admin_user_preview');
                 },
               ),
+            ],
+            const Divider(),
+            ListTile(
+              leading: Icon(Icons.build),
+              title: Text('裝置註冊表生成器'),
+              onTap: () {
+                navigatorKey.currentState!.pushNamed('/discovery_generate');
+              },
+            ),
             ListTile(
               leading: Icon(Icons.person),
               title: Text('我的資料'),
@@ -467,14 +432,8 @@ class _StaffHomePageState extends State<StaffHomePage> {
               },
             ),
             ListTile(
-              leading: Icon(Icons.logout),
+              leading: logoutButton(context),
               title: Text('登出'),
-              onTap: () async {
-                final attendance = context.read<AttendanceService>();
-                attendance.clear();
-                await authService.logout();
-                navigatorKey.currentState!.pushReplacementNamed('/login');
-              },
             ),
           ],
         ),
@@ -578,12 +537,19 @@ class _StaffHomePageState extends State<StaffHomePage> {
                               child: Container(
                                 padding: EdgeInsets.all(12),
                                 decoration: BoxDecoration(
-                                  color: Theme.of(context).colorScheme.primaryContainer,
+                                  color: Theme.of(
+                                    context,
+                                  ).colorScheme.primaryContainer,
                                   borderRadius: BorderRadius.circular(8),
                                 ),
                                 child: Row(
                                   children: [
-                                    Icon(Icons.login, color: Theme.of(context).colorScheme.primary),
+                                    Icon(
+                                      Icons.login,
+                                      color: Theme.of(
+                                        context,
+                                      ).colorScheme.primary,
+                                    ),
                                     SizedBox(width: 8),
                                     Text(
                                       '上班時間：${formatTime(checkInTime)}',
@@ -617,13 +583,20 @@ class _StaffHomePageState extends State<StaffHomePage> {
                                 ),
                                 child: Row(
                                   children: [
-                                    Icon(Icons.schedule, color: Theme.of(context).colorScheme.onSurfaceVariant),
+                                    Icon(
+                                      Icons.schedule,
+                                      color: Theme.of(
+                                        context,
+                                      ).colorScheme.onSurfaceVariant,
+                                    ),
                                     SizedBox(width: 8),
                                     Text(
                                       '尚未打卡',
                                       style: TextStyle(
                                         fontSize: 14,
-                                        color: Theme.of(context).colorScheme.onSurfaceVariant,
+                                        color: Theme.of(
+                                          context,
+                                        ).colorScheme.onSurfaceVariant,
                                       ),
                                     ),
                                   ],
@@ -728,7 +701,12 @@ class _StaffHomePageState extends State<StaffHomePage> {
                     setState(() {
                       _selectedMonth = DateTime(result.year, result.month);
                     });
-                    await _fetchMonthAttendance();
+                    if (userId != null) {
+                      await attendance.fetchAndCacheMonthAttendance(
+                        userId,
+                        _selectedMonth,
+                      );
+                    }
                     scaffoldMessengerKey.currentState!.showSnackBar(
                       SnackBar(
                         content: Text('選擇的日期:${result.year}/${result.month}'),
@@ -749,7 +727,7 @@ class _StaffHomePageState extends State<StaffHomePage> {
                     await _excelExportService.exportAttendanceRecords(
                       employeeName: employeeName,
                       employeeId: employeeId,
-                      monthRecords: _monthRecords,
+                      monthRecords: attendance.currentMonthRecords,
                       month: _selectedMonth,
                     );
                     scaffoldMessengerKey.currentState!.showSnackBar(
@@ -772,9 +750,8 @@ class _StaffHomePageState extends State<StaffHomePage> {
               constraints: BoxConstraints(maxWidth: 680),
               child: AttendanceCalendarView(
                 month: _selectedMonth,
-                recordsMap: _monthRecords,
+                recordsMap: attendance.currentMonthRecords,
                 leaveDaysMap: {},
-                periodNames: _periodNames,
                 todayDay:
                     (_selectedMonth.year == DateTime.now().year &&
                         _selectedMonth.month == DateTime.now().month)
