@@ -25,7 +25,7 @@ class _DiscoveryGeneratePageState extends State<DiscoveryGeneratePage> {
     // 檢查是否已登入
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _service.loadDevices(); // 加載裝置列表
-      _loadConfigurationNames(); // 加載配置名稱列表
+      _service.fetchConfigurations(); // 加載所有配置列表
     });
 
     // 監聽Module ID輸入變化
@@ -67,30 +67,6 @@ class _DiscoveryGeneratePageState extends State<DiscoveryGeneratePage> {
     setState(() {});
   }
 
-  Future<void> _loadConfigurationNames() async {
-    try {
-      final names = await _service.getConfigurationNames();
-      setState(() {
-        _configurationNames = ['新配置', ...names];
-        // 如果當前選擇的配置不在列表中，重置為新配置
-        if (!_configurationNames.contains(_selectedConfiguration)) {
-          _selectedConfiguration = '新配置';
-        }
-      });
-    } catch (e) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('無法加載配置: $e')),
-        );
-      }
-      // 即使加載失敗，也要提供新配置選項
-      setState(() {
-        _configurationNames = ['新配置'];
-        _selectedConfiguration = '新配置';
-      });
-    }
-  }
-
   String selectedBrand = 'sunwave';
   String selectedModel = 'p404';
   String selectedType = 'single';
@@ -101,7 +77,6 @@ class _DiscoveryGeneratePageState extends State<DiscoveryGeneratePage> {
   final TextEditingController configNameController = TextEditingController();
 
   // Configuration management
-  List<String> _configurationNames = [];
   String? _selectedConfiguration = '新配置';
 
   // 用於跟踪Module ID輸入的狀態
@@ -116,8 +91,7 @@ class _DiscoveryGeneratePageState extends State<DiscoveryGeneratePage> {
   }
 
   void addDevice() {
-    if (moduleIdController.text.isNotEmpty &&
-        nameController.text.isNotEmpty) {
+    if (moduleIdController.text.isNotEmpty && nameController.text.isNotEmpty) {
       final newDevice = Device(
         brand: selectedBrand,
         model: selectedModel,
@@ -146,11 +120,16 @@ class _DiscoveryGeneratePageState extends State<DiscoveryGeneratePage> {
       moduleIdController.clear();
       nameController.clear();
       tcpController.clear();
+
+      // 自動儲存配置
+      _autoSaveConfiguration();
     }
   }
 
-  void removeDevice(String deviceId) {
-    _service.removeDevice(deviceId);
+  Future<void> removeDevice(String deviceId) async {
+    await _service.removeDevice(deviceId);
+    // 自動儲存配置
+    _autoSaveConfiguration();
   }
 
   void editDevice(Device device) {
@@ -182,7 +161,7 @@ class _DiscoveryGeneratePageState extends State<DiscoveryGeneratePage> {
               child: const Text('取消'),
             ),
             TextButton(
-              onPressed: () {
+              onPressed: () async {
                 final updatedDevice = Device(
                   id: device.id,
                   brand: device.brand,
@@ -193,8 +172,10 @@ class _DiscoveryGeneratePageState extends State<DiscoveryGeneratePage> {
                   name: nameController.text,
                   tcp: tcpController.text,
                 );
-                _service.updateDevice(updatedDevice);
+                await _service.updateDevice(updatedDevice);
                 Navigator.of(context).pop();
+                // 自動儲存配置
+                _autoSaveConfiguration();
               },
               child: const Text('保存'),
             ),
@@ -283,9 +264,11 @@ class _DiscoveryGeneratePageState extends State<DiscoveryGeneratePage> {
                         return;
                       }
                       try {
-                        await _service.saveConfiguration(configNameController.text);
+                        await _service.saveConfiguration(
+                          configNameController.text,
+                        );
                         configNameController.clear();
-                        await _loadConfigurationNames();
+                        await _service.fetchConfigurations();
                         if (mounted) {
                           ScaffoldMessenger.of(context).showSnackBar(
                             const SnackBar(content: Text('配置保存成功')),
@@ -293,9 +276,9 @@ class _DiscoveryGeneratePageState extends State<DiscoveryGeneratePage> {
                         }
                       } catch (e) {
                         if (mounted) {
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            SnackBar(content: Text('保存配置失敗: $e')),
-                          );
+                          ScaffoldMessenger.of(
+                            context,
+                          ).showSnackBar(SnackBar(content: Text('保存配置失敗: $e')));
                         }
                       }
                     }
@@ -339,12 +322,22 @@ class _DiscoveryGeneratePageState extends State<DiscoveryGeneratePage> {
                         }
                       }
                     },
-                    items: _configurationNames.map<DropdownMenuItem<String>>((String value) {
-                      return DropdownMenuItem<String>(
-                        value: value,
-                        child: Text(value),
-                      );
-                    }).toList(),
+                    items: [
+                      const DropdownMenuItem<String>(
+                        value: '新配置',
+                        child: Text('新配置'),
+                      ),
+                      ..._service.configurations.map<DropdownMenuItem<String>>((
+                        config,
+                      ) {
+                        return DropdownMenuItem<String>(
+                          value: config.name,
+                          child: Text(
+                            '${config.name} (創建者: ${config.chineseName})',
+                          ),
+                        );
+                      }).toList(),
+                    ],
                   ),
                 ),
                 const SizedBox(width: 8),
@@ -360,9 +353,11 @@ class _DiscoveryGeneratePageState extends State<DiscoveryGeneratePage> {
                         return;
                       }
                       try {
-                        await _service.deleteConfiguration(configNameController.text);
+                        await _service.deleteConfiguration(
+                          configNameController.text,
+                        );
                         configNameController.clear();
-                        await _loadConfigurationNames();
+                        await _service.fetchConfigurations();
                         if (mounted) {
                           ScaffoldMessenger.of(context).showSnackBar(
                             const SnackBar(content: Text('配置刪除成功')),
@@ -370,9 +365,9 @@ class _DiscoveryGeneratePageState extends State<DiscoveryGeneratePage> {
                         }
                       } catch (e) {
                         if (mounted) {
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            SnackBar(content: Text('刪除配置失敗: $e')),
-                          );
+                          ScaffoldMessenger.of(
+                            context,
+                          ).showSnackBar(SnackBar(content: Text('刪除配置失敗: $e')));
                         }
                       }
                     }
@@ -382,279 +377,8 @@ class _DiscoveryGeneratePageState extends State<DiscoveryGeneratePage> {
               ],
             ),
             const SizedBox(height: 16),
-            // Device List
-            SizedBox(
-              width: MediaQuery.of(context).size.width - 20,
-              child: SingleChildScrollView(
-                scrollDirection: Axis.horizontal,
-                child: DataTable(
-                  columnSpacing: 80.0,
-                  columns: [
-                    DataColumn(
-                      label: SizedBox(
-                        width:
-                            (MediaQuery.of(context).size.width - 20 - 8 * 80) /
-                            9,
-                        child: DropdownButton<String>(
-                          value: selectedBrand,
-                          onChanged: (String? newValue) {
-                            setState(() {
-                              selectedBrand = newValue!;
-                              selectedModel = models[selectedBrand]!.first;
-                              List<String> availableTypes = getAvailableTypes(
-                                selectedBrand,
-                                selectedModel,
-                              );
-                              if (!availableTypes.contains(selectedType)) {
-                                selectedType = availableTypes.first;
-                              }
-                              selectedChannel = getAvailableChannels(
-                                selectedBrand,
-                                selectedModel,
-                                selectedType,
-                              ).first;
-                            });
-                          },
-                          items: brands.map<DropdownMenuItem<String>>((
-                            String value,
-                          ) {
-                            return DropdownMenuItem<String>(
-                              value: value,
-                              child: Text(value),
-                            );
-                          }).toList(),
-                        ),
-                      ),
-                    ),
-                    DataColumn(
-                      label: SizedBox(
-                            width:
-                                (MediaQuery.of(context).size.width -
-                                    20 -
-                                    8 * 80) /
-                                9,
-                            child: DropdownButton<String>(
-                              value: selectedModel,
-                              onChanged: (String? newValue) {
-                                setState(() {
-                                  selectedModel = newValue!;
-                                  List<String> availableTypes =
-                                      getAvailableTypes(
-                                        selectedBrand,
-                                        selectedModel,
-                                      );
-                                  if (!availableTypes.contains(selectedType)) {
-                                    selectedType = availableTypes.first;
-                                  }
-                                  selectedChannel = getAvailableChannels(
-                                    selectedBrand,
-                                    selectedModel,
-                                    selectedType,
-                                  ).first;
-                                });
-                              },
-                              items: models[selectedBrand]!
-                                  .map<DropdownMenuItem<String>>((
-                                    String value,
-                                  ) {
-                                    return DropdownMenuItem<String>(
-                                      value: value,
-                                      child: Text(value),
-                                    );
-                                  })
-                                  .toList(),
-                            ),
-                          ),
-                        ),
-                    DataColumn(
-                      label: SizedBox(
-                            width:
-                                (MediaQuery.of(context).size.width -
-                                    20 -
-                                    8 * 80) /
-                                9,
-                            child: DropdownButton<String>(
-                              value: selectedType,
-                              onChanged: (String? newValue) {
-                                setState(() {
-                                  selectedType = newValue!;
-                                  selectedChannel = getAvailableChannels(
-                                    selectedBrand,
-                                    selectedModel,
-                                    selectedType,
-                                  ).first;
-                                });
-                              },
-                              items:
-                                  getAvailableTypes(
-                                    selectedBrand,
-                                    selectedModel,
-                                  ).map<DropdownMenuItem<String>>((
-                                    String value,
-                                  ) {
-                                    return DropdownMenuItem<String>(
-                                      value: value,
-                                      child: Text(value),
-                                    );
-                                  }).toList(),
-                            ),
-                          ),
-                        ),
-                    DataColumn(
-                      label: SizedBox(
-                            width:
-                                (MediaQuery.of(context).size.width -
-                                    20 -
-                                    8 * 80) /
-                                9,
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                TextField(
-                                  controller: moduleIdController,
-                                  decoration: const InputDecoration(
-                                    labelText: 'Module ID',
-                                  ),
-                                ),
-                            // if (_currentModuleId.isNotEmpty) ...[
-                            //   const SizedBox(height: 4),
-                            //   Builder(
-                            //     builder: (context) {
-                            //       final status = getModuleChannelStatus(
-                            //         _currentModuleId,
-                            //         selectedType,
-                            //       );
-                            //       final usedChannels =
-                            //           status['usedChannels']
-                            //               as List<String>;
-                            //       final availableChannels =
-                            //           status['availableChannels']
-                            //               as List<String>;
-                            //       final totalChannels =
-                            //           status['totalChannels'] as int;
-                            //       final usedCount =
-                            //           status['usedCount'] as int;
-
-                            //       return Text(
-                            //         '已使用: ${usedChannels.join(', ')} | 可用: ${availableChannels.join(', ')} ($usedCount/$totalChannels)',
-                            //         style: TextStyle(
-                            //           fontSize: 12,
-                            //           color: availableChannels.isEmpty
-                            //               ? Colors.red
-                            //               : Colors.green,
-                            //         ),
-                            //       );
-                            //     },
-                            //   ),
-                            // ],
-                              ],
-                            ),
-                          ),
-                        ),
-                    DataColumn(
-                      label: SizedBox(
-                            width: baseWidth * 0.4,
-                            child: DropdownButton<String>(
-                              value: selectedChannel,
-                              onChanged: (String? newValue) {
-                                setState(() {
-                                  selectedChannel = newValue!;
-                                });
-                              },
-                              items:
-                                  (_currentModuleId.isNotEmpty
-                                          ? _service
-                                                .getSelectableChannelsForModule(
-                                                  selectedBrand,
-                                                  selectedModel,
-                                                  selectedType,
-                                                  _currentModuleId,
-                                                )
-                                          : getAvailableChannels(
-                                              selectedBrand,
-                                              selectedModel,
-                                              selectedType,
-                                            ))
-                                      .map<DropdownMenuItem<String>>((
-                                        String value,
-                                      ) {
-                                        return DropdownMenuItem<String>(
-                                          value: value,
-                                          child: Text(value),
-                                        );
-                                      })
-                                      .toList(),
-                            ),
-                          ),
-                        ),
-                    DataColumn(
-                      label: SizedBox(
-                            width:
-                                (MediaQuery.of(context).size.width -
-                                    20 -
-                                    8 * 80) /
-                                9,
-                            child: TextField(
-                              controller: nameController,
-                              decoration: const InputDecoration(
-                                labelText: 'Name',
-                              ),
-                            ),
-                          ),
-                        ),
-                    DataColumn(
-                      label: SizedBox(
-                            width: baseWidth * 0.4,
-                            child: TextField(
-                              controller: tcpController,
-                              decoration: const InputDecoration(
-                                labelText: 'TCP',
-                              ),
-                            ),
-                          ),
-                        ),
-                    DataColumn(
-                      label: ElevatedButton(
-                            onPressed: addDevice,
-                            child: const Text('添加'),
-                      ),
-                    ),
-                    DataColumn(
-                      label: ElevatedButton.icon(
-                            onPressed: generateAndCopyOutput,
-                            icon: const Icon(Icons.copy),
-                            label: const Text('生成並複製輸出'),
-                      ),
-                    ),
-                  ],
-                  rows: _service.devices.map((device) {
-                      return DataRow(
-                        cells: [
-                          DataCell(Text(device.brand)),
-                          DataCell(Text(device.model)),
-                          DataCell(Text(device.type)),
-                          DataCell(Text(device.moduleId)),
-                          DataCell(Text(device.channel)),
-                          DataCell(Text(device.name)),
-                          DataCell(Text(device.tcp)),
-                          DataCell(
-                            IconButton(
-                              icon: const Icon(Icons.edit),
-                              onPressed: () => editDevice(device),
-                            ),
-                          ),
-                          DataCell(
-                            IconButton(
-                              icon: const Icon(Icons.delete),
-                              onPressed: () => removeDevice(device.id!),
-                            ),
-                          ),
-                        ],
-                      );
-                  }).toList(),
-                ),
-              ),
-            ),
+            // Device List with Drag and Drop
+            _buildDeviceListWithDragDrop(),
             const SizedBox(height: 16),
             // Output Display
             SizedBox(
@@ -670,5 +394,447 @@ class _DiscoveryGeneratePageState extends State<DiscoveryGeneratePage> {
         ),
       ),
     );
+  }
+
+  Widget _buildDeviceListWithDragDrop() {
+    return Column(
+      children: [
+        // 添加設備表單
+        _buildAddDeviceForm(),
+        const SizedBox(height: 16),
+        // 設備列表標題
+        _buildDeviceListHeader(),
+        // 可拖拉的設備列表
+        if (_service.devices.isEmpty)
+          Container(
+            padding: const EdgeInsets.all(32),
+            decoration: BoxDecoration(
+              border: Border.all(
+                color: Theme.of(context).colorScheme.outlineVariant,
+              ),
+              borderRadius: const BorderRadius.vertical(
+                bottom: Radius.circular(8),
+              ),
+            ),
+            child: Center(
+              child: Text(
+                '尚無設備，請添加設備',
+                style: TextStyle(
+                  color: Theme.of(context).colorScheme.onSurfaceVariant,
+                ),
+              ),
+            ),
+          )
+        else
+          Container(
+            decoration: BoxDecoration(
+              border: Border.all(
+                color: Theme.of(context).colorScheme.outlineVariant,
+              ),
+              borderRadius: const BorderRadius.vertical(
+                bottom: Radius.circular(8),
+              ),
+            ),
+            child: ReorderableListView.builder(
+              shrinkWrap: true,
+              physics: const NeverScrollableScrollPhysics(),
+              itemCount: _service.devices.length,
+              onReorder: (oldIndex, newIndex) async {
+                await _service.reorderDevices(oldIndex, newIndex);
+                // 自動儲存配置
+                _autoSaveConfiguration();
+              },
+              itemBuilder: (context, index) {
+                final device = _service.devices[index];
+                return _buildDeviceRow(device, index);
+              },
+            ),
+          ),
+      ],
+    );
+  }
+
+  Widget _buildDeviceListHeader() {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+      decoration: BoxDecoration(
+        color: Theme.of(context).colorScheme.surfaceContainerHighest,
+        borderRadius: _service.devices.isEmpty
+            ? BorderRadius.circular(8)
+            : const BorderRadius.vertical(top: Radius.circular(8)),
+      ),
+      child: Row(
+        children: [
+          SizedBox(
+            width: 40,
+            child: Icon(
+              Icons.drag_handle,
+              size: 20,
+              color: Theme.of(context).colorScheme.onSurfaceVariant,
+            ),
+          ),
+          const SizedBox(
+            width: 80,
+            child: Text('Brand', style: TextStyle(fontWeight: FontWeight.bold)),
+          ),
+          const SizedBox(
+            width: 80,
+            child: Text('Model', style: TextStyle(fontWeight: FontWeight.bold)),
+          ),
+          const SizedBox(
+            width: 80,
+            child: Text('Type', style: TextStyle(fontWeight: FontWeight.bold)),
+          ),
+          const SizedBox(
+            width: 120,
+            child: Text(
+              'Module ID',
+              style: TextStyle(fontWeight: FontWeight.bold),
+            ),
+          ),
+          const SizedBox(
+            width: 60,
+            child: Text(
+              'Channel',
+              style: TextStyle(fontWeight: FontWeight.bold),
+            ),
+          ),
+          const Expanded(
+            child: Text('Name', style: TextStyle(fontWeight: FontWeight.bold)),
+          ),
+          const SizedBox(
+            width: 80,
+            child: Text('TCP', style: TextStyle(fontWeight: FontWeight.bold)),
+          ),
+          const SizedBox(
+            width: 100,
+            child: Text('操作', style: TextStyle(fontWeight: FontWeight.bold)),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildDeviceRow(Device device, int index) {
+    return Container(
+      key: ValueKey(device.id ?? 'new_${device.hashCode}'),
+      decoration: BoxDecoration(
+        border: Border(
+          bottom: BorderSide(
+            color: index < _service.devices.length - 1
+                ? Theme.of(context).colorScheme.outlineVariant
+                : Colors.transparent,
+            width: 0.5,
+          ),
+        ),
+      ),
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          onTap: () {},
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+            child: Row(
+              children: [
+                SizedBox(
+                  width: 40,
+                  child: Icon(
+                    Icons.drag_handle,
+                    size: 20,
+                    color: Theme.of(context).colorScheme.onSurfaceVariant,
+                  ),
+                ),
+                SizedBox(width: 80, child: Text(device.brand)),
+                SizedBox(width: 80, child: Text(device.model)),
+                SizedBox(width: 80, child: Text(device.type)),
+                SizedBox(width: 120, child: Text(device.moduleId)),
+                SizedBox(width: 60, child: Text(device.channel)),
+                Expanded(child: Text(device.name)),
+                SizedBox(width: 80, child: Text(device.tcp)),
+                SizedBox(
+                  width: 100,
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      IconButton(
+                        icon: const Icon(Icons.edit, size: 18),
+                        onPressed: () => editDevice(device),
+                        tooltip: '編輯',
+                        padding: EdgeInsets.zero,
+                        constraints: const BoxConstraints(),
+                      ),
+                      const SizedBox(width: 8),
+                      IconButton(
+                        icon: const Icon(Icons.delete, size: 18),
+                        onPressed: () => removeDevice(device.id!),
+                        tooltip: '刪除',
+                        padding: EdgeInsets.zero,
+                        constraints: const BoxConstraints(),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildAddDeviceForm() {
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: Theme.of(context).colorScheme.surfaceContainerLow,
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(color: Theme.of(context).colorScheme.primary),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Text(
+            '添加新設備',
+            style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+          ),
+          const SizedBox(height: 16),
+          Row(
+            children: [
+              Expanded(
+                child: DropdownButtonFormField<String>(
+                  decoration: const InputDecoration(
+                    labelText: 'Brand',
+                    border: OutlineInputBorder(),
+                    isDense: true,
+                  ),
+                  value: selectedBrand,
+                  onChanged: (String? newValue) {
+                    setState(() {
+                      selectedBrand = newValue!;
+                      selectedModel = models[selectedBrand]!.first;
+                      List<String> availableTypes = getAvailableTypes(
+                        selectedBrand,
+                        selectedModel,
+                      );
+                      if (!availableTypes.contains(selectedType)) {
+                        selectedType = availableTypes.first;
+                      }
+                      selectedChannel = getAvailableChannels(
+                        selectedBrand,
+                        selectedModel,
+                        selectedType,
+                      ).first;
+                    });
+                  },
+                  items: brands.map<DropdownMenuItem<String>>((String value) {
+                    return DropdownMenuItem<String>(
+                      value: value,
+                      child: Text(value),
+                    );
+                  }).toList(),
+                ),
+              ),
+              const SizedBox(width: 8),
+              Expanded(
+                child: DropdownButtonFormField<String>(
+                  decoration: const InputDecoration(
+                    labelText: 'Model',
+                    border: OutlineInputBorder(),
+                    isDense: true,
+                  ),
+                  value: selectedModel,
+                  onChanged: (String? newValue) {
+                    setState(() {
+                      selectedModel = newValue!;
+                      List<String> availableTypes = getAvailableTypes(
+                        selectedBrand,
+                        selectedModel,
+                      );
+                      if (!availableTypes.contains(selectedType)) {
+                        selectedType = availableTypes.first;
+                      }
+                      selectedChannel = getAvailableChannels(
+                        selectedBrand,
+                        selectedModel,
+                        selectedType,
+                      ).first;
+                    });
+                  },
+                  items: models[selectedBrand]!.map<DropdownMenuItem<String>>((
+                    String value,
+                  ) {
+                    return DropdownMenuItem<String>(
+                      value: value,
+                      child: Text(value),
+                    );
+                  }).toList(),
+                ),
+              ),
+              const SizedBox(width: 8),
+              Expanded(
+                child: DropdownButtonFormField<String>(
+                  decoration: const InputDecoration(
+                    labelText: 'Type',
+                    border: OutlineInputBorder(),
+                    isDense: true,
+                  ),
+                  value: selectedType,
+                  onChanged: (String? newValue) {
+                    setState(() {
+                      selectedType = newValue!;
+                      selectedChannel = getAvailableChannels(
+                        selectedBrand,
+                        selectedModel,
+                        selectedType,
+                      ).first;
+                    });
+                  },
+                  items: getAvailableTypes(selectedBrand, selectedModel)
+                      .map<DropdownMenuItem<String>>((String value) {
+                        return DropdownMenuItem<String>(
+                          value: value,
+                          child: Text(value),
+                        );
+                      })
+                      .toList(),
+                ),
+              ),
+              const SizedBox(width: 8),
+              Expanded(
+                flex: 2,
+                child: TextField(
+                  controller: moduleIdController,
+                  decoration: const InputDecoration(
+                    labelText: 'Module ID',
+                    border: OutlineInputBorder(),
+                    isDense: true,
+                  ),
+                ),
+              ),
+              const SizedBox(width: 8),
+              Expanded(
+                child: DropdownButtonFormField<String>(
+                  decoration: const InputDecoration(
+                    labelText: 'Channel',
+                    border: OutlineInputBorder(),
+                    isDense: true,
+                  ),
+                  value: selectedChannel,
+                  onChanged: (String? newValue) {
+                    setState(() {
+                      selectedChannel = newValue!;
+                    });
+                  },
+                  items:
+                      (_currentModuleId.isNotEmpty
+                              ? _service.getSelectableChannelsForModule(
+                                  selectedBrand,
+                                  selectedModel,
+                                  selectedType,
+                                  _currentModuleId,
+                                )
+                              : getAvailableChannels(
+                                  selectedBrand,
+                                  selectedModel,
+                                  selectedType,
+                                ))
+                          .map<DropdownMenuItem<String>>((String value) {
+                            return DropdownMenuItem<String>(
+                              value: value,
+                              child: Text(value),
+                            );
+                          })
+                          .toList(),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 8),
+          Row(
+            children: [
+              Expanded(
+                flex: 3,
+                child: TextField(
+                  controller: nameController,
+                  decoration: const InputDecoration(
+                    labelText: 'Name',
+                    border: OutlineInputBorder(),
+                    isDense: true,
+                  ),
+                ),
+              ),
+              const SizedBox(width: 8),
+              Expanded(
+                child: TextField(
+                  controller: tcpController,
+                  decoration: const InputDecoration(
+                    labelText: 'TCP',
+                    border: OutlineInputBorder(),
+                    isDense: true,
+                  ),
+                ),
+              ),
+              const SizedBox(width: 8),
+              ElevatedButton.icon(
+                onPressed: addDevice,
+                icon: const Icon(Icons.add),
+                label: const Text('添加設備'),
+                style: ElevatedButton.styleFrom(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 24,
+                    vertical: 20,
+                  ),
+                ),
+              ),
+              const SizedBox(width: 8),
+              ElevatedButton.icon(
+                onPressed: generateAndCopyOutput,
+                icon: const Icon(Icons.copy),
+                label: const Text('生成並複製'),
+                style: ElevatedButton.styleFrom(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 24,
+                    vertical: 20,
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+
+
+  String _formatDateTime(String dateTime) {
+    try {
+      final dt = DateTime.parse(dateTime);
+      return '${dt.year}-${dt.month.toString().padLeft(2, '0')}-${dt.day.toString().padLeft(2, '0')} '
+          '${dt.hour.toString().padLeft(2, '0')}:${dt.minute.toString().padLeft(2, '0')}';
+    } catch (e) {
+      return dateTime;
+    }
+  }
+
+  // 自動儲存配置
+  Future<void> _autoSaveConfiguration() async {
+    // 只有在選擇了非「新配置」時才自動儲存
+    if (_selectedConfiguration != null && _selectedConfiguration != '新配置') {
+      try {
+        await _service.saveConfiguration(_selectedConfiguration!);
+        // 靜默保存，不顯示提示
+      } catch (e) {
+        // 如果自動儲存失敗，顯示錯誤
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('自動儲存失敗: $e'),
+              backgroundColor: Colors.orange,
+            ),
+          );
+        }
+      }
+    }
   }
 }

@@ -3,6 +3,45 @@ import 'package:http/browser_client.dart';
 import 'dart:convert';
 import 'package:coselig_staff_portal/main.dart';
 
+class DeviceConfiguration {
+  final int id;
+  final int userId;
+  final String name;
+  final String chineseName;
+  final String userName;
+  final String createdAt;
+  final String updatedAt;
+  final List<Device>? devices;
+
+  DeviceConfiguration({
+    required this.id,
+    required this.userId,
+    required this.name,
+    required this.chineseName,
+    required this.userName,
+    required this.createdAt,
+    required this.updatedAt,
+    this.devices,
+  });
+
+  factory DeviceConfiguration.fromJson(Map<String, dynamic> json) {
+    return DeviceConfiguration(
+      id: json['id'] ?? 0,
+      userId: json['user_id'] ?? 0,
+      name: json['name'] ?? '',
+      chineseName: json['chinese_name'] ?? json['user_name'] ?? 'Unknown',
+      userName: json['user_name'] ?? '',
+      createdAt: json['created_at'] ?? '',
+      updatedAt: json['updated_at'] ?? '',
+      devices: json['devices'] != null
+          ? (jsonDecode(json['devices']) as List)
+                .map((d) => Device.fromJson(d))
+                .toList()
+          : null,
+    );
+  }
+}
+
 class Device {
   String? id; // 數據庫ID，對於新裝置為 null
   String brand;
@@ -57,6 +96,7 @@ class DiscoveryService extends ChangeNotifier {
   final BrowserClient _client = BrowserClient()
     ..withCredentials = true; // 自動處理 cookies
   final List<Device> _devices = [];
+  final List<DeviceConfiguration> _configurations = [];
   String _generatedOutput = '';
   bool _isLoading = false;
   String? _error;
@@ -68,6 +108,8 @@ class DiscoveryService extends ChangeNotifier {
   );
 
   List<Device> get devices => List.unmodifiable(_devices);
+  List<DeviceConfiguration> get configurations =>
+      List.unmodifiable(_configurations);
   bool get isLoading => _isLoading;
   String? get error => _error;
 
@@ -316,6 +358,61 @@ class DiscoveryService extends ChangeNotifier {
     }
   }
 
+  /// 重新排序設備列表
+  Future<void> reorderDevices(int oldIndex, int newIndex) async {
+    if (oldIndex < newIndex) {
+      newIndex -= 1;
+    }
+    final device = _devices.removeAt(oldIndex);
+    _devices.insert(newIndex, device);
+    notifyListeners();
+
+    // 批量更新所有裝置的排序，使用索引作為排序依據
+    // 後端會根據更新順序來維持排序
+    final futures = <Future>[];
+    for (int i = 0; i < _devices.length; i++) {
+      final d = _devices[i];
+      if (d.id != null) {
+        futures.add(_updateDeviceOrder(d));
+      }
+    }
+
+    // 等待所有更新完成
+    await Future.wait(futures);
+  }
+
+  /// 更新單個裝置排序（內部方法）
+  Future<void> _updateDeviceOrder(Device device) async {
+    try {
+      await _client.put(
+        Uri.parse('$baseUrl/api/devices'),
+        headers: {'Content-Type': 'application/json'},
+        body: jsonEncode(device.toJson()),
+      );
+    } catch (e) {
+      // 靜默失敗，不影響 UI 體驗
+      print('Failed to update device order: $e');
+    }
+  }
+
+  /// 向上移動設備
+  void moveDeviceUp(int index) {
+    if (index > 0) {
+      final device = _devices.removeAt(index);
+      _devices.insert(index - 1, device);
+      notifyListeners();
+    }
+  }
+
+  /// 向下移動設備
+  void moveDeviceDown(int index) {
+    if (index < _devices.length - 1) {
+      final device = _devices.removeAt(index);
+      _devices.insert(index + 1, device);
+      notifyListeners();
+    }
+  }
+
   Future<void> updateDevice(Device device) async {
     if (device.id == null) return;
 
@@ -482,7 +579,11 @@ class DiscoveryService extends ChangeNotifier {
     }
   }
 
-  Future<List<String>> getConfigurationNames() async {
+  Future<void> fetchConfigurations() async {
+    _isLoading = true;
+    _error = null;
+    notifyListeners();
+
     try {
       final response = await _client.get(
         Uri.parse('$baseUrl/api/configurations'),
@@ -491,17 +592,31 @@ class DiscoveryService extends ChangeNotifier {
       if (response.statusCode == 200) {
         final data = jsonDecode(response.body);
         final configs = data['configurations'] as List;
-        return configs.map((config) => config['name'] as String).toList();
+        _configurations.clear();
+        _configurations.addAll(
+          configs.map((json) => DeviceConfiguration.fromJson(json)).toList(),
+        );
+        notifyListeners();
       } else if (response.statusCode == 401) {
+        _error = 'Unauthorized';
         navigatorKey.currentState?.pushReplacementNamed('/login');
-        throw Exception('Unauthorized');
       } else {
         final error = jsonDecode(response.body);
-        throw Exception(error['error'] ?? 'Failed to get configurations');
+        _error = error['error'] ?? 'Failed to get configurations';
+        notifyListeners();
       }
     } catch (e) {
-      throw Exception('Network error: $e');
+      _error = 'Network error: $e';
+      notifyListeners();
+    } finally {
+      _isLoading = false;
+      notifyListeners();
     }
+  }
+
+  Future<List<String>> getConfigurationNames() async {
+    await fetchConfigurations();
+    return _configurations.map((config) => config.name).toList();
   }
 
   Future<void> deleteConfiguration(String name) async {
