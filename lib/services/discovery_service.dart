@@ -287,7 +287,7 @@ class DiscoveryService extends ChangeNotifier {
     return requiredAtoms.difference(availableAtoms).isEmpty;
   }
 
-  Future<void> addDevice(Device device) async {
+  void addDevice(Device device) {
     // 在發送API請求前進行邏輯檢查
     if (!canAddDevice(device)) {
       _error = '無法添加裝置：模組ID的所有通道都已被使用';
@@ -295,104 +295,35 @@ class DiscoveryService extends ChangeNotifier {
       return;
     }
 
-    _isLoading = true;
-    _error = null;
+    // 本地添加裝置，不再呼叫後端 API
+    // 生成一個本地 ID
+    final newDevice = Device(
+      id: DateTime.now().millisecondsSinceEpoch.toString(),
+      brand: device.brand,
+      model: device.model,
+      type: device.type,
+      moduleId: device.moduleId,
+      channel: device.channel,
+      name: device.name,
+      tcp: device.tcp,
+    );
+    _devices.add(newDevice);
     notifyListeners();
-
-    try {
-      final response = await _client.post(
-        Uri.parse('$baseUrl/api/devices'),
-        headers: {'Content-Type': 'application/json'},
-        body: jsonEncode(device.toJson()),
-      );
-
-      if (response.statusCode == 201) {
-        final data = jsonDecode(response.body);
-        final newDevice = Device.fromJson(data['device']);
-        _devices.add(newDevice);
-        notifyListeners();
-      } else if (response.statusCode == 401) {
-        _error = 'Unauthorized';
-        navigatorKey.currentState?.pushReplacementNamed('/login');
-      } else {
-        final error = jsonDecode(response.body);
-        _error = error['error'] ?? 'Failed to add device';
-        notifyListeners();
-      }
-    } catch (e) {
-      _error = 'Network error: $e';
-      notifyListeners();
-    } finally {
-      _isLoading = false;
-      notifyListeners();
-    }
   }
 
-  Future<void> removeDevice(String deviceId) async {
-    _isLoading = true;
-    _error = null;
+  void removeDevice(String deviceId) {
+    _devices.removeWhere((device) => device.id == deviceId);
     notifyListeners();
-
-    try {
-      final response = await _client.delete(
-        Uri.parse('$baseUrl/api/devices?id=$deviceId'),
-      );
-
-      if (response.statusCode == 200) {
-        _devices.removeWhere((device) => device.id == deviceId);
-        notifyListeners();
-      } else if (response.statusCode == 401) {
-        _error = 'Unauthorized';
-        navigatorKey.currentState?.pushReplacementNamed('/login');
-      } else {
-        final error = jsonDecode(response.body);
-        _error = error['error'] ?? 'Failed to delete device';
-        notifyListeners();
-      }
-    } catch (e) {
-      _error = 'Network error: $e';
-      notifyListeners();
-    } finally {
-      _isLoading = false;
-      notifyListeners();
-    }
   }
 
   /// 重新排序設備列表
-  Future<void> reorderDevices(int oldIndex, int newIndex) async {
+  void reorderDevices(int oldIndex, int newIndex) {
     if (oldIndex < newIndex) {
       newIndex -= 1;
     }
     final device = _devices.removeAt(oldIndex);
     _devices.insert(newIndex, device);
     notifyListeners();
-
-    // 批量更新所有裝置的排序，使用索引作為排序依據
-    // 後端會根據更新順序來維持排序
-    final futures = <Future>[];
-    for (int i = 0; i < _devices.length; i++) {
-      final d = _devices[i];
-      if (d.id != null) {
-        futures.add(_updateDeviceOrder(d));
-      }
-    }
-
-    // 等待所有更新完成
-    await Future.wait(futures);
-  }
-
-  /// 更新單個裝置排序（內部方法）
-  Future<void> _updateDeviceOrder(Device device) async {
-    try {
-      await _client.put(
-        Uri.parse('$baseUrl/api/devices'),
-        headers: {'Content-Type': 'application/json'},
-        body: jsonEncode(device.toJson()),
-      );
-    } catch (e) {
-      // 靜默失敗，不影響 UI 體驗
-      print('Failed to update device order: $e');
-    }
   }
 
   /// 向上移動設備
@@ -413,41 +344,12 @@ class DiscoveryService extends ChangeNotifier {
     }
   }
 
-  Future<void> updateDevice(Device device) async {
+  void updateDevice(Device device) {
     if (device.id == null) return;
 
-    _isLoading = true;
-    _error = null;
-    notifyListeners();
-
-    try {
-      final response = await _client.put(
-        Uri.parse('$baseUrl/api/devices'),
-        headers: {'Content-Type': 'application/json'},
-        body: jsonEncode(device.toJson()),
-      );
-
-      if (response.statusCode == 200) {
-        final data = jsonDecode(response.body);
-        final updatedDevice = Device.fromJson(data['device']);
-        final index = _devices.indexWhere((d) => d.id == device.id);
-        if (index != -1) {
-          _devices[index] = updatedDevice;
-        }
-        notifyListeners();
-      } else if (response.statusCode == 401) {
-        _error = 'Unauthorized';
-        navigatorKey.currentState?.pushReplacementNamed('/login');
-      } else {
-        final error = jsonDecode(response.body);
-        _error = error['error'] ?? 'Failed to update device';
-        notifyListeners();
-      }
-    } catch (e) {
-      _error = 'Network error: $e';
-      notifyListeners();
-    } finally {
-      _isLoading = false;
+    final index = _devices.indexWhere((d) => d.id == device.id);
+    if (index != -1) {
+      _devices[index] = device;
       notifyListeners();
     }
   }
@@ -471,44 +373,6 @@ class DiscoveryService extends ChangeNotifier {
     _generatedOutput = buffer.toString();
     notifyListeners();
     return _generatedOutput;
-  }
-
-  Future<void> loadDevices() async {
-    _isLoading = true;
-    _error = null;
-    notifyListeners();
-
-    try {
-      final response = await _client.get(Uri.parse('$baseUrl/api/devices'));
-
-      if (response.statusCode == 200) {
-        final data = jsonDecode(response.body);
-        final devicesData = data['devices'] as List;
-        _devices.clear();
-        _devices.addAll(devicesData.map((json) => Device.fromJson(json)));
-        notifyListeners();
-      } else if (response.statusCode == 401) {
-        _error = 'Unauthorized';
-        // Redirect to login
-        navigatorKey.currentState?.pushReplacementNamed('/login');
-      } else {
-        final error = jsonDecode(response.body);
-        _error = error['error'] ?? 'Failed to load devices';
-        notifyListeners();
-      }
-    } catch (e) {
-      _error = 'Network error: $e';
-      notifyListeners();
-    } finally {
-      _isLoading = false;
-      notifyListeners();
-    }
-  }
-
-  Future<void> saveDevices() async {
-    // Devices are saved in real-time via addDevice/removeDevice
-    // This method can be used for any additional save operations if needed
-    notifyListeners();
   }
 
   // Configuration management

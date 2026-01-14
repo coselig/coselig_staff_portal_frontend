@@ -24,7 +24,6 @@ class _DiscoveryGeneratePageState extends State<DiscoveryGeneratePage> {
 
     // 檢查是否已登入
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      _service.loadDevices(); // 加載裝置列表
       _service.fetchConfigurations(); // 加載所有配置列表
     });
 
@@ -58,7 +57,6 @@ class _DiscoveryGeneratePageState extends State<DiscoveryGeneratePage> {
     moduleIdController.dispose();
     nameController.dispose();
     tcpController.dispose();
-    configNameController.dispose();
     _service.removeListener(_update);
     super.dispose();
   }
@@ -74,7 +72,6 @@ class _DiscoveryGeneratePageState extends State<DiscoveryGeneratePage> {
   final TextEditingController moduleIdController = TextEditingController();
   final TextEditingController nameController = TextEditingController();
   final TextEditingController tcpController = TextEditingController();
-  final TextEditingController configNameController = TextEditingController();
 
   // Configuration management
   String? _selectedConfiguration = '新配置';
@@ -126,8 +123,8 @@ class _DiscoveryGeneratePageState extends State<DiscoveryGeneratePage> {
     }
   }
 
-  Future<void> removeDevice(String deviceId) async {
-    await _service.removeDevice(deviceId);
+  void removeDevice(String deviceId) {
+    _service.removeDevice(deviceId);
     // 自動儲存配置
     _autoSaveConfiguration();
   }
@@ -161,7 +158,7 @@ class _DiscoveryGeneratePageState extends State<DiscoveryGeneratePage> {
               child: const Text('取消'),
             ),
             TextButton(
-              onPressed: () async {
+              onPressed: () {
                 final updatedDevice = Device(
                   id: device.id,
                   brand: device.brand,
@@ -172,7 +169,7 @@ class _DiscoveryGeneratePageState extends State<DiscoveryGeneratePage> {
                   name: nameController.text,
                   tcp: tcpController.text,
                 );
-                await _service.updateDevice(updatedDevice);
+                _service.updateDevice(updatedDevice);
                 Navigator.of(context).pop();
                 // 自動儲存配置
                 _autoSaveConfiguration();
@@ -244,30 +241,75 @@ class _DiscoveryGeneratePageState extends State<DiscoveryGeneratePage> {
             // Configuration Management
             Row(
               children: [
-                Expanded(
-                  flex: 2,
-                  child: TextField(
-                    controller: configNameController,
-                    decoration: const InputDecoration(labelText: '配置名稱'),
-                  ),
-                ),
-                const SizedBox(width: 8),
                 ElevatedButton(
                   onPressed: () async {
-                    if (configNameController.text.isNotEmpty) {
-                      if (configNameController.text == '新配置') {
-                        if (mounted) {
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            const SnackBar(content: Text('無法使用預設配置名稱')),
-                          );
+                    // 如果是新配置，彈出對話框輸入名稱
+                    if (_selectedConfiguration == '新配置') {
+                      final nameController = TextEditingController();
+                      final newName = await showDialog<String>(
+                        context: context,
+                        builder: (context) => AlertDialog(
+                          title: const Text('保存新配置'),
+                          content: TextField(
+                            controller: nameController,
+                            decoration: const InputDecoration(
+                              labelText: '配置名稱',
+                              hintText: '請輸入配置名稱',
+                            ),
+                            autofocus: true,
+                          ),
+                          actions: [
+                            TextButton(
+                              onPressed: () => Navigator.pop(context),
+                              child: const Text('取消'),
+                            ),
+                            TextButton(
+                              onPressed: () {
+                                if (nameController.text.isNotEmpty) {
+                                  Navigator.pop(context, nameController.text);
+                                }
+                              },
+                              child: const Text('保存'),
+                            ),
+                          ],
+                        ),
+                      );
+
+                      if (newName != null && newName.isNotEmpty) {
+                        if (newName == '新配置') {
+                          if (mounted) {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              const SnackBar(content: Text('無法使用預設配置名稱')),
+                            );
+                          }
+                          return;
                         }
-                        return;
+                        
+                        try {
+                          await _service.saveConfiguration(newName);
+                          setState(() {
+                            _selectedConfiguration = newName;
+                          });
+                          await _service.fetchConfigurations();
+                          if (mounted) {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              const SnackBar(content: Text('配置保存成功')),
+                            );
+                          }
+                        } catch (e) {
+                          if (mounted) {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              SnackBar(content: Text('保存配置失敗: $e')),
+                            );
+                          }
+                        }
                       }
+                    } else {
+                      // 直接保存到當前選擇的配置
                       try {
                         await _service.saveConfiguration(
-                          configNameController.text,
+                          _selectedConfiguration!,
                         );
-                        configNameController.clear();
                         await _service.fetchConfigurations();
                         if (mounted) {
                           ScaffoldMessenger.of(context).showSnackBar(
@@ -343,20 +385,47 @@ class _DiscoveryGeneratePageState extends State<DiscoveryGeneratePage> {
                 const SizedBox(width: 8),
                 ElevatedButton(
                   onPressed: () async {
-                    if (configNameController.text.isNotEmpty) {
-                      if (configNameController.text == '新配置') {
-                        if (mounted) {
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            const SnackBar(content: Text('無法刪除預設配置')),
-                          );
-                        }
-                        return;
+                    if (_selectedConfiguration == null ||
+                        _selectedConfiguration == '新配置') {
+                      if (mounted) {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(content: Text('請先選擇要刪除的配置')),
+                        );
                       }
+                      return;
+                    }
+                    
+                    // 顯示確認對話框
+                    final confirm = await showDialog<bool>(
+                      context: context,
+                      builder: (context) => AlertDialog(
+                        title: const Text('確認刪除'),
+                        content: Text('確定要刪除配置 "$_selectedConfiguration" 嗎？'),
+                        actions: [
+                          TextButton(
+                            onPressed: () => Navigator.pop(context, false),
+                            child: const Text('取消'),
+                          ),
+                          TextButton(
+                            onPressed: () => Navigator.pop(context, true),
+                            child: const Text(
+                              '刪除',
+                              style: TextStyle(color: Colors.red),
+                            ),
+                          ),
+                        ],
+                      ),
+                    );
+
+                    if (confirm == true) {
                       try {
                         await _service.deleteConfiguration(
-                          configNameController.text,
+                          _selectedConfiguration!,
                         );
-                        configNameController.clear();
+                        setState(() {
+                          _selectedConfiguration = '新配置';
+                        });
+                        _service.clearDevices();
                         await _service.fetchConfigurations();
                         if (mounted) {
                           ScaffoldMessenger.of(context).showSnackBar(
@@ -372,6 +441,10 @@ class _DiscoveryGeneratePageState extends State<DiscoveryGeneratePage> {
                       }
                     }
                   },
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Colors.red,
+                    foregroundColor: Colors.white,
+                  ),
                   child: const Text('刪除配置'),
                 ),
               ],
@@ -439,8 +512,8 @@ class _DiscoveryGeneratePageState extends State<DiscoveryGeneratePage> {
               shrinkWrap: true,
               physics: const NeverScrollableScrollPhysics(),
               itemCount: _service.devices.length,
-              onReorder: (oldIndex, newIndex) async {
-                await _service.reorderDevices(oldIndex, newIndex);
+              onReorder: (oldIndex, newIndex) {
+                _service.reorderDevices(oldIndex, newIndex);
                 // 自動儲存配置
                 _autoSaveConfiguration();
               },
