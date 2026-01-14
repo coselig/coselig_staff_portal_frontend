@@ -25,6 +25,7 @@ class _AdminUserPreviewPageState extends State<AdminUserPreviewPage> {
   bool _isLoading = false;
   String? _selectedUserId;
   List<Map<String, dynamic>> _allUsers = [];
+  bool _showInactive = false;
 
   @override
   void initState() {
@@ -122,6 +123,20 @@ class _AdminUserPreviewPageState extends State<AdminUserPreviewPage> {
                                 style: Theme.of(context).textTheme.titleMedium,
                               ),
                               const SizedBox(height: 8),
+                              Row(
+                                children: [
+                                  Checkbox(
+                                    value: _showInactive,
+                                    onChanged: (value) {
+                                      setState(() {
+                                        _showInactive = value ?? false;
+                                      });
+                                    },
+                                  ),
+                                  const Text('顯示離職員工'),
+                                ],
+                              ),
+                              const SizedBox(height: 8),
                               DropdownButtonFormField<String>(
                                 value: _selectedUserId,
                                 hint: const Text('請選擇用戶'),
@@ -132,11 +147,29 @@ class _AdminUserPreviewPageState extends State<AdminUserPreviewPage> {
                                     vertical: 8,
                                   ),
                                 ),
-                                items: _allUsers.map((user) {
+                                items: _allUsers
+                                    .where((user) {
+                                      // 過濾離職員工
+                                      if (!_showInactive) {
+                                        final isActive = user['is_active'];
+                                        // is_active 可能是 int (0/1) 或 bool
+                                        if (isActive == 0 ||
+                                            isActive == false) {
+                                          return false;
+                                        }
+                                      }
+                                      return true;
+                                    })
+                                    .map((user) {
+                                      final isActive = user['is_active'];
+                                      final statusText =
+                                          (isActive == 0 || isActive == false)
+                                          ? ' (離職)'
+                                          : '';
                                   return DropdownMenuItem<String>(
                                     value: user['id'].toString(),
                                     child: Text(
-                                      '${user['chinese_name'] ?? user['name']} (${user['email']})',
+                                          '${user['chinese_name'] ?? user['name']} (${user['email']})$statusText',
                                     ),
                                   );
                                 }).toList(),
