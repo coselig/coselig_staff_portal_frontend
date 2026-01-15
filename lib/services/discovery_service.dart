@@ -173,12 +173,14 @@ class DiscoveryService extends ChangeNotifier {
       'p805': {
         'types': ['dual', 'single'],
         'channels': {
-          'dual': ['a', 'b'],
-          'single': ['1', '2', '3', '4'],
+          'dual': ['a', 'b', 'c', 'd'],
+          'single': ['1', '2', '3', '4', '5', '6', '7', '8'],
         },
         'channel_map': {
           'a': ['1', '2'],
           'b': ['3', '4'],
+          'c': ['5', '6'],
+          'd': ['7', '8'],
         },
       },
     },
@@ -371,13 +373,7 @@ class DiscoveryService extends ChangeNotifier {
       }
     }
     buffer.writeln('];');
-    buffer.writeln('switch(msg.source) {');
-    buffer.writeln('    case "feedback": return [msg, null, null, null];');
-    buffer.writeln('    case "update": return [null, msg, null, null];');
-    buffer.writeln('    case "discovery": return [null, null, msg, null];');
-    buffer.writeln('    case "tcp": return [null, null, null, msg];');
-    buffer.writeln('    default: return null;');
-    buffer.writeln('}');
+    buffer.writeln('return msg;');
     _generatedOutput = buffer.toString();
     notifyListeners();
     return _generatedOutput;
