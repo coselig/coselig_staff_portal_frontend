@@ -98,6 +98,7 @@ class DiscoveryService extends ChangeNotifier {
   final List<Device> _devices = [];
   final List<DeviceConfiguration> _configurations = [];
   String _generatedOutput = '';
+  String _currentConfigurationName = '新配置';
   bool _isLoading = false;
   String? _error;
 
@@ -110,6 +111,7 @@ class DiscoveryService extends ChangeNotifier {
   List<Device> get devices => List.unmodifiable(_devices);
   List<DeviceConfiguration> get configurations =>
       List.unmodifiable(_configurations);
+  String get currentConfigurationName => _currentConfigurationName;
   bool get isLoading => _isLoading;
   String? get error => _error;
 
@@ -369,7 +371,67 @@ class DiscoveryService extends ChangeNotifier {
       }
     }
     buffer.writeln('];');
-    buffer.writeln('return msg;');
+    buffer.writeln('switch(msg.source) {');
+    buffer.writeln('    case "feedback": return [msg, null, null, null];');
+    buffer.writeln('    case "update": return [null, msg, null, null];');
+    buffer.writeln('    case "discovery": return [null, null, msg, null];');
+    buffer.writeln('    case "tcp": return [null, null, null, msg];');
+    buffer.writeln('    default: return null;');
+    buffer.writeln('}');
+    _generatedOutput = buffer.toString();
+    notifyListeners();
+    return _generatedOutput;
+  }
+
+  String generateYamlOutput() {
+    StringBuffer buffer = StringBuffer();
+
+    buffer.writeln('views:');
+    buffer.writeln('  - type: sections');
+    buffer.writeln('    max_columns: 4');
+    buffer.writeln('    title: $_currentConfigurationName');
+    buffer.writeln('    path: unknown');
+    buffer.writeln('    sections:');
+
+    // 按照 tcp 分組（tcp: "1" 為一組，其他可以分更多組）
+    final groupedByTcp = <String, List<Device>>{};
+    for (final device in _devices) {
+      final tcpKey = device.tcp.isEmpty ? '未分組' : device.tcp;
+      groupedByTcp.putIfAbsent(tcpKey, () => []).add(device);
+    }
+
+    // 為每個 TCP 組生成一個 section
+    for (final entry in groupedByTcp.entries) {
+      final tcpGroup = entry.key;
+      final devices = entry.value;
+
+      buffer.writeln('      - type: grid');
+      buffer.writeln('        cards:');
+      buffer.writeln('          - type: heading');
+      buffer.writeln('            heading_style: title');
+      buffer.writeln('            heading: TCP $tcpGroup');
+
+      // 為每個設備生成一個 tile
+      for (final device in devices) {
+        // 生成 entity ID: light.{type}_{module_id}_{channel}
+        final entityId =
+            'light.${device.type}_${device.moduleId}_${device.channel}';
+
+        buffer.writeln('          - type: tile');
+        buffer.writeln('            entity: $entityId');
+        buffer.writeln('            name: ${device.name}');
+        buffer.writeln('            vertical: false');
+        buffer.writeln('            features_position: bottom');
+        buffer.writeln('            features:');
+        buffer.writeln('              - type: light-brightness');
+
+        // dual 類型添加色溫控制
+        if (device.type == 'dual') {
+          buffer.writeln('              - type: light-color-temp');
+        }
+      }
+    }
+
     _generatedOutput = buffer.toString();
     notifyListeners();
     return _generatedOutput;
@@ -517,6 +579,12 @@ class DiscoveryService extends ChangeNotifier {
   // 清空設備列表
   void clearDevices() {
     _devices.clear();
+    notifyListeners();
+  }
+
+  // 設置當前配置名稱
+  void setConfigurationName(String name) {
+    _currentConfigurationName = name;
     notifyListeners();
   }
 }

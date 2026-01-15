@@ -211,6 +211,10 @@ class _DiscoveryGeneratePageState extends State<DiscoveryGeneratePage> {
     _service.generateOutput();
   }
 
+  void generateYamlOutput() {
+    _service.generateYamlOutput();
+  }
+
   void generateAndCopyOutput() async {
     generateOutput();
     if (_service.generatedOutput.isNotEmpty) {
@@ -224,10 +228,21 @@ class _DiscoveryGeneratePageState extends State<DiscoveryGeneratePage> {
     }
   }
 
+  void generateAndCopyYamlOutput() async {
+    generateYamlOutput();
+    if (_service.generatedOutput.isNotEmpty) {
+      await Clipboard.setData(ClipboardData(text: _service.generatedOutput));
+      // 使用 ScaffoldMessenger 顯示成功訊息
+      if (mounted) {
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(const SnackBar(content: Text('YAML 配置已生成並複製到剪貼簿')));
+      }
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
-    final double baseWidth =
-        (MediaQuery.of(context).size.width - 20 - 8 * 80) / 9;
     return Scaffold(
       appBar: AppBar(
         title: const Text('裝置註冊表生成器'),
@@ -290,6 +305,7 @@ class _DiscoveryGeneratePageState extends State<DiscoveryGeneratePage> {
                           setState(() {
                             _selectedConfiguration = newName;
                           });
+                          _service.setConfigurationName(newName);
                           await _service.fetchConfigurations();
                           if (mounted) {
                             ScaffoldMessenger.of(context).showSnackBar(
@@ -338,6 +354,7 @@ class _DiscoveryGeneratePageState extends State<DiscoveryGeneratePage> {
                         setState(() {
                           _selectedConfiguration = newValue;
                         });
+                        _service.setConfigurationName(newValue);
                         if (newValue == '新配置') {
                           // 清空設備列表
                           _service.clearDevices();
@@ -863,7 +880,19 @@ class _DiscoveryGeneratePageState extends State<DiscoveryGeneratePage> {
               ElevatedButton.icon(
                 onPressed: generateAndCopyOutput,
                 icon: const Icon(Icons.copy),
-                label: const Text('生成並複製'),
+                label: const Text('生成裝置設定'),
+                style: ElevatedButton.styleFrom(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 24,
+                    vertical: 20,
+                  ),
+                ),
+              ),
+              const SizedBox(width: 8),
+              ElevatedButton.icon(
+                onPressed: generateAndCopyYamlOutput,
+                icon: const Icon(Icons.content_copy),
+                label: const Text('生成UIYAML配置'),
                 style: ElevatedButton.styleFrom(
                   padding: const EdgeInsets.symmetric(
                     horizontal: 24,
@@ -880,15 +909,6 @@ class _DiscoveryGeneratePageState extends State<DiscoveryGeneratePage> {
 
 
 
-  String _formatDateTime(String dateTime) {
-    try {
-      final dt = DateTime.parse(dateTime);
-      return '${dt.year}-${dt.month.toString().padLeft(2, '0')}-${dt.day.toString().padLeft(2, '0')} '
-          '${dt.hour.toString().padLeft(2, '0')}:${dt.minute.toString().padLeft(2, '0')}';
-    } catch (e) {
-      return dateTime;
-    }
-  }
 
   // 自動儲存配置
   Future<void> _autoSaveConfiguration() async {
