@@ -28,7 +28,7 @@ class AttendanceCalendarView extends StatefulWidget {
 
 class _AttendanceCalendarViewState extends State<AttendanceCalendarView> {
   Map<int, dynamic> _holidaysMap = {};
-  static Map<String, List<Holiday>> _holidaysCache = {}; // 全局快取
+  static final Map<String, List<Holiday>> _holidaysCache = {}; // 全局快取
   bool _isLoading = false;
 
   @override
@@ -329,7 +329,7 @@ class _AttendanceCalendarViewState extends State<AttendanceCalendarView> {
         }
       }
     } else {
-      backgroundColor = Theme.of(context).colorScheme.surfaceVariant;
+      backgroundColor = Theme.of(context).colorScheme.surfaceContainerHighest;
       textColor = Theme.of(context).colorScheme.onSurfaceVariant;
       status = '';
     }

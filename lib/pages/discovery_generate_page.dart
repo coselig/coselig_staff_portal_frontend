@@ -395,7 +395,7 @@ class _DiscoveryGeneratePageState extends State<DiscoveryGeneratePage> {
                             '${config.name} (創建者: ${config.chineseName})',
                           ),
                         );
-                      }).toList(),
+                      }),
                     ],
                   ),
                 ),
@@ -697,7 +697,7 @@ class _DiscoveryGeneratePageState extends State<DiscoveryGeneratePage> {
                     border: OutlineInputBorder(),
                     isDense: true,
                   ),
-                  value: selectedBrand,
+                  initialValue: selectedBrand,
                   onChanged: (String? newValue) {
                     setState(() {
                       selectedBrand = newValue!;
@@ -732,7 +732,7 @@ class _DiscoveryGeneratePageState extends State<DiscoveryGeneratePage> {
                     border: OutlineInputBorder(),
                     isDense: true,
                   ),
-                  value: selectedModel,
+                  initialValue: selectedModel,
                   onChanged: (String? newValue) {
                     setState(() {
                       selectedModel = newValue!;
@@ -768,7 +768,7 @@ class _DiscoveryGeneratePageState extends State<DiscoveryGeneratePage> {
                     border: OutlineInputBorder(),
                     isDense: true,
                   ),
-                  value: selectedType,
+                  initialValue: selectedType,
                   onChanged: (String? newValue) {
                     setState(() {
                       selectedType = newValue!;
@@ -809,7 +809,7 @@ class _DiscoveryGeneratePageState extends State<DiscoveryGeneratePage> {
                     border: OutlineInputBorder(),
                     isDense: true,
                   ),
-                  value: selectedChannel,
+                  initialValue: selectedChannel,
                   onChanged: (String? newValue) {
                     setState(() {
                       selectedChannel = newValue!;

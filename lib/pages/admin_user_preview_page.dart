@@ -138,7 +138,7 @@ class _AdminUserPreviewPageState extends State<AdminUserPreviewPage> {
                               ),
                               const SizedBox(height: 8),
                               DropdownButtonFormField<String>(
-                                value: _selectedUserId,
+                                initialValue: _selectedUserId,
                                 hint: const Text('請選擇用戶'),
                                 decoration: const InputDecoration(
                                   border: OutlineInputBorder(),
