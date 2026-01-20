@@ -51,6 +51,9 @@ class Device {
   String channel;
   String name;
   String tcp;
+  int? brightMinimum;
+  int? colortempMinimum;
+  int? colortempMaximum;
 
   Device({
     this.id,
@@ -61,18 +64,36 @@ class Device {
     required this.channel,
     required this.name,
     required this.tcp,
+    this.brightMinimum,
+    this.colortempMinimum,
+    this.colortempMaximum,
   });
 
   factory Device.fromJson(Map<String, dynamic> json) {
+    int? _parseInt(dynamic v) {
+      if (v == null) return null;
+      if (v is int) return v;
+      if (v is String) return int.tryParse(v);
+      return null;
+    }
+
+    final type = json['type'] as String? ?? '';
+    final parsedBright = _parseInt(json['bright_minimum']) ?? 2;
+    final parsedCtMin = _parseInt(json['colortemp_minimum']);
+    final parsedCtMax = _parseInt(json['colortemp_maximum']);
+
     return Device(
       id: json['id']?.toString(),
       brand: json['brand'],
       model: json['model'],
-      type: json['type'],
+      type: type,
       moduleId: json['module_id'],
       channel: json['channel'],
       name: json['name'],
       tcp: json['tcp'] ?? '',
+      brightMinimum: parsedBright,
+      colortempMinimum: type == 'dual' ? (parsedCtMin ?? 154) : parsedCtMin,
+      colortempMaximum: type == 'dual' ? (parsedCtMax ?? 370) : parsedCtMax,
     );
   }
 
@@ -86,6 +107,9 @@ class Device {
       'channel': channel,
       'name': name,
       'tcp': tcp,
+      if (brightMinimum != null) 'bright_minimum': brightMinimum,
+      if (colortempMinimum != null) 'colortemp_minimum': colortempMinimum,
+      if (colortempMaximum != null) 'colortemp_maximum': colortempMaximum,
     };
   }
 }
@@ -310,6 +334,13 @@ class DiscoveryService extends ChangeNotifier {
       channel: device.channel,
       name: device.name,
       tcp: device.tcp,
+      brightMinimum: device.brightMinimum ?? 2,
+      colortempMinimum: device.type == 'dual'
+          ? (device.colortempMinimum ?? 154)
+          : device.colortempMinimum,
+      colortempMaximum: device.type == 'dual'
+          ? (device.colortempMaximum ?? 370)
+          : device.colortempMaximum,
     );
     _devices.add(newDevice);
     notifyListeners();
@@ -363,9 +394,23 @@ class DiscoveryService extends ChangeNotifier {
     buffer.writeln('msg.devices = [');
     for (int i = 0; i < _devices.length; i++) {
       var device = _devices[i];
-      buffer.write(
-        '    { brand: "${device.brand}", model: "${device.model}", type: "${device.type}", module_id: "${device.moduleId}", channel: "${device.channel}", name: "${device.name}", tcp: "${device.tcp}" }',
-      );
+      final parts = <String>[
+        'brand: "${device.brand}"',
+        'model: "${device.model}"',
+        'type: "${device.type}"',
+        'module_id: "${device.moduleId}"',
+        'channel: "${device.channel}"',
+        'name: "${device.name}"',
+        'tcp: "${device.tcp}"',
+        'bright_minimum: ${device.brightMinimum ?? 2}',
+      ];
+
+      if (device.type == 'dual') {
+        parts.add('colortemp_minimum: ${device.colortempMinimum ?? 154}');
+        parts.add('colortemp_maximum: ${device.colortempMaximum ?? 370}');
+      }
+
+      buffer.write('    { ' + parts.join(', ') + ' }');
       if (i < _devices.length - 1) {
         buffer.writeln(',');
       } else {
