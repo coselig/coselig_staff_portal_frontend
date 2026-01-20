@@ -57,6 +57,9 @@ class _DiscoveryGeneratePageState extends State<DiscoveryGeneratePage> {
     moduleIdController.dispose();
     nameController.dispose();
     tcpController.dispose();
+    brightController.dispose();
+    ctMinController.dispose();
+    ctMaxController.dispose();
     _service.removeListener(_update);
     super.dispose();
   }
@@ -72,6 +75,9 @@ class _DiscoveryGeneratePageState extends State<DiscoveryGeneratePage> {
   final TextEditingController moduleIdController = TextEditingController();
   final TextEditingController nameController = TextEditingController();
   final TextEditingController tcpController = TextEditingController();
+  final TextEditingController brightController = TextEditingController();
+  final TextEditingController ctMinController = TextEditingController();
+  final TextEditingController ctMaxController = TextEditingController();
 
   // Configuration management
   String? _selectedConfiguration = '新配置';
@@ -89,6 +95,10 @@ class _DiscoveryGeneratePageState extends State<DiscoveryGeneratePage> {
 
   void addDevice() {
     if (moduleIdController.text.isNotEmpty && nameController.text.isNotEmpty) {
+      final int? bright = int.tryParse(brightController.text);
+      final int? ctMin = int.tryParse(ctMinController.text);
+      final int? ctMax = int.tryParse(ctMaxController.text);
+
       final newDevice = Device(
         brand: selectedBrand,
         model: selectedModel,
@@ -97,6 +107,9 @@ class _DiscoveryGeneratePageState extends State<DiscoveryGeneratePage> {
         channel: selectedChannel,
         name: nameController.text,
         tcp: tcpController.text,
+        brightMinimum: bright,
+        colortempMinimum: ctMin,
+        colortempMaximum: ctMax,
       );
 
       // 檢查是否可以添加裝置
@@ -117,6 +130,9 @@ class _DiscoveryGeneratePageState extends State<DiscoveryGeneratePage> {
       moduleIdController.clear();
       nameController.clear();
       tcpController.clear();
+      brightController.clear();
+      ctMinController.clear();
+      ctMaxController.clear();
 
       // 自動儲存配置
       _autoSaveConfiguration();
@@ -133,6 +149,15 @@ class _DiscoveryGeneratePageState extends State<DiscoveryGeneratePage> {
     // 創建臨時控制器
     final nameController = TextEditingController(text: device.name);
     final tcpController = TextEditingController(text: device.tcp);
+    final brightController = TextEditingController(
+      text: device.brightMinimum?.toString() ?? '',
+    );
+    final ctMinController = TextEditingController(
+      text: device.colortempMinimum?.toString() ?? '',
+    );
+    final ctMaxController = TextEditingController(
+      text: device.colortempMaximum?.toString() ?? '',
+    );
 
     showDialog(
       context: context,
@@ -150,6 +175,32 @@ class _DiscoveryGeneratePageState extends State<DiscoveryGeneratePage> {
                 controller: tcpController,
                 decoration: const InputDecoration(labelText: 'TCP'),
               ),
+              const SizedBox(height: 8),
+              TextField(
+                controller: brightController,
+                decoration: const InputDecoration(
+                  labelText: '最低亮度 (bright_minimum)',
+                ),
+                keyboardType: TextInputType.number,
+              ),
+              if (device.type == 'dual') ...[
+                const SizedBox(height: 8),
+                TextField(
+                  controller: ctMinController,
+                  decoration: const InputDecoration(
+                    labelText: '最低色溫 (colortemp_minimum)',
+                  ),
+                  keyboardType: TextInputType.number,
+                ),
+                const SizedBox(height: 8),
+                TextField(
+                  controller: ctMaxController,
+                  decoration: const InputDecoration(
+                    labelText: '最高色溫 (colortemp_maximum)',
+                  ),
+                  keyboardType: TextInputType.number,
+                ),
+              ],
             ],
           ),
           actions: [
@@ -168,6 +219,13 @@ class _DiscoveryGeneratePageState extends State<DiscoveryGeneratePage> {
                   channel: device.channel,
                   name: nameController.text,
                   tcp: tcpController.text,
+                  brightMinimum: int.tryParse(brightController.text),
+                  colortempMinimum: device.type == 'dual'
+                      ? int.tryParse(ctMinController.text)
+                      : null,
+                  colortempMaximum: device.type == 'dual'
+                      ? int.tryParse(ctMaxController.text)
+                      : null,
                 );
                 _service.updateDevice(updatedDevice);
                 Navigator.of(context).pop();
@@ -864,6 +922,47 @@ class _DiscoveryGeneratePageState extends State<DiscoveryGeneratePage> {
                   ),
                 ),
               ),
+              const SizedBox(width: 8),
+              SizedBox(
+                width: 120,
+                child: TextField(
+                  controller: brightController,
+                  decoration: const InputDecoration(
+                    labelText: '最低亮度',
+                    border: OutlineInputBorder(),
+                    isDense: true,
+                  ),
+                  keyboardType: TextInputType.number,
+                ),
+              ),
+              if (selectedType == 'dual') ...[
+                const SizedBox(width: 8),
+                SizedBox(
+                  width: 120,
+                  child: TextField(
+                    controller: ctMinController,
+                    decoration: const InputDecoration(
+                      labelText: '色溫最小',
+                      border: OutlineInputBorder(),
+                      isDense: true,
+                    ),
+                    keyboardType: TextInputType.number,
+                  ),
+                ),
+                const SizedBox(width: 8),
+                SizedBox(
+                  width: 120,
+                  child: TextField(
+                    controller: ctMaxController,
+                    decoration: const InputDecoration(
+                      labelText: '色溫最大',
+                      border: OutlineInputBorder(),
+                      isDense: true,
+                    ),
+                    keyboardType: TextInputType.number,
+                  ),
+                ),
+              ],
               const SizedBox(width: 8),
               ElevatedButton.icon(
                 onPressed: addDevice,
