@@ -42,7 +42,12 @@ void main() async {
       providers: [
         ChangeNotifierProvider(create: (_) => AuthService()),
         ChangeNotifierProvider(create: (_) => AttendanceService()),
-        ChangeNotifierProvider(create: (_) => ThemeProvider()),
+        ChangeNotifierProxyProvider<AuthService, ThemeProvider>(
+          create: (context) =>
+              ThemeProvider(Provider.of<AuthService>(context, listen: false)),
+          update: (context, authService, previous) =>
+              ThemeProvider(authService),
+        ),
       ],
       child: const MainApp(),
     ),

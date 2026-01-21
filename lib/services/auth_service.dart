@@ -15,6 +15,7 @@ class AuthService extends ChangeNotifier {
   String? email;
   String? role;
   String? userId;
+  String? themeMode; // 新增主題模式欄位
   bool isLoading = false;
   String message = '';
 
@@ -69,6 +70,7 @@ class AuthService extends ChangeNotifier {
         email = data['user']['email'];
         role = data['user']['role'];
         userId = data['user']['id']?.toString();
+        themeMode = data['user']['theme_mode']; // 新增主題模式
         message = '自動登入成功';
       } else {
         _clearUser();
@@ -189,6 +191,30 @@ class AuthService extends ChangeNotifier {
   }
 
   /* =========
+   * 更新主題模式
+   * ========= */
+  Future<bool> updateThemeMode(String mode) async {
+    try {
+      final res = await _client.put(
+        Uri.parse('$baseUrl/api/users/theme-mode'),
+        headers: {'Content-Type': 'application/json'},
+        body: jsonEncode({'theme_mode': mode}),
+      );
+
+      if (res.statusCode == 200) {
+        themeMode = mode;
+        notifyListeners();
+        return true;
+      } else {
+        return false;
+      }
+    } catch (e) {
+      print('更新主題模式失敗: $e');
+      return false;
+    }
+  }
+
+  /* =========
    * 工具
    * ========= */
   void _clearUser() {
@@ -197,6 +223,7 @@ class AuthService extends ChangeNotifier {
     email = null;
     role = null;
     userId = null;
+    themeMode = null; // 新增清除主題模式
   }
 
   @override
