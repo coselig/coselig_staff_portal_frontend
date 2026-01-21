@@ -94,7 +94,10 @@ class _DiscoveryGeneratePageState extends State<DiscoveryGeneratePage> {
   }
 
   void addDevice() {
-    if (moduleIdController.text.isNotEmpty && nameController.text.isNotEmpty) {
+    if (moduleIdController.text.isNotEmpty) {
+      final String deviceName = nameController.text.isNotEmpty
+          ? nameController.text
+          : "${selectedModel} ${moduleIdController.text} - ${selectedChannel}";
       final int? bright = int.tryParse(brightController.text);
       final int? ctMin = int.tryParse(ctMinController.text);
       final int? ctMax = int.tryParse(ctMaxController.text);
@@ -105,8 +108,8 @@ class _DiscoveryGeneratePageState extends State<DiscoveryGeneratePage> {
         type: selectedType,
         moduleId: moduleIdController.text,
         channel: selectedChannel,
-        name: nameController.text,
-        tcp: tcpController.text,
+        name: deviceName,
+        tcp: tcpController.text.isNotEmpty ? tcpController.text : "1",
         brightMinimum: bright,
         colortempMinimum: ctMin,
         colortempMaximum: ctMax,
@@ -217,8 +220,10 @@ class _DiscoveryGeneratePageState extends State<DiscoveryGeneratePage> {
                   type: device.type,
                   moduleId: device.moduleId,
                   channel: device.channel,
-                  name: nameController.text,
-                  tcp: tcpController.text,
+                  name: nameController.text.isNotEmpty
+                      ? nameController.text
+                      : "${device.model} ${device.moduleId} - ${device.channel}",
+                  tcp: tcpController.text.isNotEmpty ? tcpController.text : "1",
                   brightMinimum: int.tryParse(brightController.text),
                   colortempMinimum: device.type == 'dual'
                       ? int.tryParse(ctMinController.text)

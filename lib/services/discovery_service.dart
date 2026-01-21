@@ -70,7 +70,7 @@ class Device {
   });
 
   factory Device.fromJson(Map<String, dynamic> json) {
-    int? _parseInt(dynamic v) {
+    int? parseInt(dynamic v) {
       if (v == null) return null;
       if (v is int) return v;
       if (v is String) return int.tryParse(v);
@@ -78,9 +78,9 @@ class Device {
     }
 
     final type = json['type'] as String? ?? '';
-    final parsedBright = _parseInt(json['bright_minimum']) ?? 2;
-    final parsedCtMin = _parseInt(json['colortemp_minimum']);
-    final parsedCtMax = _parseInt(json['colortemp_maximum']);
+    final parsedBright = parseInt(json['bright_minimum']) ?? 2;
+    final parsedCtMin = parseInt(json['colortemp_minimum']);
+    final parsedCtMax = parseInt(json['colortemp_maximum']);
 
     return Device(
       id: json['id']?.toString(),
