@@ -410,7 +410,7 @@ class DiscoveryService extends ChangeNotifier {
         parts.add('colortemp_maximum: ${device.colortempMaximum ?? 370}');
       }
 
-      buffer.write('    { ' + parts.join(', ') + ' }');
+      buffer.write('    { ${parts.join(', ')} }');
       if (i < _devices.length - 1) {
         buffer.writeln(',');
       } else {

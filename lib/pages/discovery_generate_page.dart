@@ -97,7 +97,7 @@ class _DiscoveryGeneratePageState extends State<DiscoveryGeneratePage> {
     if (moduleIdController.text.isNotEmpty) {
       final String deviceName = nameController.text.isNotEmpty
           ? nameController.text
-          : "${selectedModel} ${moduleIdController.text} - ${selectedChannel}";
+          : "$selectedModel ${moduleIdController.text} - $selectedChannel";
       final int? bright = int.tryParse(brightController.text);
       final int? ctMin = int.tryParse(ctMinController.text);
       final int? ctMax = int.tryParse(ctMaxController.text);
