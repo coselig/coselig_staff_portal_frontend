@@ -195,16 +195,29 @@ class DiscoveryService extends ChangeNotifier {
     },
     'guo': {
       'p805': {
-        'types': ['dual', 'single'],
+        'types': ['dual', 'single', 'rgbw'],
         'channels': {
           'dual': ['a', 'b', 'c', 'd'],
           'single': ['1', '2', '3', '4', '5', '6', '7', '8'],
+          'rgbw': ['x', 'y'],
         },
         'channel_map': {
           'a': ['1', '2'],
           'b': ['3', '4'],
           'c': ['5', '6'],
           'd': ['7', '8'],
+          'x': ['1', '2', '3', '4'],
+          'y': ['5', '6', '7', '8'],
+        },
+      },
+      'p305': {
+        'types': ['dual', 'single'],
+        'channels': {
+          'dual': ['a'],
+          'single': ['1', '2', '3'],
+        },
+        'channel_map': {
+          'a': ['1', '2'],
         },
       },
     },
