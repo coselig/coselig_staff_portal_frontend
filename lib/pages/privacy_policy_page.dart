@@ -84,6 +84,26 @@ class PrivacyPolicyPage extends StatelessWidget {
 
             const SizedBox(height: 24),
 
+            // 應用程式用途
+            const Text(
+              '應用程式用途',
+              style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+            ),
+            const SizedBox(height: 16),
+            const Text('光悅員工系統是一款專為光悅科技員工設計的內部管理平台。應用程式的主要用途包括：'),
+            const SizedBox(height: 8),
+            const Text('• 員工考勤記錄和管理'),
+            const Text('• 員工個人資料管理'),
+            const Text('• 公司公告和通知系統'),
+            const Text('• 員工發現和建議功能'),
+            const Text('• 管理員功能（員工列表管理、BLE 設備管理等）'),
+            const SizedBox(height: 8),
+            const Text(
+              '本應用程式僅限 @coselig.com 域名下的 Google 帳號使用，旨在提高公司內部管理效率和員工工作體驗。',
+            ),
+
+            const SizedBox(height: 24),
+
             // 收集和使用您的個人數據
             const Text(
               '收集和使用您的個人數據',

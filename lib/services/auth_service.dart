@@ -1,8 +1,10 @@
 import 'dart:convert';
+import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:http/browser_client.dart';
 import 'package:google_sign_in/google_sign_in.dart';
+import 'package:extension_google_sign_in_as_googleapis_auth/extension_google_sign_in_as_googleapis_auth.dart';
 
 class AuthService extends ChangeNotifier {
   /// ⚠️ Flutter Web 必須用 BrowserClient 才能送 / 收 Cookie
@@ -12,8 +14,7 @@ class AuthService extends ChangeNotifier {
       'https://employeeservice.coseligtest.workers.dev';
 
   final GoogleSignIn _googleSignIn = GoogleSignIn(
-    clientId:
-        '120974904090-7i1lmj710vvvfjaf71du6tdb4sun8i8q.apps.googleusercontent.com',
+    scopes: ['email', 'profile'],
   );
 
   String? name;
@@ -65,7 +66,8 @@ class AuthService extends ChangeNotifier {
       final res = await _client.get(
         Uri.parse('$baseUrl/api/me'),
         headers: {'Content-Type': 'application/json'},
-      );
+          )
+          .timeout(const Duration(seconds: 5));
 
       final data = jsonDecode(res.body);
 
@@ -84,7 +86,11 @@ class AuthService extends ChangeNotifier {
       }
     } catch (e) {
       _clearUser();
-      message = '自動登入失敗: $e';
+      if (e is TimeoutException) {
+        message = '網路連線超時，請檢查網路';
+      } else {
+        message = '自動登入失敗: $e';
+      }
     }
 
     isLoading = false;
@@ -111,7 +117,8 @@ class AuthService extends ChangeNotifier {
         Uri.parse('$baseUrl/api/login'),
         headers: {'Content-Type': 'application/json'},
         body: jsonEncode(loginBody),
-      );
+          )
+          .timeout(const Duration(seconds: 10));
 
       final data = jsonDecode(res.body);
 
@@ -129,7 +136,11 @@ class AuthService extends ChangeNotifier {
         message = data['error'] ?? '登入失敗';
       }
     } catch (e) {
-      message = '請求失敗: $e';
+      if (e is TimeoutException) {
+        message = '網路連線超時，請檢查網路';
+      } else {
+        message = '請求失敗: $e';
+      }
     }
 
     isLoading = false;
@@ -155,7 +166,8 @@ class AuthService extends ChangeNotifier {
           'password': password,
           'role': 'employee',
         }),
-      );
+          )
+          .timeout(const Duration(seconds: 10));
 
       final data = jsonDecode(res.body);
 
@@ -168,7 +180,11 @@ class AuthService extends ChangeNotifier {
         message = data['error'] ?? '註冊失敗';
       }
     } catch (e) {
-      message = '請求失敗: $e';
+      if (e is TimeoutException) {
+        message = '網路連線超時，請檢查網路';
+      } else {
+        message = '請求失敗: $e';
+      }
     }
 
     isLoading = false;
@@ -213,6 +229,15 @@ class AuthService extends ChangeNotifier {
         return false;
       }
 
+      // 使用 extension 獲取 authenticated client
+      final authClient = await _googleSignIn.authenticatedClient();
+      if (authClient == null) {
+        message = '獲取 Google 認證失敗';
+        isLoading = false;
+        notifyListeners();
+        return false;
+      }
+
       final GoogleSignInAuthentication googleAuth =
           await googleUser.authentication;
       final String? idToken = googleAuth.idToken;
@@ -229,7 +254,8 @@ class AuthService extends ChangeNotifier {
         Uri.parse('$baseUrl/api/google-login'),
         headers: {'Content-Type': 'application/json'},
         body: jsonEncode({'id_token': idToken}),
-      );
+          )
+          .timeout(const Duration(seconds: 10));
 
       final data = jsonDecode(res.body);
 
@@ -249,7 +275,12 @@ class AuthService extends ChangeNotifier {
         message = data['error'] ?? 'Google 登入失敗';
       }
     } catch (e) {
-      message = 'Google 登入請求失敗: $e';
+      if (e is TimeoutException) {
+        message = '網路連線超時，請檢查網路';
+      } else {
+        message = 'Google 登入請求失敗: $e';
+      }
+      _clearUser();
     }
 
     isLoading = false;
@@ -266,7 +297,8 @@ class AuthService extends ChangeNotifier {
         Uri.parse('$baseUrl/api/users/theme-mode'),
         headers: {'Content-Type': 'application/json'},
         body: jsonEncode({'theme_mode': mode}),
-      );
+          )
+          .timeout(const Duration(seconds: 10));
 
       if (res.statusCode == 200) {
         themeMode = mode;
@@ -276,7 +308,11 @@ class AuthService extends ChangeNotifier {
         return false;
       }
     } catch (e) {
-      print('更新主題模式失敗: $e');
+      if (e is TimeoutException) {
+        print('更新主題模式超時: $e');
+      } else {
+        print('更新主題模式失敗: $e');
+      }
       return false;
     }
   }
