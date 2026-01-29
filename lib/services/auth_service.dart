@@ -2,6 +2,7 @@ import 'dart:convert';
 
 import 'package:flutter/material.dart';
 import 'package:http/browser_client.dart';
+import 'package:google_sign_in/google_sign_in.dart';
 
 class AuthService extends ChangeNotifier {
   /// ⚠️ Flutter Web 必須用 BrowserClient 才能送 / 收 Cookie
@@ -9,6 +10,11 @@ class AuthService extends ChangeNotifier {
 
   static const String baseUrl =
       'https://employeeservice.coseligtest.workers.dev';
+
+  final GoogleSignIn _googleSignIn = GoogleSignIn(
+    clientId:
+        '120974904090-7i1lmj710vvvfjaf71du6tdb4sun8i8q.apps.googleusercontent.com',
+  );
 
   String? name;
   String? chineseName;
@@ -188,6 +194,67 @@ class AuthService extends ChangeNotifier {
     message = '已登出';
     isLoading = false;
     notifyListeners();
+  }
+
+  /* =========
+   * Google 登入
+   * ========= */
+  Future<bool> googleLogin() async {
+    isLoading = true;
+    message = '正在登入 Google...';
+    notifyListeners();
+
+    try {
+      final GoogleSignInAccount? googleUser = await _googleSignIn.signIn();
+      if (googleUser == null) {
+        message = 'Google 登入取消';
+        isLoading = false;
+        notifyListeners();
+        return false;
+      }
+
+      final GoogleSignInAuthentication googleAuth =
+          await googleUser.authentication;
+      final String? idToken = googleAuth.idToken;
+
+      if (idToken == null) {
+        message = '獲取 Google ID Token 失敗';
+        isLoading = false;
+        notifyListeners();
+        return false;
+      }
+
+      // 發送 ID Token 到後端驗證
+      final res = await _client.post(
+        Uri.parse('$baseUrl/api/google-login'),
+        headers: {'Content-Type': 'application/json'},
+        body: jsonEncode({'id_token': idToken}),
+      );
+
+      final data = jsonDecode(res.body);
+
+      if (res.statusCode == 200 && data['user'] != null) {
+        name = data['user']['name'];
+        chineseName = data['user']['chinese_name'];
+        email = data['user']['email'];
+        role = data['user']['role'];
+        userId = data['user']['id']?.toString();
+        themeMode = data['user']['theme_mode'];
+        message = 'Google 登入成功';
+        isLoading = false;
+        notifyListeners();
+        return true;
+      } else {
+        _clearUser();
+        message = data['error'] ?? 'Google 登入失敗';
+      }
+    } catch (e) {
+      message = 'Google 登入請求失敗: $e';
+    }
+
+    isLoading = false;
+    notifyListeners();
+    return false;
   }
 
   /* =========

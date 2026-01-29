@@ -75,9 +75,54 @@ class _LoginFrameState extends State<LoginFrame> {
                 child: const Text('登入'),
               ),
           ),
-          // SizedBox(height: 8),
-          // Expanded(
-          //   child: SingleChildScrollView(
+            SizedBox(height: 16),
+            SizedBox(
+              width: double.infinity,
+              height: 56,
+              child: OutlinedButton.icon(
+                onPressed: () async {
+                  final success = await authService.googleLogin();
+                  if (success) {
+                    if (mounted) {
+                      navigatorKey.currentState!.pushReplacementNamed('/home');
+                    }
+                  }
+                  setState(() {});
+                },
+                icon: Icon(Icons.login),
+                label: Text('使用 Google 登入'),
+                style: OutlinedButton.styleFrom(
+                  padding: const EdgeInsets.symmetric(
+                    vertical: 16,
+                    horizontal: 32,
+                  ),
+                  textStyle: const TextStyle(
+                    fontSize: 18,
+                    fontWeight: FontWeight.bold,
+                  ),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  side: BorderSide(color: Colors.blue),
+                ),
+              ),
+            ),
+            SizedBox(height: 16),
+            Center(
+              child: TextButton(
+                onPressed: () {
+                  navigatorKey.currentState!.pushNamed('/privacy');
+                },
+                child: const Text(
+                  '隱私權政策',
+                  style: TextStyle(
+                    color: Colors.blue,
+                    decoration: TextDecoration.underline,
+                  ),
+                ),
+              ),
+            ),
+            // SizedBox(height: 8),
           //     child: Text(
           //       authService.message,
           //       style: const TextStyle(fontFamily: 'Courier', fontSize: 14),
