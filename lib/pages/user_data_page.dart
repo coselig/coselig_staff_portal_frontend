@@ -1,7 +1,7 @@
 import 'package:universal_html/html.dart' as html;
 import 'package:flutter/material.dart';
 import 'package:coselig_staff_portal/services/user_data_service.dart';
-import 'package:coselig_staff_portal/widgets/theme_toggle_switch.dart';
+import 'package:coselig_staff_portal/widgets/app_drawer.dart';
 
 class UserDataPage extends StatefulWidget {
   const UserDataPage({super.key});
@@ -111,8 +111,8 @@ class _UserDataPageState extends State<UserDataPage> {
     return Scaffold(
       appBar: AppBar(
         title: const Text('我的資料'),
-        actions: const [ThemeToggleSwitch()],
       ),
+      drawer: const AppDrawer(),
       body: _isLoading
           ? const Center(child: CircularProgressIndicator())
           : SingleChildScrollView(

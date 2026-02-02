@@ -4,7 +4,7 @@ import 'package:coselig_staff_portal/services/auth_service.dart';
 import 'package:coselig_staff_portal/widgets/buttons.dart';
 import 'package:coselig_staff_portal/widgets/month_year_picker.dart';
 import 'package:coselig_staff_portal/widgets/attendance_calendar_view.dart';
-import 'package:coselig_staff_portal/widgets/theme_toggle_switch.dart';
+import 'package:coselig_staff_portal/widgets/app_drawer.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:coselig_staff_portal/main.dart';
@@ -103,10 +103,10 @@ class _AdminPageState extends State<AdminPage> {
         ),
         actions: [
           registerGenerateButton(),
-          const ThemeToggleSwitch(),
           logoutButton(context),
         ],
       ),
+      drawer: const AppDrawer(),
       body: Padding(
         padding: const EdgeInsets.all(16.0),
         child: Column(

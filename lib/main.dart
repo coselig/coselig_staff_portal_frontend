@@ -4,7 +4,6 @@ import 'package:coselig_staff_portal/pages/admin_user_preview_page.dart';
 import 'package:coselig_staff_portal/pages/auth_page.dart';
 import 'package:coselig_staff_portal/pages/ble_page.dart';
 import 'package:coselig_staff_portal/pages/discovery_generate_page.dart';
-import 'package:coselig_staff_portal/pages/drive_page.dart';
 import 'package:coselig_staff_portal/pages/privacy_policy_page.dart';
 import 'package:coselig_staff_portal/pages/splash_screen.dart';
 import 'package:coselig_staff_portal/pages/staff_home_page.dart';
@@ -87,7 +86,6 @@ class MainApp extends StatelessWidget {
         '/user_data': (context) => const UserDataPage(),
         '/admin_user_preview': (context) => const AdminUserPreviewPage(),
         '/privacy': (context) => const PrivacyPolicyPage(),
-        '/drive': (context) => const DrivePage(),
       },
     );
   }

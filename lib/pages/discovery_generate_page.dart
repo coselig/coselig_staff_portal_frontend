@@ -1,7 +1,7 @@
 import 'package:universal_html/html.dart' as html;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:coselig_staff_portal/widgets/theme_toggle_switch.dart';
+import 'package:coselig_staff_portal/widgets/app_drawer.dart';
 import 'package:coselig_staff_portal/services/discovery_service.dart';
 
 class DiscoveryGeneratePage extends StatefulWidget {
@@ -309,226 +309,219 @@ class _DiscoveryGeneratePageState extends State<DiscoveryGeneratePage> {
     return Scaffold(
       appBar: AppBar(
         title: const Text('裝置註冊表生成器'),
-        actions: const [ThemeToggleSwitch()],
+        leading: Builder(
+          builder: (context) => IconButton(
+            icon: const Icon(Icons.menu),
+            onPressed: () => Scaffold.of(context).openDrawer(),
+            tooltip: '開啟選單',
+          ),
+        ),
+        actions: [
+          // 配置選擇下拉選單
+          DropdownButton<String>(
+            hint: const Text('選擇配置', style: TextStyle(color: Colors.white)),
+            value: _selectedConfiguration,
+            dropdownColor: Theme.of(context).primaryColor,
+            style: const TextStyle(color: Colors.white),
+            underline: Container(),
+            onChanged: (String? newValue) async {
+              if (newValue != null) {
+                setState(() {
+                  _selectedConfiguration = newValue;
+                });
+                _service.setConfigurationName(newValue);
+                if (newValue == '新配置') {
+                  // 清空設備列表
+                  _service.clearDevices();
+                  if (mounted) {
+                    ScaffoldMessenger.of(
+                      context,
+                    ).showSnackBar(const SnackBar(content: Text('已清空配置')));
+                  }
+                } else {
+                  try {
+                    await _service.loadConfiguration(newValue);
+                    if (mounted) {
+                      ScaffoldMessenger.of(
+                        context,
+                      ).showSnackBar(const SnackBar(content: Text('配置加載成功')));
+                    }
+                  } catch (e) {
+                    if (mounted) {
+                      ScaffoldMessenger.of(
+                        context,
+                      ).showSnackBar(SnackBar(content: Text('加載配置失敗: $e')));
+                    }
+                  }
+                }
+              }
+            },
+            items: [
+              const DropdownMenuItem<String>(value: '新配置', child: Text('新配置')),
+              ..._service.configurations.map<DropdownMenuItem<String>>((
+                config,
+              ) {
+                return DropdownMenuItem<String>(
+                  value: config.name,
+                  child: Text('${config.name} (創建者: ${config.chineseName})'),
+                );
+              }),
+            ],
+          ),
+          // 保存按鈕
+          IconButton(
+            icon: const Icon(Icons.save),
+            tooltip: '保存配置',
+            onPressed: () async {
+              // 如果是新配置，彈出對話框輸入名稱
+              if (_selectedConfiguration == '新配置') {
+                final nameController = TextEditingController();
+                final newName = await showDialog<String>(
+                  context: context,
+                  builder: (context) => AlertDialog(
+                    title: const Text('保存新配置'),
+                    content: TextField(
+                      controller: nameController,
+                      decoration: const InputDecoration(
+                        labelText: '配置名稱',
+                        hintText: '請輸入配置名稱',
+                      ),
+                      autofocus: true,
+                    ),
+                    actions: [
+                      TextButton(
+                        onPressed: () => Navigator.pop(context),
+                        child: const Text('取消'),
+                      ),
+                      TextButton(
+                        onPressed: () {
+                          if (nameController.text.isNotEmpty) {
+                            Navigator.pop(context, nameController.text);
+                          }
+                        },
+                        child: const Text('保存'),
+                      ),
+                    ],
+                  ),
+                );
+
+                if (newName != null && newName.isNotEmpty) {
+                  if (newName == '新配置') {
+                    if (mounted) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(content: Text('無法使用預設配置名稱')),
+                      );
+                    }
+                    return;
+                  }
+
+                  try {
+                    await _service.saveConfiguration(newName);
+                    setState(() {
+                      _selectedConfiguration = newName;
+                    });
+                    _service.setConfigurationName(newName);
+                    await _service.fetchConfigurations();
+                    if (mounted) {
+                      ScaffoldMessenger.of(
+                        context,
+                      ).showSnackBar(const SnackBar(content: Text('配置保存成功')));
+                    }
+                  } catch (e) {
+                    if (mounted) {
+                      ScaffoldMessenger.of(
+                        context,
+                      ).showSnackBar(SnackBar(content: Text('保存配置失敗: $e')));
+                    }
+                  }
+                }
+              } else {
+                // 直接保存到當前選擇的配置
+                try {
+                  await _service.saveConfiguration(_selectedConfiguration!);
+                  await _service.fetchConfigurations();
+                  if (mounted) {
+                    ScaffoldMessenger.of(
+                      context,
+                    ).showSnackBar(const SnackBar(content: Text('配置保存成功')));
+                  }
+                } catch (e) {
+                  if (mounted) {
+                    ScaffoldMessenger.of(
+                      context,
+                    ).showSnackBar(SnackBar(content: Text('保存配置失敗: $e')));
+                  }
+                }
+              }
+            },
+          ),
+          // 刪除按鈕
+          IconButton(
+            icon: const Icon(Icons.delete, color: Colors.red),
+            tooltip: '刪除配置',
+            onPressed: () async {
+              if (_selectedConfiguration == null ||
+                  _selectedConfiguration == '新配置') {
+                if (mounted) {
+                  ScaffoldMessenger.of(
+                    context,
+                  ).showSnackBar(const SnackBar(content: Text('請先選擇要刪除的配置')));
+                }
+                return;
+              }
+
+              // 顯示確認對話框
+              final confirm = await showDialog<bool>(
+                context: context,
+                builder: (context) => AlertDialog(
+                  title: const Text('確認刪除'),
+                  content: Text('確定要刪除配置 "$_selectedConfiguration" 嗎？'),
+                  actions: [
+                    TextButton(
+                      onPressed: () => Navigator.pop(context, false),
+                      child: const Text('取消'),
+                    ),
+                    TextButton(
+                      onPressed: () => Navigator.pop(context, true),
+                      child: const Text(
+                        '刪除',
+                        style: TextStyle(color: Colors.red),
+                      ),
+                    ),
+                  ],
+                ),
+              );
+
+              if (confirm == true) {
+                try {
+                  await _service.deleteConfiguration(_selectedConfiguration!);
+                  setState(() {
+                    _selectedConfiguration = '新配置';
+                  });
+                  _service.clearDevices();
+                  await _service.fetchConfigurations();
+                  if (mounted) {
+                    ScaffoldMessenger.of(
+                      context,
+                    ).showSnackBar(const SnackBar(content: Text('配置刪除成功')));
+                  }
+                } catch (e) {
+                  if (mounted) {
+                    ScaffoldMessenger.of(
+                      context,
+                    ).showSnackBar(SnackBar(content: Text('刪除配置失敗: $e')));
+                  }
+                }
+              }
+            },
+          ),
+        ],
       ),
+      drawer: const AppDrawer(),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(16.0),
         child: Column(
           children: [
-            const SizedBox(height: 16),
-            // Configuration Management
-            Row(
-              children: [
-                ElevatedButton(
-                  onPressed: () async {
-                    // 如果是新配置，彈出對話框輸入名稱
-                    if (_selectedConfiguration == '新配置') {
-                      final nameController = TextEditingController();
-                      final newName = await showDialog<String>(
-                        context: context,
-                        builder: (context) => AlertDialog(
-                          title: const Text('保存新配置'),
-                          content: TextField(
-                            controller: nameController,
-                            decoration: const InputDecoration(
-                              labelText: '配置名稱',
-                              hintText: '請輸入配置名稱',
-                            ),
-                            autofocus: true,
-                          ),
-                          actions: [
-                            TextButton(
-                              onPressed: () => Navigator.pop(context),
-                              child: const Text('取消'),
-                            ),
-                            TextButton(
-                              onPressed: () {
-                                if (nameController.text.isNotEmpty) {
-                                  Navigator.pop(context, nameController.text);
-                                }
-                              },
-                              child: const Text('保存'),
-                            ),
-                          ],
-                        ),
-                      );
-
-                      if (newName != null && newName.isNotEmpty) {
-                        if (newName == '新配置') {
-                          if (mounted) {
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              const SnackBar(content: Text('無法使用預設配置名稱')),
-                            );
-                          }
-                          return;
-                        }
-                        
-                        try {
-                          await _service.saveConfiguration(newName);
-                          setState(() {
-                            _selectedConfiguration = newName;
-                          });
-                          _service.setConfigurationName(newName);
-                          await _service.fetchConfigurations();
-                          if (mounted) {
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              const SnackBar(content: Text('配置保存成功')),
-                            );
-                          }
-                        } catch (e) {
-                          if (mounted) {
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              SnackBar(content: Text('保存配置失敗: $e')),
-                            );
-                          }
-                        }
-                      }
-                    } else {
-                      // 直接保存到當前選擇的配置
-                      try {
-                        await _service.saveConfiguration(
-                          _selectedConfiguration!,
-                        );
-                        await _service.fetchConfigurations();
-                        if (mounted) {
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            const SnackBar(content: Text('配置保存成功')),
-                          );
-                        }
-                      } catch (e) {
-                        if (mounted) {
-                          ScaffoldMessenger.of(
-                            context,
-                          ).showSnackBar(SnackBar(content: Text('保存配置失敗: $e')));
-                        }
-                      }
-                    }
-                  },
-                  child: const Text('保存配置'),
-                ),
-                const SizedBox(width: 8),
-                Expanded(
-                  flex: 2,
-                  child: DropdownButton<String>(
-                    hint: const Text('選擇配置'),
-                    value: _selectedConfiguration,
-                    onChanged: (String? newValue) async {
-                      if (newValue != null) {
-                        setState(() {
-                          _selectedConfiguration = newValue;
-                        });
-                        _service.setConfigurationName(newValue);
-                        if (newValue == '新配置') {
-                          // 清空設備列表
-                          _service.clearDevices();
-                          if (mounted) {
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              const SnackBar(content: Text('已清空配置')),
-                            );
-                          }
-                        } else {
-                          try {
-                            await _service.loadConfiguration(newValue);
-                            if (mounted) {
-                              ScaffoldMessenger.of(context).showSnackBar(
-                                const SnackBar(content: Text('配置加載成功')),
-                              );
-                            }
-                          } catch (e) {
-                            if (mounted) {
-                              ScaffoldMessenger.of(context).showSnackBar(
-                                SnackBar(content: Text('加載配置失敗: $e')),
-                              );
-                            }
-                          }
-                        }
-                      }
-                    },
-                    items: [
-                      const DropdownMenuItem<String>(
-                        value: '新配置',
-                        child: Text('新配置'),
-                      ),
-                      ..._service.configurations.map<DropdownMenuItem<String>>((
-                        config,
-                      ) {
-                        return DropdownMenuItem<String>(
-                          value: config.name,
-                          child: Text(
-                            '${config.name} (創建者: ${config.chineseName})',
-                          ),
-                        );
-                      }),
-                    ],
-                  ),
-                ),
-                const SizedBox(width: 8),
-                ElevatedButton(
-                  onPressed: () async {
-                    if (_selectedConfiguration == null ||
-                        _selectedConfiguration == '新配置') {
-                      if (mounted) {
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(content: Text('請先選擇要刪除的配置')),
-                        );
-                      }
-                      return;
-                    }
-                    
-                    // 顯示確認對話框
-                    final confirm = await showDialog<bool>(
-                      context: context,
-                      builder: (context) => AlertDialog(
-                        title: const Text('確認刪除'),
-                        content: Text('確定要刪除配置 "$_selectedConfiguration" 嗎？'),
-                        actions: [
-                          TextButton(
-                            onPressed: () => Navigator.pop(context, false),
-                            child: const Text('取消'),
-                          ),
-                          TextButton(
-                            onPressed: () => Navigator.pop(context, true),
-                            child: const Text(
-                              '刪除',
-                              style: TextStyle(color: Colors.red),
-                            ),
-                          ),
-                        ],
-                      ),
-                    );
-
-                    if (confirm == true) {
-                      try {
-                        await _service.deleteConfiguration(
-                          _selectedConfiguration!,
-                        );
-                        setState(() {
-                          _selectedConfiguration = '新配置';
-                        });
-                        _service.clearDevices();
-                        await _service.fetchConfigurations();
-                        if (mounted) {
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            const SnackBar(content: Text('配置刪除成功')),
-                          );
-                        }
-                      } catch (e) {
-                        if (mounted) {
-                          ScaffoldMessenger.of(
-                            context,
-                          ).showSnackBar(SnackBar(content: Text('刪除配置失敗: $e')));
-                        }
-                      }
-                    }
-                  },
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.red,
-                    foregroundColor: Colors.white,
-                  ),
-                  child: const Text('刪除配置'),
-                ),
-              ],
-            ),
             const SizedBox(height: 16),
             // Device List with Drag and Drop
             _buildDeviceListWithDragDrop(),

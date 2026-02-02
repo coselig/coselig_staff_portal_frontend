@@ -2,8 +2,7 @@ import 'package:universal_html/html.dart' as html;
 import 'package:coselig_staff_portal/constants/app_constants.dart';
 import 'package:coselig_staff_portal/utils/time_utils.dart';
 import 'package:coselig_staff_portal/services/attendance_service.dart';
-import 'package:coselig_staff_portal/widgets/buttons.dart';
-import 'package:coselig_staff_portal/widgets/theme_toggle_switch.dart';
+import 'package:coselig_staff_portal/widgets/app_drawer.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:coselig_staff_portal/services/auth_service.dart';
@@ -323,6 +322,13 @@ class _StaffHomePageState extends State<StaffHomePage> {
 
     return Scaffold(
       appBar: AppBar(
+        leading: Builder(
+          builder: (context) => IconButton(
+            icon: const Icon(Icons.menu),
+            onPressed: () => Scaffold.of(context).openDrawer(),
+            tooltip: '開啟選單',
+          ),
+        ),
         title: Row(
           children: [
             const Text('員工系統'),
@@ -361,59 +367,9 @@ class _StaffHomePageState extends State<StaffHomePage> {
               }
             },
           ),
-          ThemeToggleSwitch(),
-          logoutButton(context),
         ],
       ),
-      drawer: Drawer(
-        child: ListView(
-          children: [
-            DrawerHeader(child: Text('光悅員工系統', style: TextStyle(fontSize: 20))),
-            if (authService.isAdmin) ...[
-              ListTile(
-                leading: Icon(Icons.admin_panel_settings),
-                title: Text('管理員系統'),
-                onTap: () {
-                  navigatorKey.currentState!.pushNamed('/admin');
-                },
-              ),
-              ListTile(
-                leading: Icon(Icons.people),
-                title: Text('用戶資料預覽'),
-                onTap: () {
-                  navigatorKey.currentState!.pushNamed('/admin_user_preview');
-                },
-              ),
-            ],
-            const Divider(),
-            ListTile(
-              leading: Icon(Icons.cloud),
-              title: Text('雲端硬碟'),
-              onTap: () {
-                navigatorKey.currentState!.pushNamed('/drive');
-              },
-            ),
-            ListTile(
-              leading: Icon(Icons.build),
-              title: Text('裝置註冊表生成器'),
-              onTap: () {
-                navigatorKey.currentState!.pushNamed('/discovery_generate');
-              },
-            ),
-            ListTile(
-              leading: Icon(Icons.person),
-              title: Text('我的資料'),
-              onTap: () {
-                navigatorKey.currentState!.pushNamed('/user_data');
-              },
-            ),
-            ListTile(
-              leading: logoutButton(context),
-              title: Text('登出'),
-            ),
-          ],
-        ),
-      ),
+      drawer: const AppDrawer(),
       body: ListView(
         padding: const EdgeInsets.all(16.0),
         children: [

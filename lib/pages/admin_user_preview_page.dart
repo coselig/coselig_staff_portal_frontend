@@ -1,7 +1,7 @@
 import 'package:universal_html/html.dart' as html;
 import 'package:flutter/material.dart';
 import 'package:coselig_staff_portal/services/user_data_service.dart';
-import 'package:coselig_staff_portal/widgets/theme_toggle_switch.dart';
+import 'package:coselig_staff_portal/widgets/app_drawer.dart';
 
 class AdminUserPreviewPage extends StatefulWidget {
   const AdminUserPreviewPage({super.key});
@@ -99,8 +99,8 @@ class _AdminUserPreviewPageState extends State<AdminUserPreviewPage> {
     return Scaffold(
       appBar: AppBar(
         title: const Text('用戶資料預覽（管理員）'),
-        actions: const [ThemeToggleSwitch()],
       ),
+      drawer: const AppDrawer(),
       body: _isLoading && _allUsers.isEmpty
           ? const Center(child: CircularProgressIndicator())
           : SingleChildScrollView(
