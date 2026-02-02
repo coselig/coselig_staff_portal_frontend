@@ -1,17 +1,14 @@
 import 'package:universal_html/html.dart' as html;
 import 'package:coselig_staff_portal/constants/app_constants.dart';
-import 'package:coselig_staff_portal/utils/time_utils.dart';
 import 'package:coselig_staff_portal/services/attendance_service.dart';
 import 'package:coselig_staff_portal/widgets/app_drawer.dart';
 import 'package:coselig_staff_portal/widgets/working_staff_card.dart';
+import 'package:coselig_staff_portal/widgets/attendance_viewer.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:coselig_staff_portal/services/auth_service.dart';
-import 'package:coselig_staff_portal/widgets/month_year_picker.dart';
-import 'package:coselig_staff_portal/widgets/attendance_calendar_view.dart';
 import 'package:coselig_staff_portal/widgets/attendance_punch_card.dart';
 import 'package:coselig_staff_portal/main.dart';
-import 'package:coselig_staff_portal/services/attendance_excel_export_service.dart';
 
 class StaffHomePage extends StatefulWidget {
   const StaffHomePage({super.key});
@@ -22,8 +19,6 @@ class StaffHomePage extends StatefulWidget {
 
 class _StaffHomePageState extends State<StaffHomePage> {
   bool _requested = false;
-  DateTime _selectedMonth = DateTime.now();
-  final ExcelExportService _excelExportService = ExcelExportService();
 
   int periodCount = 1; // 動態時段數量
   List<String> _dynamicPeriods = ['period1']; // 動態時段列表
@@ -87,7 +82,9 @@ class _StaffHomePageState extends State<StaffHomePage> {
     super.initState();
     html.document.title = '員工系統';
     Future.microtask(_initUserAndAttendance);
-    Future.microtask(() => context.read<AttendanceService>().fetchAndCacheWorkingStaff());
+    Future.microtask(
+      () => context.read<AttendanceService>().fetchAndCacheWorkingStaff(),
+    );
   }
 
   Future<void> _initUserAndAttendance() async {
@@ -99,10 +96,10 @@ class _StaffHomePageState extends State<StaffHomePage> {
     if (authService.userId != null) {
       await attendance.getTodayAttendance(authService.userId!);
       _updatePeriodCount();
-      await attendance.fetchAndCacheMonthAttendance(
-        authService.userId!,
-        _selectedMonth,
-      );
+      // await attendance.fetchAndCacheMonthAttendance(
+      //   authService.userId!,
+      //   _selectedMonth,
+      // );
     }
   }
 
@@ -179,9 +176,10 @@ class _StaffHomePageState extends State<StaffHomePage> {
           if (authService.userId != null) {
             await attendanceService.getTodayAttendance(authService.userId!);
             _updatePeriodCount();
+            // 刷新當前月份的資料
             await attendanceService.fetchAndCacheMonthAttendance(
               authService.userId!,
-              _selectedMonth,
+              DateTime.now(),
             );
           }
 
@@ -241,7 +239,7 @@ class _StaffHomePageState extends State<StaffHomePage> {
       }
       // 打卡後自動刷新
       await attendance.getTodayAttendance(userId);
-      await attendance.fetchAndCacheMonthAttendance(userId, _selectedMonth);
+      // await attendance.fetchAndCacheMonthAttendance(userId, _selectedMonth);
       scaffoldMessengerKey.currentState!.showSnackBar(
         SnackBar(content: Text('$periodName $actionName打卡成功')),
       );
@@ -283,25 +281,25 @@ class _StaffHomePageState extends State<StaffHomePage> {
             ),
           ],
         ),
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.refresh),
-            tooltip: '手動刷新',
-            onPressed: () async {
-              if (userId != null) {
-                await attendance.getTodayAttendance(userId);
-                _updatePeriodCount();
-                await attendance.fetchAndCacheMonthAttendance(
-                  userId,
-                  _selectedMonth,
-                );
-                scaffoldMessengerKey.currentState!.showSnackBar(
-                  const SnackBar(content: Text('已手動刷新打卡資料')),
-                );
-              }
-            },
-          ),
-        ],
+        // actions: [
+        //   IconButton(
+        //     icon: const Icon(Icons.refresh),
+        //     tooltip: '手動刷新',
+        //     onPressed: () async {
+        //       if (userId != null) {
+        //         await attendance.getTodayAttendance(userId);
+        //         _updatePeriodCount();
+        //         await attendance.fetchAndCacheMonthAttendance(
+        //           userId,
+        //           _selectedMonth,
+        //         );
+        //         scaffoldMessengerKey.currentState!.showSnackBar(
+        //           const SnackBar(content: Text('已手動刷新打卡資料')),
+        //         );
+        //       }
+        //     },
+        //   ),
+        // ],
       ),
       drawer: const AppDrawer(),
       body: ListView(
@@ -337,10 +335,8 @@ class _StaffHomePageState extends State<StaffHomePage> {
                 displayName: displayName,
                 checkInTime: checkInTime,
                 checkOutTime: checkOutTime,
-                onEditName: () => _editPeriodNameForAnyPeriod(
-                  period,
-                  displayName,
-                ),
+                onEditName: () =>
+                    _editPeriodNameForAnyPeriod(period, displayName),
                 onCheckIn: () => _performPunch(
                   userId: userId,
                   period: period,
@@ -417,89 +413,7 @@ class _StaffHomePageState extends State<StaffHomePage> {
             },
           ),
           SizedBox(height: 16),
-          if (attendance.errorMessage != null)
-            Text(
-              attendance.errorMessage!,
-              style: TextStyle(
-                color: Theme.of(context).colorScheme.error,
-                fontSize: 14,
-              ),
-            ),
-          const SizedBox(height: 24),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              ElevatedButton(
-                child: Text('選擇月份'),
-                onPressed: () async {
-                  final result = await showMonthYearPicker(
-                    context: context,
-                    initialYear: _selectedMonth.year,
-                    initialMonth: _selectedMonth.month,
-                  );
-                  if (result != null) {
-                    setState(() {
-                      _selectedMonth = DateTime(result.year, result.month);
-                    });
-                    if (userId != null) {
-                      await attendance.fetchAndCacheMonthAttendance(
-                        userId,
-                        _selectedMonth,
-                      );
-                    }
-                    scaffoldMessengerKey.currentState!.showSnackBar(
-                      SnackBar(
-                        content: Text('選擇的日期:${result.year}/${result.month}'),
-                      ),
-                    );
-                  }
-                },
-              ),
-              const SizedBox(width: 16),
-              ElevatedButton(
-                child: Text('匯出Excel'),
-                onPressed: () async {
-                  final authService = context.read<AuthService>();
-                  final employeeName = authService.name ?? '員工';
-                  final employeeId = authService.userId ?? '';
-
-                  try {
-                    await _excelExportService.exportAttendanceRecords(
-                      employeeName: employeeName,
-                      employeeId: employeeId,
-                      monthRecords: attendance.currentMonthRecords,
-                      month: _selectedMonth,
-                    );
-                    scaffoldMessengerKey.currentState!.showSnackBar(
-                      const SnackBar(content: Text('Excel檔案匯出成功')),
-                    );
-                  } catch (e) {
-                    scaffoldMessengerKey.currentState!.showSnackBar(
-                      SnackBar(content: Text('匯出失敗: $e')),
-                    );
-                  }
-                },
-              ),
-            ],
-          ),
-
-          const SizedBox(height: 24),
-          Align(
-            alignment: Alignment.center,
-            child: ConstrainedBox(
-              constraints: BoxConstraints(maxWidth: 680),
-              child: AttendanceCalendarView(
-                month: _selectedMonth,
-                recordsMap: attendance.currentMonthRecords,
-                leaveDaysMap: {},
-                todayDay:
-                    (_selectedMonth.year == DateTime.now().year &&
-                        _selectedMonth.month == DateTime.now().month)
-                    ? DateTime.now().day
-                    : null,
-              ),
-            ),
-          ),
+          const AttendanceViewer(),
         ],
       ),
     );

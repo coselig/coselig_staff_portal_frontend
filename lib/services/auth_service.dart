@@ -3,8 +3,6 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:http/browser_client.dart';
-import 'dart:html' as html;
-import 'dart:js' as js;
 
 class AuthService extends ChangeNotifier {
   /// ⚠️ Flutter Web 必須用 BrowserClient 才能送 / 收 Cookie
