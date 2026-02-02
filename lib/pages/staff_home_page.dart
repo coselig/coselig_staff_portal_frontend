@@ -3,6 +3,7 @@ import 'package:coselig_staff_portal/constants/app_constants.dart';
 import 'package:coselig_staff_portal/utils/time_utils.dart';
 import 'package:coselig_staff_portal/services/attendance_service.dart';
 import 'package:coselig_staff_portal/widgets/app_drawer.dart';
+import 'package:coselig_staff_portal/widgets/working_staff_card.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:coselig_staff_portal/services/auth_service.dart';
@@ -253,73 +254,6 @@ class _StaffHomePageState extends State<StaffHomePage> {
     final attendance = context.watch<AttendanceService>();
     final userId = authService.userId;
 
-    Widget workingStaffBlock = Card(
-      margin: const EdgeInsets.only(bottom: 20),
-      child: Padding(
-        padding: const EdgeInsets.all(16.0),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              children: [
-                Icon(Icons.people, color: Colors.green),
-                SizedBox(width: 8),
-                Text(
-                  '目前正在上班的員工',
-                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-                ),
-                Spacer(),
-                IconButton(
-                  icon: Icon(Icons.refresh),
-                  tooltip: '刷新',
-                  onPressed: attendance.isLoadingWorkingStaff
-                      ? null
-                      : () => attendance.fetchAndCacheWorkingStaff(),
-                ),
-              ],
-            ),
-            attendance.isLoadingWorkingStaff
-                ? Center(
-                    child: Padding(
-                      padding: EdgeInsets.all(12),
-                      child: CircularProgressIndicator(),
-                    ),
-                  )
-                : attendance.workingStaffList.isEmpty
-                ? Padding(
-                    padding: EdgeInsets.all(8),
-                    child: Text(
-                      '目前沒有員工正在上班',
-                      style: TextStyle(
-                        color: Theme.of(
-                          context,
-                        ).colorScheme.onSurface.withAlpha(150),
-                      ),
-                    ),
-                  )
-                : Column(
-                    children: attendance.workingStaffList.map((emp) {
-                      final chineseName = emp['chinese_name'];
-                      final englishName = emp['name'] ?? '';
-                      final displayName =
-                          chineseName != null &&
-                              chineseName.toString().isNotEmpty
-                          ? chineseName.toString()
-                          : englishName;
-                      return ListTile(
-                        leading: Icon(Icons.person, color: Colors.blue),
-                        title: Text(displayName),
-                        subtitle: Text(
-                          '上班時間：${formatTime(emp['check_in_time'])}',
-                        ),
-                      );
-                    }).toList(),
-                  ),
-          ],
-        ),
-      ),
-    );
-
     return Scaffold(
       appBar: AppBar(
         leading: Builder(
@@ -373,7 +307,7 @@ class _StaffHomePageState extends State<StaffHomePage> {
       body: ListView(
         padding: const EdgeInsets.all(16.0),
         children: [
-          workingStaffBlock,
+          const WorkingStaffCard(),
           Text(
             '歡迎，${authService.chineseName ?? authService.name ?? '員工'}！',
             style: const TextStyle(fontSize: 24),
