@@ -20,71 +20,13 @@ class StaffHomePage extends StatefulWidget {
 class _StaffHomePageState extends State<StaffHomePage> {
   bool _requested = false;
 
-  int periodCount = 1; // 動態時段數量
-  List<String> _dynamicPeriods = ['period1']; // 動態時段列表
-  final Map<int, String> _periodNames = {
-    1: '上午班',
-    2: '下午班',
-    3: '晚班',
-  }; // 時段自定義名稱
-
-  void _updatePeriodCount() {
-    final attendance = context.read<AttendanceService>();
-    final today = attendance.todayAttendance;
-    if (today == null) {
-      setState(() => periodCount = 1);
-      return;
-    }
-
-    // 收集所有時段（包含動態時段名稱）
-    final Set<String> allPeriods = {};
-    today.forEach((key, value) {
-      if (key.endsWith('_check_in_time') || key.endsWith('_check_out_time')) {
-        String periodName;
-        if (key.endsWith('_check_in_time')) {
-          periodName = key.substring(0, key.length - '_check_in_time'.length);
-        } else {
-          periodName = key.substring(0, key.length - '_check_out_time'.length);
-        }
-        if (periodName.isNotEmpty) {
-          allPeriods.add(periodName);
-        }
-      }
-    });
-
-    // 更新動態時段列表
-    setState(() {
-      if (allPeriods.isEmpty) {
-        _dynamicPeriods = ['period1']; // 預設至少有一個時段
-        periodCount = 1;
-      } else {
-        _dynamicPeriods = allPeriods.toList()
-          ..sort((a, b) {
-            // 優先顯示 period1, period2 格式的時段
-            final aPeriod = a.startsWith('period');
-            final bPeriod = b.startsWith('period');
-            if (aPeriod && !bPeriod) return -1;
-            if (!aPeriod && bPeriod) return 1;
-            if (aPeriod && bPeriod) {
-              final aNum = int.tryParse(a.substring(6)) ?? 999;
-              final bNum = int.tryParse(b.substring(6)) ?? 999;
-              return aNum.compareTo(bNum);
-            }
-            return a.compareTo(b);
-          });
-        periodCount = _dynamicPeriods.length;
-      }
-    });
-  }
+  // 移除本地時段管理方法，改用 AttendanceService
 
   @override
   void initState() {
     super.initState();
     html.document.title = '員工系統';
     Future.microtask(_initUserAndAttendance);
-    Future.microtask(
-      () => context.read<AttendanceService>().fetchAndCacheWorkingStaff(),
-    );
   }
 
   Future<void> _initUserAndAttendance() async {
@@ -95,7 +37,7 @@ class _StaffHomePageState extends State<StaffHomePage> {
     await authService.tryAutoLogin();
     if (authService.userId != null) {
       await attendance.getTodayAttendance(authService.userId!);
-      _updatePeriodCount();
+      attendance.updateDynamicPeriods();
       // await attendance.fetchAndCacheMonthAttendance(
       //   authService.userId!,
       //   _selectedMonth,
@@ -165,9 +107,7 @@ class _StaffHomePageState extends State<StaffHomePage> {
           if (currentPeriod.startsWith('period')) {
             final num = int.tryParse(currentPeriod.substring(6));
             if (num != null) {
-              setState(() {
-                _periodNames[num] = result;
-              });
+              attendanceService.periodNames[num] = result;
             }
           }
 
@@ -175,7 +115,7 @@ class _StaffHomePageState extends State<StaffHomePage> {
           final authService = context.read<AuthService>();
           if (authService.userId != null) {
             await attendanceService.getTodayAttendance(authService.userId!);
-            _updatePeriodCount();
+            attendanceService.updateDynamicPeriods();
             // 刷新當前月份的資料
             await attendanceService.fetchAndCacheMonthAttendance(
               authService.userId!,
@@ -288,7 +228,7 @@ class _StaffHomePageState extends State<StaffHomePage> {
         //     onPressed: () async {
         //       if (userId != null) {
         //         await attendance.getTodayAttendance(userId);
-        //         _updatePeriodCount();
+        //         attendance.updateDynamicPeriods();
         //         await attendance.fetchAndCacheMonthAttendance(
         //           userId,
         //           _selectedMonth,
@@ -313,14 +253,14 @@ class _StaffHomePageState extends State<StaffHomePage> {
           const SizedBox(height: 20),
           // 動態時段
           Column(
-            children: List.generate(_dynamicPeriods.length, (index) {
-              final period = _dynamicPeriods[index];
+            children: List.generate(attendance.dynamicPeriods.length, (index) {
+              final period = attendance.dynamicPeriods[index];
 
               // 根據時段名稱決定顯示名稱
               String displayName;
               if (period.startsWith('period')) {
                 final num = int.tryParse(period.substring(6));
-                displayName = _periodNames[num] ?? '時段$num';
+                displayName = attendance.periodNames[num] ?? '時段$num';
               } else {
                 displayName = period; // 直接使用自定義名稱
               }
@@ -356,7 +296,8 @@ class _StaffHomePageState extends State<StaffHomePage> {
             icon: Icon(Icons.add),
             label: Text('新增時段'),
             onPressed: () async {
-              final newPeriodIndex = periodCount + 1;
+              final attendance = context.read<AttendanceService>();
+              final newPeriodIndex = attendance.dynamicPeriods.length + 1;
               final TextEditingController controller = TextEditingController(
                 text: '時段$newPeriodIndex',
               );
@@ -400,15 +341,19 @@ class _StaffHomePageState extends State<StaffHomePage> {
               );
 
               if (result != null && result.isNotEmpty) {
-                setState(() {
-                  periodCount++;
-                  _periodNames[newPeriodIndex] = result;
-                  // 將新時段加入動態時段列表
-                  _dynamicPeriods.add('period$newPeriodIndex');
-                });
-                scaffoldMessengerKey.currentState!.showSnackBar(
-                  SnackBar(content: Text('已新增時段：$result')),
-                );
+                final success = await attendance.addPeriod(result);
+                if (success) {
+                  scaffoldMessengerKey.currentState!.showSnackBar(
+                    SnackBar(content: Text('已新增時段：$result')),
+                  );
+                } else {
+                  scaffoldMessengerKey.currentState!.showSnackBar(
+                    SnackBar(
+                      content: Text('新增失敗：${attendance.errorMessage ?? '未知錯誤'}'),
+                      backgroundColor: Colors.red,
+                    ),
+                  );
+                }
               }
             },
           ),

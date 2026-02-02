@@ -3,8 +3,22 @@ import 'package:provider/provider.dart';
 import 'package:coselig_staff_portal/services/attendance_service.dart';
 import 'package:intl/intl.dart';
 
-class WorkingStaffCard extends StatelessWidget {
+class WorkingStaffCard extends StatefulWidget {
   const WorkingStaffCard({super.key});
+
+  @override
+  State<WorkingStaffCard> createState() => _WorkingStaffCardState();
+}
+
+class _WorkingStaffCardState extends State<WorkingStaffCard> {
+  @override
+  void initState() {
+    super.initState();
+    // 初始化時獲取正在上班的員工列表
+    Future.microtask(
+      () => context.read<AttendanceService>().fetchAndCacheWorkingStaff(),
+    );
+  }
 
   String formatTime(dynamic time) {
     if (time == null) return '未知';

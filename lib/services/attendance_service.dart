@@ -21,6 +21,10 @@ class AttendanceService extends ChangeNotifier {
   List<Map<String, dynamic>> workingStaffList = [];
   bool isLoadingWorkingStaff = false;
 
+  // 動態時段管理
+  List<String> dynamicPeriods = ['period1'];
+  final Map<int, String> periodNames = {1: '上午班', 2: '下午班', 3: '晚班'};
+
   /// 取得指定月份的打卡記錄
   Future<Map<int, dynamic>> getMonthAttendance(
     String userId,
@@ -238,5 +242,65 @@ class AttendanceService extends ChangeNotifier {
       notifyListeners();
       return false;
     }
+  }
+
+  /// 更新動態時段列表（從今天的考勤數據中發現所有時段）
+  void updateDynamicPeriods() {
+    if (todayAttendance == null) {
+      dynamicPeriods = ['period1'];
+      notifyListeners();
+      return;
+    }
+
+    // 收集所有時段（包含動態時段名稱）
+    final Set<String> allPeriods = {};
+    todayAttendance!.forEach((key, value) {
+      if (key.endsWith('_check_in_time') || key.endsWith('_check_out_time')) {
+        String periodName;
+        if (key.endsWith('_check_in_time')) {
+          periodName = key.substring(0, key.length - '_check_in_time'.length);
+        } else {
+          periodName = key.substring(0, key.length - '_check_out_time'.length);
+        }
+        if (periodName.isNotEmpty) {
+          allPeriods.add(periodName);
+        }
+      }
+    });
+
+    // 更新動態時段列表
+    if (allPeriods.isEmpty) {
+      dynamicPeriods = ['period1']; // 預設至少有一個時段
+    } else {
+      dynamicPeriods = allPeriods.toList()
+        ..sort((a, b) {
+          // 優先顯示 period1, period2 格式的時段
+          final aPeriod = a.startsWith('period');
+          final bPeriod = b.startsWith('period');
+          if (aPeriod && !bPeriod) return -1;
+          if (!aPeriod && bPeriod) return 1;
+          if (aPeriod && bPeriod) {
+            final aNum = int.tryParse(a.substring(6)) ?? 999;
+            final bNum = int.tryParse(b.substring(6)) ?? 999;
+            return aNum.compareTo(bNum);
+          }
+          return a.compareTo(b);
+        });
+    }
+    notifyListeners();
+  }
+
+  /// 新增時段
+  Future<bool> addPeriod(String periodName) async {
+    final newPeriodIndex = dynamicPeriods.length + 1;
+    final newPeriod = 'period$newPeriodIndex';
+
+    // 更新本地狀態
+    periodNames[newPeriodIndex] = periodName;
+    dynamicPeriods.add(newPeriod);
+    notifyListeners();
+
+    // TODO: 如果需要後端支持，可以在這裡調用 API
+    return true;
   }
 }
