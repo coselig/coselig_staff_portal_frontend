@@ -98,6 +98,15 @@ class _AttendanceCalendarViewState extends State<AttendanceCalendarView> {
     }
   }
 
+  Future<void> _refreshHolidays() async {
+    // 清除當前年份的快取
+    final year = widget.month.year.toString();
+    _holidaysCache.remove(year);
+
+    // 重新獲取節假日數據
+    await _fetchHolidays();
+  }
+
   @override
   Widget build(BuildContext context) {
     // 取得本月1號的日期
@@ -153,6 +162,18 @@ class _AttendanceCalendarViewState extends State<AttendanceCalendarView> {
             constraints.maxWidth.clamp(280.0, 420.0); // 最小280，最大420
             return Column(
               children: [
+                // 刷新按鈕行
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.end,
+                  children: [
+                    IconButton(
+                      icon: const Icon(Icons.refresh),
+                      tooltip: '刷新節假日數據',
+                      onPressed: _isLoading ? null : _refreshHolidays,
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 4),
                 GridView.count(
                   crossAxisCount: 7,
                   shrinkWrap: true,

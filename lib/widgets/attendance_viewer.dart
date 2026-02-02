@@ -33,6 +33,19 @@ class _AttendanceViewerState extends State<AttendanceViewer> {
     super.initState();
     if (widget.isAdminMode) {
       _fetchEmployees();
+    } else {
+      // 個人模式：初始化當前月份的考勤數據
+      Future.microtask(_initializePersonalData);
+    }
+  }
+
+  Future<void> _initializePersonalData() async {
+    final authService = context.read<AuthService>();
+    final attendance = context.read<AttendanceService>();
+    final userId = authService.userId;
+
+    if (userId != null) {
+      await attendance.fetchAndCacheMonthAttendance(userId, _selectedMonth);
     }
   }
 
