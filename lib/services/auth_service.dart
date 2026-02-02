@@ -57,13 +57,20 @@ class AuthService extends ChangeNotifier {
    * 自動登入（讀取 session）
    * ======================== */
   Future<void> tryAutoLogin() async {
+    // 如果已經登入，跳過自動登入
+    if (isLoggedIn) {
+      message = '已登入';
+      return;
+    }
+    
     isLoading = true;
     notifyListeners();
 
     try {
-      final res = await _client.get(
-        Uri.parse('$baseUrl/api/me'),
-        headers: {'Content-Type': 'application/json'},
+      final res = await _client
+          .get(
+            Uri.parse('$baseUrl/api/me'),
+            headers: {'Content-Type': 'application/json'},
           )
           .timeout(const Duration(seconds: 5));
 
@@ -111,10 +118,11 @@ class AuthService extends ChangeNotifier {
       } else {
         loginBody = {'name': email, 'password': password};
       }
-      final res = await _client.post(
-        Uri.parse('$baseUrl/api/login'),
-        headers: {'Content-Type': 'application/json'},
-        body: jsonEncode(loginBody),
+      final res = await _client
+          .post(
+            Uri.parse('$baseUrl/api/login'),
+            headers: {'Content-Type': 'application/json'},
+            body: jsonEncode(loginBody),
           )
           .timeout(const Duration(seconds: 10));
 
@@ -155,15 +163,16 @@ class AuthService extends ChangeNotifier {
     notifyListeners();
 
     try {
-      final res = await _client.post(
-        Uri.parse('$baseUrl/api/register'),
-        headers: {'Content-Type': 'application/json'},
-        body: jsonEncode({
-          'name': name,
-          'email': email,
-          'password': password,
-          'role': 'employee',
-        }),
+      final res = await _client
+          .post(
+            Uri.parse('$baseUrl/api/register'),
+            headers: {'Content-Type': 'application/json'},
+            body: jsonEncode({
+              'name': name,
+              'email': email,
+              'password': password,
+              'role': 'employee',
+            }),
           )
           .timeout(const Duration(seconds: 10));
 
@@ -292,10 +301,11 @@ class AuthService extends ChangeNotifier {
 
     try {
       // 發送 ID Token 到後端驗證
-      final res = await _client.post(
-        Uri.parse('$baseUrl/api/google-login'),
-        headers: {'Content-Type': 'application/json'},
-        body: jsonEncode({'id_token': idToken}),
+      final res = await _client
+          .post(
+            Uri.parse('$baseUrl/api/google-login'),
+            headers: {'Content-Type': 'application/json'},
+            body: jsonEncode({'id_token': idToken}),
           )
           .timeout(const Duration(seconds: 10));
 
@@ -335,10 +345,11 @@ class AuthService extends ChangeNotifier {
    * ========= */
   Future<bool> updateThemeMode(String mode) async {
     try {
-      final res = await _client.put(
-        Uri.parse('$baseUrl/api/users/theme-mode'),
-        headers: {'Content-Type': 'application/json'},
-        body: jsonEncode({'theme_mode': mode}),
+      final res = await _client
+          .put(
+            Uri.parse('$baseUrl/api/users/theme-mode'),
+            headers: {'Content-Type': 'application/json'},
+            body: jsonEncode({'theme_mode': mode}),
           )
           .timeout(const Duration(seconds: 10));
 
