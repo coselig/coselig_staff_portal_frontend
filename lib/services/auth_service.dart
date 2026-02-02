@@ -3,8 +3,8 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:http/browser_client.dart';
-import 'package:google_sign_in/google_sign_in.dart';
-import 'package:extension_google_sign_in_as_googleapis_auth/extension_google_sign_in_as_googleapis_auth.dart';
+import 'dart:html' as html;
+import 'dart:js' as js;
 
 class AuthService extends ChangeNotifier {
   /// ⚠️ Flutter Web 必須用 BrowserClient 才能送 / 收 Cookie
@@ -13,9 +13,7 @@ class AuthService extends ChangeNotifier {
   static const String baseUrl =
       'https://employeeservice.coseligtest.workers.dev';
 
-  final GoogleSignIn _googleSignIn = GoogleSignIn(
-    scopes: ['email', 'profile'],
-  );
+  // 移除 GoogleSignIn，使用自定義 Google Identity Services 實現
 
   String? name;
   String? chineseName;
@@ -74,13 +72,13 @@ class AuthService extends ChangeNotifier {
       if (res.statusCode == 200 && data['user'] != null) {
         name = data['user']['name'];
         chineseName = data['user']['chinese_name'];
-        chineseName = data['user']['chinese_name'];
         email = data['user']['email'];
         role = data['user']['role'];
         userId = data['user']['id']?.toString();
         themeMode = data['user']['theme_mode']; // 新增主題模式
         message = '自動登入成功';
       } else {
+        // 401 或其他非 200 狀態碼都表示未登入
         _clearUser();
         message = '尚未登入';
       }
@@ -213,42 +211,86 @@ class AuthService extends ChangeNotifier {
   }
 
   /* =========
-   * Google 登入
+   * Google 登入 - 簡化版本
    * ========= */
   Future<bool> googleLogin() async {
     isLoading = true;
-    message = '正在登入 Google...';
+    message = '正在準備 Google 登入...';
     notifyListeners();
 
     try {
-      final GoogleSignInAccount? googleUser = await _googleSignIn.signIn();
-      if (googleUser == null) {
-        message = 'Google 登入取消';
+      // 簡單的實現：顯示訊息並模擬登入流程
+      message = '請使用瀏覽器的 Google 登入提示';
+      notifyListeners();
+
+      // 等待用戶完成登入（實際上會由 Google Identity Services 處理）
+      await Future.delayed(const Duration(seconds: 2));
+
+      // 檢查是否有登入結果
+      final result = js.context.callMethod('eval', [
+        'window.googleLoginResult',
+      ]);
+      if (result == null) {
+        message = 'Google 登入取消或尚未完成';
         isLoading = false;
         notifyListeners();
         return false;
       }
 
-      // 使用 extension 獲取 authenticated client
-      final authClient = await _googleSignIn.authenticatedClient();
-      if (authClient == null) {
-        message = '獲取 Google 認證失敗';
+      final idToken = result as String;
+
+      message = '正在驗證登入...';
+      notifyListeners();
+
+      // 發送 ID Token 到後端驗證
+      final res = await _client
+          .post(
+            Uri.parse('$baseUrl/api/google-login'),
+            headers: {'Content-Type': 'application/json'},
+            body: jsonEncode({'id_token': idToken}),
+          )
+          .timeout(const Duration(seconds: 10));
+
+      final data = jsonDecode(res.body);
+
+      if (res.statusCode == 200 && data['user'] != null) {
+        name = data['user']['name'];
+        chineseName = data['user']['chinese_name'];
+        email = data['user']['email'];
+        role = data['user']['role'];
+        userId = data['user']['id']?.toString();
+        themeMode = data['user']['theme_mode'];
+        message = 'Google 登入成功';
         isLoading = false;
         notifyListeners();
-        return false;
+        return true;
+      } else {
+        _clearUser();
+        message = data['error'] ?? 'Google 登入失敗';
       }
-
-      final GoogleSignInAuthentication googleAuth =
-          await googleUser.authentication;
-      final String? idToken = googleAuth.idToken;
-
-      if (idToken == null) {
-        message = '獲取 Google ID Token 失敗';
-        isLoading = false;
-        notifyListeners();
-        return false;
+    } catch (e) {
+      if (e is TimeoutException) {
+        message = '網路連線超時，請檢查網路';
+      } else {
+        message = 'Google 登入請求失敗: $e';
       }
+      _clearUser();
+    }
 
+    isLoading = false;
+    notifyListeners();
+    return false;
+  }
+
+  /* =========
+   * 驗證 Google ID Token
+   * ========= */
+  Future<bool> verifyGoogleToken(String idToken) async {
+    isLoading = true;
+    message = '正在驗證 Google 登入...';
+    notifyListeners();
+
+    try {
       // 發送 ID Token 到後端驗證
       final res = await _client.post(
         Uri.parse('$baseUrl/api/google-login'),
