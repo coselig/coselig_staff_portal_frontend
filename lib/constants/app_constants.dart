@@ -12,5 +12,8 @@ class AppConstants {
   static String get appVersion => _packageInfo?.version ?? '0.0.0';
   static String get buildNumber => _packageInfo?.buildNumber ?? '0';
   
+  // 應用名稱
+  static String get appName => 'Coselig 員工系統';
+  
   static String get fullVersion => 'v$appVersion (Build #$buildNumber)';
 }

@@ -220,75 +220,35 @@ class AuthService extends ChangeNotifier {
   }
 
   /* =========
-   * Google 登入 - 簡化版本
+   * Google 登入 - 簡化版本（實際由 login_frame.dart 處理）
    * ========= */
   Future<bool> googleLogin() async {
+    // 這個方法現在主要用於顯示訊息，實際的 Google 登入邏輯在 login_frame.dart 中
     isLoading = true;
     message = '正在準備 Google 登入...';
     notifyListeners();
 
     try {
-      // 簡單的實現：顯示訊息並模擬登入流程
       message = '請使用瀏覽器的 Google 登入提示';
       notifyListeners();
 
       // 等待用戶完成登入（實際上會由 Google Identity Services 處理）
       await Future.delayed(const Duration(seconds: 2));
 
-      // 檢查是否有登入結果
-      final result = js.context.callMethod('eval', [
-        'window.googleLoginResult',
-      ]);
-      if (result == null) {
-        message = 'Google 登入取消或尚未完成';
-        isLoading = false;
-        notifyListeners();
-        return false;
-      }
-
-      final idToken = result as String;
-
-      message = '正在驗證登入...';
+      // 注意：實際的 Google 登入邏輯現在在 login_frame.dart 中實現
+      // 這裡只是一個占位符方法
+      message = 'Google 登入已由登入頁面處理';
+      isLoading = false;
       notifyListeners();
+      return false; // 返回 false，因為實際登入由 login_frame.dart 處理
 
-      // 發送 ID Token 到後端驗證
-      final res = await _client
-          .post(
-            Uri.parse('$baseUrl/api/google-login'),
-            headers: {'Content-Type': 'application/json'},
-            body: jsonEncode({'id_token': idToken}),
-          )
-          .timeout(const Duration(seconds: 10));
-
-      final data = jsonDecode(res.body);
-
-      if (res.statusCode == 200 && data['user'] != null) {
-        name = data['user']['name'];
-        chineseName = data['user']['chinese_name'];
-        email = data['user']['email'];
-        role = data['user']['role'];
-        userId = data['user']['id']?.toString();
-        themeMode = data['user']['theme_mode'];
-        message = 'Google 登入成功';
-        isLoading = false;
-        notifyListeners();
-        return true;
-      } else {
-        _clearUser();
-        message = data['error'] ?? 'Google 登入失敗';
-      }
     } catch (e) {
-      if (e is TimeoutException) {
-        message = '網路連線超時，請檢查網路';
-      } else {
-        message = 'Google 登入請求失敗: $e';
-      }
+      message = 'Google 登入準備失敗: $e';
       _clearUser();
+      isLoading = false;
+      notifyListeners();
+      return false;
     }
-
-    isLoading = false;
-    notifyListeners();
-    return false;
   }
 
   /* =========

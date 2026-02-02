@@ -387,6 +387,13 @@ class _StaffHomePageState extends State<StaffHomePage> {
             ],
             const Divider(),
             ListTile(
+              leading: Icon(Icons.cloud),
+              title: Text('雲端硬碟'),
+              onTap: () {
+                navigatorKey.currentState!.pushNamed('/drive');
+              },
+            ),
+            ListTile(
               leading: Icon(Icons.build),
               title: Text('裝置註冊表生成器'),
               onTap: () {
