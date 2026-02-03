@@ -115,7 +115,7 @@ class _AttendanceCalendarViewState extends State<AttendanceCalendarView> {
 
   @override
   Widget build(BuildContext context) {
-    final uiSettings = context.watch<UiSettingsProvider>();
+    context.watch<UiSettingsProvider>();
     final firstDayOfMonth = DateTime(widget.month.year, widget.month.month, 1);
     // 取得本月最後一天的日期
     final lastDayOfMonth = DateTime(
