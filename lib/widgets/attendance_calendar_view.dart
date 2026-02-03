@@ -1,3 +1,5 @@
+import 'dart:math';
+
 import 'package:coselig_staff_portal/utils/time_utils.dart';
 import 'package:coselig_staff_portal/services/holiday_service.dart';
 import 'package:coselig_staff_portal/services/ui_settings_provider.dart';
@@ -204,8 +206,10 @@ class _AttendanceCalendarViewState extends State<AttendanceCalendarView> {
                           return Text(
                             '${widget.month.year}年 ${widget.month.month}月',
                             style: TextStyle(
-                              fontSize: (18 * uiSettings.fontSizeScale * _scale)
-                                  .toDouble(),
+                              fontSize: max(
+                                12.0,
+                                18 * uiSettings.fontSizeScale * _scale,
+                              ),
                               fontWeight: FontWeight.bold,
                               color: Theme.of(context).colorScheme.primary,
                             ),
@@ -230,9 +234,10 @@ class _AttendanceCalendarViewState extends State<AttendanceCalendarView> {
                                 label,
                                 style: TextStyle(
                                   fontWeight: FontWeight.bold,
-                                  fontSize:
-                                      (14 * uiSettings.fontSizeScale * _scale)
-                                          .toDouble(),
+                                  fontSize: max(
+                                    10.0,
+                                    14 * uiSettings.fontSizeScale * _scale,
+                                  ),
                                   color: Theme.of(
                                     context,
                                   ).colorScheme.onSurfaceVariant,
@@ -458,8 +463,10 @@ class _AttendanceCalendarViewState extends State<AttendanceCalendarView> {
                     style: TextStyle(
                       color: textColor,
                       fontWeight: FontWeight.bold,
-                      fontSize: (18 * uiSettings.fontSizeScale * _scale)
-                          .toDouble(),
+                      fontSize: max(
+                        12.0,
+                        18 * uiSettings.fontSizeScale * _scale,
+                      ),
                     ),
                   );
                 },
@@ -474,8 +481,10 @@ class _AttendanceCalendarViewState extends State<AttendanceCalendarView> {
                         status,
                         style: TextStyle(
                           color: textColor,
-                          fontSize: (12 * uiSettings.fontSizeScale * _scale)
-                              .toDouble(),
+                          fontSize: max(
+                            8.0,
+                            12 * uiSettings.fontSizeScale * _scale,
+                          ),
                         ),
                         textAlign: TextAlign.center,
                       );
