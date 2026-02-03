@@ -97,7 +97,7 @@ class _DiscoveryGeneratePageState extends State<DiscoveryGeneratePage> {
     if (moduleIdController.text.isNotEmpty) {
       final String deviceName = nameController.text.isNotEmpty
           ? nameController.text
-          : "$selectedModel ${moduleIdController.text} - $selectedChannel";
+          : "$selectedModel ${moduleIdController.text}_$selectedChannel";
       final int? bright = int.tryParse(brightController.text);
       final int? ctMin = int.tryParse(ctMinController.text);
       final int? ctMax = int.tryParse(ctMaxController.text);
@@ -117,7 +117,6 @@ class _DiscoveryGeneratePageState extends State<DiscoveryGeneratePage> {
 
       // 檢查是否可以添加裝置
       if (!_service.canAddDevice(newDevice)) {
-        // 顯示錯誤信息
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(

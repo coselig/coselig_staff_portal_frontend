@@ -69,6 +69,13 @@ class AppDrawer extends StatelessWidget {
               navigatorKey.currentState!.pushNamed('/user_data');
             },
           ),
+          ListTile(
+            leading: Icon(Icons.work),
+            title: Text('顯示目前工作的員工'),
+            onTap: () {
+              print('Toggle currently working employees');
+            },
+          ),
           const Divider(),
           ListTile(title: ThemeToggleSwitch()),
           ListTile(

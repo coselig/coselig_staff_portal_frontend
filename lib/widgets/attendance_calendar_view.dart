@@ -174,6 +174,20 @@ class _AttendanceCalendarViewState extends State<AttendanceCalendarView> {
                   ],
                 ),
                 const SizedBox(height: 4),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Text(
+                      '${widget.month.year}年 ${widget.month.month}月',
+                      style: TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.bold,
+                        color: Theme.of(context).colorScheme.primary,
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 8),
                 GridView.count(
                   crossAxisCount: 7,
                   shrinkWrap: true,
