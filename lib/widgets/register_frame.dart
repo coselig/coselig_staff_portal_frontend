@@ -1,5 +1,6 @@
 import 'package:coselig_staff_portal/main.dart';
 import 'package:coselig_staff_portal/services/auth_service.dart';
+import 'package:coselig_staff_portal/services/ui_settings_provider.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
@@ -17,6 +18,7 @@ class _RegisterFrameState extends State<RegisterFrame> {
   @override
   Widget build(BuildContext context) {
     final authService = context.watch<AuthService>();
+    final uiSettings = context.watch<UiSettingsProvider>();
     return Container(
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(12),
@@ -67,8 +69,8 @@ class _RegisterFrameState extends State<RegisterFrame> {
                     vertical: 16,
                     horizontal: 32,
                   ),
-                  textStyle: const TextStyle(
-                    fontSize: 18,
+                  textStyle: TextStyle(
+                    fontSize: (18 * uiSettings.fontSizeScale).toDouble(),
                     fontWeight: FontWeight.bold,
                   ),
                   shape: RoundedRectangleBorder(

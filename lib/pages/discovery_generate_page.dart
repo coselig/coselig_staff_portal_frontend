@@ -1,8 +1,10 @@
 import 'package:universal_html/html.dart' as html;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:provider/provider.dart';
 import 'package:coselig_staff_portal/widgets/app_drawer.dart';
 import 'package:coselig_staff_portal/services/discovery_service.dart';
+import 'package:coselig_staff_portal/services/ui_settings_provider.dart';
 
 class DiscoveryGeneratePage extends StatefulWidget {
   const DiscoveryGeneratePage({super.key});
@@ -305,6 +307,7 @@ class _DiscoveryGeneratePageState extends State<DiscoveryGeneratePage> {
 
   @override
   Widget build(BuildContext context) {
+    final uiSettings = context.watch<UiSettingsProvider>();
     return Scaffold(
       appBar: AppBar(
         title: const Text('裝置註冊表生成器'),
@@ -523,7 +526,7 @@ class _DiscoveryGeneratePageState extends State<DiscoveryGeneratePage> {
           children: [
             const SizedBox(height: 16),
             // Device List with Drag and Drop
-            _buildDeviceListWithDragDrop(),
+            _buildDeviceListWithDragDrop(uiSettings),
             const SizedBox(height: 16),
             // Output Display
             SizedBox(
@@ -541,11 +544,11 @@ class _DiscoveryGeneratePageState extends State<DiscoveryGeneratePage> {
     );
   }
 
-  Widget _buildDeviceListWithDragDrop() {
+  Widget _buildDeviceListWithDragDrop(UiSettingsProvider uiSettings) {
     return Column(
       children: [
         // 添加設備表單
-        _buildAddDeviceForm(),
+        _buildAddDeviceForm(uiSettings),
         const SizedBox(height: 16),
         // 設備列表標題
         _buildDeviceListHeader(),
@@ -727,7 +730,7 @@ class _DiscoveryGeneratePageState extends State<DiscoveryGeneratePage> {
     );
   }
 
-  Widget _buildAddDeviceForm() {
+  Widget _buildAddDeviceForm(UiSettingsProvider uiSettings) {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
@@ -738,9 +741,17 @@ class _DiscoveryGeneratePageState extends State<DiscoveryGeneratePage> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text(
-            '添加新設備',
-            style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+          Builder(
+            builder: (context) {
+              final uiSettings = context.watch<UiSettingsProvider>();
+              return Text(
+                '添加新設備',
+                style: TextStyle(
+                  fontSize: (16 * uiSettings.fontSizeScale).toDouble(),
+                  fontWeight: FontWeight.bold,
+                ),
+              );
+            },
           ),
           const SizedBox(height: 16),
           Row(

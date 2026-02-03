@@ -1,6 +1,8 @@
 import 'package:coselig_staff_portal/utils/time_utils.dart';
 import 'package:coselig_staff_portal/services/holiday_service.dart';
+import 'package:coselig_staff_portal/services/ui_settings_provider.dart';
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 
 /// 月曆視圖元件，顯示一個月的打卡、請假、假日狀態
 typedef OnManualPunch = void Function(int day, dynamic record);
@@ -109,7 +111,7 @@ class _AttendanceCalendarViewState extends State<AttendanceCalendarView> {
 
   @override
   Widget build(BuildContext context) {
-    // 取得本月1號的日期
+    final uiSettings = context.watch<UiSettingsProvider>();
     final firstDayOfMonth = DateTime(widget.month.year, widget.month.month, 1);
     // 取得本月最後一天的日期
     final lastDayOfMonth = DateTime(
@@ -180,13 +182,19 @@ class _AttendanceCalendarViewState extends State<AttendanceCalendarView> {
                 Row(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    Text(
-                      '${widget.month.year}年 ${widget.month.month}月',
-                      style: TextStyle(
-                        fontSize: 18,
-                        fontWeight: FontWeight.bold,
-                        color: Theme.of(context).colorScheme.primary,
-                      ),
+                    Builder(
+                      builder: (context) {
+                        final uiSettings = context.watch<UiSettingsProvider>();
+                        return Text(
+                          '${widget.month.year}年 ${widget.month.month}月',
+                          style: TextStyle(
+                            fontSize: (18 * uiSettings.fontSizeScale)
+                                .toDouble(),
+                            fontWeight: FontWeight.bold,
+                            color: Theme.of(context).colorScheme.primary,
+                          ),
+                        );
+                      },
                     ),
                   ],
                 ),
@@ -416,21 +424,34 @@ class _AttendanceCalendarViewState extends State<AttendanceCalendarView> {
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              Text(
-                '$day',
-                style: TextStyle(
-                  color: textColor,
-                  fontWeight: FontWeight.bold,
-                  fontSize: 18,
-                ),
+              Builder(
+                builder: (context) {
+                  final uiSettings = context.watch<UiSettingsProvider>();
+                  return Text(
+                    '$day',
+                    style: TextStyle(
+                      color: textColor,
+                      fontWeight: FontWeight.bold,
+                      fontSize: (18 * uiSettings.fontSizeScale).toDouble(),
+                    ),
+                  );
+                },
               ),
               if (status.isNotEmpty)
                 Padding(
                   padding: const EdgeInsets.only(top: 2),
-                  child: Text(
-                    status,
-                    style: TextStyle(color: textColor, fontSize: 12),
-                    textAlign: TextAlign.center,
+                  child: Builder(
+                    builder: (context) {
+                      final uiSettings = context.watch<UiSettingsProvider>();
+                      return Text(
+                        status,
+                        style: TextStyle(
+                          color: textColor,
+                          fontSize: (12 * uiSettings.fontSizeScale).toDouble(),
+                        ),
+                        textAlign: TextAlign.center,
+                      );
+                    },
                   ),
                 ),
             ],

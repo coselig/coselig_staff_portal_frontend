@@ -44,7 +44,7 @@ class AttendancePunchCard extends StatelessWidget {
                   child: Text(
                     displayName,
                     style: TextStyle(
-                      fontSize: 18 * uiSettings.fontSizeScale,
+                      fontSize: (18 * uiSettings.fontSizeScale).toDouble(),
                       fontWeight: FontWeight.bold,
                     ),
                   ),
