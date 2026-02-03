@@ -303,4 +303,24 @@ class AttendanceService extends ChangeNotifier {
     // TODO: 如果需要後端支持，可以在這裡調用 API
     return true;
   }
+
+  /// 獲取指定日期所有員工的考勤記錄（管理員用）
+  Future<List<Map<String, dynamic>>> fetchAllEmployeesAttendanceForDate(
+    DateTime date,
+  ) async {
+    final url =
+        '$baseUrl/api/attendance/all-employees?date=${date.toIso8601String().split('T')[0]}';
+    final res = await _client.get(
+      Uri.parse(url),
+      headers: {'Content-Type': 'application/json'},
+    );
+
+    if (res.statusCode == 200) {
+      final data = jsonDecode(res.body);
+      final records = data['records'] as List<dynamic>? ?? [];
+      return records.map((record) => record as Map<String, dynamic>).toList();
+    } else {
+      throw Exception('Failed to fetch all employees attendance');
+    }
+  }
 }

@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:coselig_staff_portal/services/auth_service.dart';
+import 'package:coselig_staff_portal/services/ui_settings_provider.dart';
 import 'package:coselig_staff_portal/widgets/theme_toggle_switch.dart';
 import 'package:coselig_staff_portal/main.dart';
 import 'package:url_launcher/url_launcher.dart';
+import 'package:provider/provider.dart' show ReadContext;
 
 class AppDrawer extends StatelessWidget {
   const AppDrawer({super.key});
@@ -16,9 +18,16 @@ class AppDrawer extends StatelessWidget {
       child: ListView(
         children: [
           DrawerHeader(
-            child: Text(
-              '光悅員工系統',
-              style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+            child: Consumer<UiSettingsProvider>(
+              builder: (context, uiSettings, child) {
+                return Text(
+                  '光悅員工系統',
+                  style: TextStyle(
+                    fontSize: (20 * uiSettings.fontSizeScale).toDouble(),
+                    fontWeight: FontWeight.bold,
+                  ),
+                );
+              },
             ),
           ),
           if (authService.isAdmin) ...[
@@ -72,9 +81,34 @@ class AppDrawer extends StatelessWidget {
           ListTile(
             leading: Icon(Icons.work),
             title: Text('顯示目前工作的員工'),
-            onTap: () {
-              print('Toggle currently working employees');
-            },
+            trailing: Consumer<UiSettingsProvider>(
+              builder: (context, uiSettings, child) {
+                return Switch(
+                  value: uiSettings.showWorkingStaffCard,
+                  onChanged: (bool value) {
+                    uiSettings.setShowWorkingStaffCard(value);
+                  },
+                );
+              },
+            ),
+          ),
+          ListTile(
+            leading: Icon(Icons.text_fields),
+            title: Text('字體大小'),
+            subtitle: Consumer<UiSettingsProvider>(
+              builder: (context, uiSettings, child) {
+                return Slider(
+                  value: uiSettings.fontSizeScale,
+                  min: 0.5,
+                  max: 2.0,
+                  divisions: 15,
+                  label: '${(uiSettings.fontSizeScale * 100).round()}%',
+                  onChanged: (double value) {
+                    uiSettings.setFontSizeScale(value);
+                  },
+                );
+              },
+            ),
           ),
           const Divider(),
           ListTile(title: ThemeToggleSwitch()),

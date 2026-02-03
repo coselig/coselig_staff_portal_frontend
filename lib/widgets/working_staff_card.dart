@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:coselig_staff_portal/services/attendance_service.dart';
+import 'package:coselig_staff_portal/services/ui_settings_provider.dart';
 import 'package:intl/intl.dart';
 
 class WorkingStaffCard extends StatefulWidget {
@@ -24,6 +25,9 @@ class _WorkingStaffCardState extends State<WorkingStaffCard> {
   @override
   Widget build(BuildContext context) {
     final attendance = context.watch<AttendanceService>();
+    final uiSettings = context.watch<UiSettingsProvider>();
+    final screenWidth = MediaQuery.of(context).size.width;
+    final isMobile = screenWidth < 600; // 假設小於600px為手機
 
     return Card(
       margin: const EdgeInsets.only(bottom: 20),
@@ -36,9 +40,13 @@ class _WorkingStaffCardState extends State<WorkingStaffCard> {
               children: [
                 Icon(Icons.people, color: Colors.green),
                 const SizedBox(width: 8),
-                const Text(
+                Text(
                   '目前正在上班的員工',
-                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                  style: TextStyle(
+                    fontSize: ((isMobile ? 16 : 18) * uiSettings.fontSizeScale)
+                        .toDouble(),
+                    fontWeight: FontWeight.bold,
+                  ),
                 ),
                 const Spacer(),
                 IconButton(
@@ -64,6 +72,9 @@ class _WorkingStaffCardState extends State<WorkingStaffCard> {
                       '目前沒有員工正在上班',
                       style: TextStyle(
                         color: Theme.of(context).colorScheme.onSurface.withAlpha(150),
+                        fontSize:
+                            ((isMobile ? 14 : 16) * uiSettings.fontSizeScale)
+                                .toDouble(),
                       ),
                     ),
                   )
@@ -76,11 +87,30 @@ class _WorkingStaffCardState extends State<WorkingStaffCard> {
                           ? chineseName.toString()
                           : englishName;
                       return ListTile(
-                        leading: const Icon(Icons.person, color: Colors.blue),
-                        title: Text(displayName),
+                        leading: Icon(
+                          Icons.person,
+                          color: Colors.blue,
+                          size: isMobile ? 20 : 24,
+                        ),
+                        title: Text(
+                          displayName,
+                          style: TextStyle(
+                            fontSize:
+                                ((isMobile ? 16 : 18) *
+                                        uiSettings.fontSizeScale)
+                                    .toDouble(),
+                          ),
+                        ),
                         subtitle: Text(
                           '上班時間：${formatTime(emp['check_in_time'])}',
+                          style: TextStyle(
+                            fontSize:
+                                ((isMobile ? 12 : 14) *
+                                        uiSettings.fontSizeScale)
+                                    .toDouble(),
+                          ),
                         ),
+                        dense: isMobile, // 在手機上使用緊湊模式
                       );
                     }).toList(),
                   ),

@@ -155,6 +155,9 @@ class _AttendanceCalendarViewState extends State<AttendanceCalendarView> {
       }
     }
     return Card(
+      color: Theme.of(context).colorScheme.surfaceVariant,
+      elevation: 4,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
       child: Padding(
         padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
         child: LayoutBuilder(
@@ -180,7 +183,7 @@ class _AttendanceCalendarViewState extends State<AttendanceCalendarView> {
                     Text(
                       '${widget.month.year}年 ${widget.month.month}月',
                       style: TextStyle(
-                        fontSize: 16,
+                        fontSize: 18,
                         fontWeight: FontWeight.bold,
                         color: Theme.of(context).colorScheme.primary,
                       ),
@@ -197,7 +200,12 @@ class _AttendanceCalendarViewState extends State<AttendanceCalendarView> {
                       Center(
                         child: Text(
                           label,
-                          style: const TextStyle(fontWeight: FontWeight.bold),
+                          style: TextStyle(
+                            fontWeight: FontWeight.bold,
+                            color: Theme.of(
+                              context,
+                            ).colorScheme.onSurfaceVariant,
+                          ),
                         ),
                       ),
                   ],

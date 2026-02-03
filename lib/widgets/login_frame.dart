@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:js' as js;
 import 'package:coselig_staff_portal/main.dart';
 import 'package:coselig_staff_portal/services/auth_service.dart';
+import 'package:coselig_staff_portal/services/ui_settings_provider.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:universal_html/html.dart' as html;
@@ -19,6 +20,7 @@ class _LoginFrameState extends State<LoginFrame> {
   @override
   Widget build(BuildContext context) {
     final authService = context.watch<AuthService>();
+    final uiSettings = context.watch<UiSettingsProvider>();
     return Container(
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(12),
@@ -65,8 +67,8 @@ class _LoginFrameState extends State<LoginFrame> {
                     vertical: 16,
                     horizontal: 32,
                   ),
-                  textStyle: const TextStyle(
-                    fontSize: 18,
+                  textStyle: TextStyle(
+                    fontSize: (18 * uiSettings.fontSizeScale).toDouble(),
                     fontWeight: FontWeight.bold,
                   ),
                   shape: RoundedRectangleBorder(
@@ -181,8 +183,8 @@ class _LoginFrameState extends State<LoginFrame> {
                     vertical: 16,
                     horizontal: 32,
                   ),
-                  textStyle: const TextStyle(
-                    fontSize: 18,
+                  textStyle: TextStyle(
+                    fontSize: (18 * uiSettings.fontSizeScale).toDouble(),
                     fontWeight: FontWeight.bold,
                   ),
                   shape: RoundedRectangleBorder(

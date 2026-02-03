@@ -9,6 +9,7 @@ import 'package:provider/provider.dart';
 import 'package:coselig_staff_portal/services/auth_service.dart';
 import 'package:coselig_staff_portal/widgets/attendance_punch_card.dart';
 import 'package:coselig_staff_portal/main.dart';
+import 'package:coselig_staff_portal/services/ui_settings_provider.dart';
 
 class StaffHomePage extends StatefulWidget {
   const StaffHomePage({super.key});
@@ -190,6 +191,7 @@ class _StaffHomePageState extends State<StaffHomePage> {
   Widget build(BuildContext context) {
     final authService = context.read<AuthService>();
     final attendance = context.watch<AttendanceService>();
+    final uiSettings = context.watch<UiSettingsProvider>();
     final userId = authService.userId;
 
     return Scaffold(
@@ -245,7 +247,7 @@ class _StaffHomePageState extends State<StaffHomePage> {
       body: ListView(
         padding: const EdgeInsets.all(16.0),
         children: [
-          const WorkingStaffCard(),
+          if (uiSettings.showWorkingStaffCard) const WorkingStaffCard(),
           Text(
             '歡迎，${authService.chineseName ?? authService.name ?? '員工'}！',
             style: const TextStyle(fontSize: 24),

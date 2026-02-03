@@ -11,6 +11,7 @@ import 'package:coselig_staff_portal/pages/user_data_page.dart';
 import 'package:coselig_staff_portal/services/attendance_service.dart';
 import 'package:coselig_staff_portal/services/auth_service.dart';
 import 'package:coselig_staff_portal/services/theme_provider.dart';
+import 'package:coselig_staff_portal/services/ui_settings_provider.dart';
 import 'package:coselig_staff_portal/widgets/register_frame.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
@@ -43,6 +44,7 @@ void main() async {
       providers: [
         ChangeNotifierProvider(create: (_) => AuthService()),
         ChangeNotifierProvider(create: (_) => AttendanceService()),
+        ChangeNotifierProvider(create: (_) => UiSettingsProvider()),
         ChangeNotifierProxyProvider<AuthService, ThemeProvider>(
           create: (context) =>
               ThemeProvider(Provider.of<AuthService>(context, listen: false)),
@@ -85,31 +87,67 @@ class MainApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final themeProvider = Provider.of<ThemeProvider>(context);
-    return MaterialApp(
-      title: 'Coselig 員工系統',
-      color: Colors.orangeAccent[100],
-      navigatorKey: navigatorKey,
-      scaffoldMessengerKey: scaffoldMessengerKey,
-      theme: lightTheme,
-      darkTheme: darkTheme,
-      themeMode: themeProvider.themeMode,
-      initialRoute: '/',
-      onUnknownRoute: (settings) {
-        // 對於未知路由，重定向到 splash，讓它處理
-        return MaterialPageRoute(builder: (context) => const SplashScreen());
-      },
-      routes: {
-        '/': (context) => const SplashScreen(),
-        '/splash': (context) => const SplashScreen(),
-        '/login': (context) => const AuthPage(),
-        '/home': (context) => const StaffHomePage(),
-        '/register': (context) => const RegisterFrame(),
-        '/admin': (context) => const AdminPage(),
-        '/discovery_generate': (context) => const DiscoveryGeneratePage(),
-        '/ble': (context) => const BlePage(),
-        '/user_data': (context) => const UserDataPage(),
-        '/admin_user_preview': (context) => const AdminUserPreviewPage(),
-        '/privacy': (context) => const PrivacyPolicyPage(),
+    return Consumer<UiSettingsProvider>(
+      builder: (context, uiSettings, child) {
+        final baseLightTheme = ThemeData(
+          brightness: Brightness.light,
+          colorScheme: ColorScheme.fromSeed(
+            seedColor: const Color(0xFFfEBC82),
+            brightness: Brightness.light,
+          ),
+          useMaterial3: true,
+        );
+        final baseDarkTheme = ThemeData(
+          brightness: Brightness.dark,
+          colorScheme: ColorScheme.fromSeed(
+            seedColor: const Color(0xFFfEBC82),
+            brightness: Brightness.dark,
+          ),
+          useMaterial3: true,
+        );
+
+        final lightThemeWithScale = baseLightTheme.copyWith(
+          textTheme: baseLightTheme.textTheme.apply(
+            fontSizeFactor: uiSettings.fontSizeScale,
+            fontSizeDelta: 0,
+          ),
+        );
+        final darkThemeWithScale = baseDarkTheme.copyWith(
+          textTheme: baseDarkTheme.textTheme.apply(
+            fontSizeFactor: uiSettings.fontSizeScale,
+            fontSizeDelta: 0,
+          ),
+        );
+
+        return MaterialApp(
+          title: 'Coselig 員工系統',
+          color: Colors.orangeAccent[100],
+          navigatorKey: navigatorKey,
+          scaffoldMessengerKey: scaffoldMessengerKey,
+          theme: lightThemeWithScale,
+          darkTheme: darkThemeWithScale,
+          themeMode: themeProvider.themeMode,
+          initialRoute: '/',
+          onUnknownRoute: (settings) {
+            // 對於未知路由，重定向到 splash，讓它處理
+            return MaterialPageRoute(
+              builder: (context) => const SplashScreen(),
+            );
+          },
+          routes: {
+            '/': (context) => const SplashScreen(),
+            '/splash': (context) => const SplashScreen(),
+            '/login': (context) => const AuthPage(),
+            '/home': (context) => const StaffHomePage(),
+            '/register': (context) => const RegisterFrame(),
+            '/admin': (context) => const AdminPage(),
+            '/discovery_generate': (context) => const DiscoveryGeneratePage(),
+            '/ble': (context) => const BlePage(),
+            '/user_data': (context) => const UserDataPage(),
+            '/admin_user_preview': (context) => const AdminUserPreviewPage(),
+            '/privacy': (context) => const PrivacyPolicyPage(),
+          },
+        );
       },
     );
   }
