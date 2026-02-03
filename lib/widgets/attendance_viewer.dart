@@ -108,7 +108,7 @@ class _AttendanceViewerState extends State<AttendanceViewer> {
   Widget build(BuildContext context) {
     final attendance = context.watch<AttendanceService>();
     final authService = context.read<AuthService>();
-    final uiSettings = context.watch<UiSettingsProvider>();
+    context.watch<UiSettingsProvider>();
 
     // 權限檢查
     if (widget.isAdminMode && !authService.isAdmin) {
