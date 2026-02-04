@@ -22,8 +22,7 @@ class AttendanceService extends ChangeNotifier {
   bool isLoadingWorkingStaff = false;
 
   // 動態時段管理
-  List<String> dynamicPeriods = ['period1'];
-  final Map<int, String> periodNames = {1: '上午班', 2: '下午班', 3: '晚班'};
+  List<String> dynamicPeriods = ['時段1'];
 
   /// 取得指定月份的打卡記錄
   Future<Map<int, dynamic>> getMonthAttendance(
@@ -247,7 +246,7 @@ class AttendanceService extends ChangeNotifier {
   /// 更新動態時段列表（從今天的考勤數據中發現所有時段）
   void updateDynamicPeriods() {
     if (todayAttendance == null) {
-      dynamicPeriods = ['period1'];
+      dynamicPeriods = ['時段1'];
       notifyListeners();
       return;
     }
@@ -270,7 +269,7 @@ class AttendanceService extends ChangeNotifier {
 
     // 更新動態時段列表
     if (allPeriods.isEmpty) {
-      dynamicPeriods = ['period1']; // 預設至少有一個時段
+      dynamicPeriods = ['時段1']; // 預設至少有一個時段
     } else {
       dynamicPeriods = allPeriods.toList()
         ..sort((a, b) {
@@ -293,14 +292,11 @@ class AttendanceService extends ChangeNotifier {
   /// 新增時段
   Future<bool> addPeriod(String periodName) async {
     final newPeriodIndex = dynamicPeriods.length + 1;
-    final newPeriod = 'period$newPeriodIndex';
+    final newPeriod = '時段$newPeriodIndex';
 
     // 更新本地狀態
-    periodNames[newPeriodIndex] = periodName;
     dynamicPeriods.add(newPeriod);
     notifyListeners();
-
-    // TODO: 如果需要後端支持，可以在這裡調用 API
     return true;
   }
 

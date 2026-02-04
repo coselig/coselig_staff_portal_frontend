@@ -104,14 +104,6 @@ class _StaffHomePageState extends State<StaffHomePage> {
         );
 
         if (success) {
-          // 如果是 period 格式，也更新本地快取
-          if (currentPeriod.startsWith('period')) {
-            final num = int.tryParse(currentPeriod.substring(6));
-            if (num != null) {
-              attendanceService.periodNames[num] = result;
-            }
-          }
-
           // 刷新今日打卡資料
           final authService = context.read<AuthService>();
           if (authService.userId != null) {
@@ -259,13 +251,7 @@ class _StaffHomePageState extends State<StaffHomePage> {
               final period = attendance.dynamicPeriods[index];
 
               // 根據時段名稱決定顯示名稱
-              String displayName;
-              if (period.startsWith('period')) {
-                final num = int.tryParse(period.substring(6));
-                displayName = attendance.periodNames[num] ?? '時段$num';
-              } else {
-                displayName = period; // 直接使用自定義名稱
-              }
+              String displayName = period;
 
               final checkInTime =
                   attendance.todayAttendance?['${period}_check_in_time'];
