@@ -115,68 +115,240 @@ class FixtureAllocation {
   }
 }
 
+class LoopAllocation {
+  Loop loop;
+  int allocatedCount; // 分配的迴路數量（通常為1，因為一個迴路對應一個模組通道組）
+
+  LoopAllocation({required this.loop, this.allocatedCount = 1});
+
+  // 獲取本次分配需要的通道數（基於迴路的調光類型）
+  int get requiredChannels {
+    int channelsPerLoop;
+    switch (loop.dimmingType) {
+      case 'WRGB':
+        channelsPerLoop = 4;
+        break;
+      case 'RGB':
+        channelsPerLoop = 3;
+        break;
+      case '雙色溫':
+        channelsPerLoop = 2;
+        break;
+      case '單色溫':
+      case '繼電器':
+        channelsPerLoop = 1;
+        break;
+      default:
+        channelsPerLoop = 1;
+    }
+    return allocatedCount * channelsPerLoop;
+  }
+
+  LoopAllocation copyWith({Loop? loop, int? allocatedCount}) {
+    return LoopAllocation(
+      loop: loop ?? this.loop,
+      allocatedCount: allocatedCount ?? this.allocatedCount,
+    );
+  }
+}
+
+class ModuleOption {
+  final String model;
+  final int channelCount;
+  final bool isDimmable;
+
+  const ModuleOption({
+    required this.model,
+    required this.channelCount,
+    required this.isDimmable,
+  });
+}
+
 class Module {
   String model;
   int channelCount;
-  int maxCurrentPerChannel;
   bool isDimmable;
   List<FixtureAllocation> allocations;
+  List<LoopAllocation> loopAllocations;
 
   Module({
     required this.model,
     required this.channelCount,
-    required this.maxCurrentPerChannel,
     required this.isDimmable,
     this.allocations = const [],
+    this.loopAllocations = const [],
   });
 
   Module copyWith({
     String? model,
     int? channelCount,
-    int? maxCurrentPerChannel,
     bool? isDimmable,
     List<FixtureAllocation>? allocations,
+    List<LoopAllocation>? loopAllocations,
   }) {
     return Module(
       model: model ?? this.model,
       channelCount: channelCount ?? this.channelCount,
-      maxCurrentPerChannel: maxCurrentPerChannel ?? this.maxCurrentPerChannel,
       isDimmable: isDimmable ?? this.isDimmable,
       allocations: allocations ?? this.allocations,
+      loopAllocations: loopAllocations ?? this.loopAllocations,
     );
   }
+
+  // 獲取已使用的通道數
+  int get usedChannels =>
+      allocations.fold(
+        0,
+        (sum, allocation) => sum + allocation.requiredChannels,
+      ) +
+      loopAllocations.fold(
+        0,
+        (sum, allocation) => sum + allocation.requiredChannels,
+      );
 
   // 獲取可用通道數
   int get availableChannels => channelCount - usedChannels;
 
-  // 獲取已使用的通道數
-  int get usedChannels {
-    return allocations.fold(
-      0,
-      (sum, allocation) => sum + allocation.requiredChannels,
-    );
-  }
-
-  // 檢查是否可以分配給指定的燈具和數量
+  // 檢查是否可以分配指定數量的燈具
   bool canAssignFixture(LightFixture fixture, int count) {
-    if (count <= 0) return false;
-    final allocation = FixtureAllocation(
-      fixture: fixture,
-      allocatedCount: count,
+    int requiredChannels = count * fixture.requiredChannels ~/ fixture.count;
+    return availableChannels >= requiredChannels;
+  }
+
+  // 檢查是否可以分配迴路
+  bool canAssignLoop(Loop loop, int count) {
+    int requiredChannels = count * _getChannelsPerLoop(loop.dimmingType);
+    return availableChannels >= requiredChannels;
+  }
+
+  // 獲取迴路需要的通道數
+  int _getChannelsPerLoop(String dimmingType) {
+    switch (dimmingType) {
+      case 'WRGB':
+        return 4;
+      case 'RGB':
+        return 3;
+      case '雙色溫':
+        return 2;
+      case '單色溫':
+      case '繼電器':
+        return 1;
+      default:
+        return 1;
+    }
+  }
+}
+
+// 預定義模組選項
+const List<ModuleOption> moduleOptions = [
+  ModuleOption(model: 'P210', channelCount: 2, isDimmable: true),
+  ModuleOption(model: 'P404', channelCount: 4, isDimmable: true),
+  ModuleOption(model: 'R410', channelCount: 4, isDimmable: false),
+  ModuleOption(model: 'P805', channelCount: 8, isDimmable: true),
+  ModuleOption(model: 'P305', channelCount: 3, isDimmable: true),
+];
+
+// 燈具類型選項
+const List<String> fixtureTypes = [
+  '軌道燈',
+  '燈帶',
+  '崁燈',
+  '射燈',
+  '吊燈',
+];
+
+class FixtureTypeData {
+  final String type;
+  final String quantityLabel;
+  final String unitLabel;
+  final bool isMeterBased;
+
+  const FixtureTypeData({
+    required this.type,
+    required this.quantityLabel,
+    required this.unitLabel,
+    this.isMeterBased = false,
+  });
+}
+
+const Map<String, FixtureTypeData> fixtureTypeData = {
+  '軌道燈': FixtureTypeData(
+    type: '軌道燈',
+    quantityLabel: '燈具數量',
+    unitLabel: '每顆瓦數 (W)',
+  ),
+  '燈帶': FixtureTypeData(
+    type: '燈帶',
+    quantityLabel: '米數',
+    unitLabel: '每米瓦數 (W/m)',
+    isMeterBased: true,
+  ),
+  '崁燈': FixtureTypeData(
+    type: '崁燈',
+    quantityLabel: '燈具數量',
+    unitLabel: '每顆瓦數 (W)',
+  ),
+  '射燈': FixtureTypeData(
+    type: '射燈',
+    quantityLabel: '燈具數量',
+    unitLabel: '每顆瓦數 (W)',
+  ),
+  '吊燈': FixtureTypeData(
+    type: '吊燈',
+    quantityLabel: '燈具數量',
+    unitLabel: '每顆瓦數 (W)',
+  ),
+};
+
+class LoopFixture {
+  String name;
+  int totalWatt;
+
+  LoopFixture({
+    required this.name,
+    required this.totalWatt});
+
+  LoopFixture copyWith({
+    String? name,
+    int? totalWatt,
+  }) {
+    return LoopFixture(
+      name: name ?? this.name,
+      totalWatt: totalWatt ?? this.totalWatt,
     );
-    if (usedChannels + allocation.requiredChannels > channelCount) return false;
-    if (!isDimmable && fixture.dimmingType != '繼電器') return false;
-    if (isDimmable && fixture.dimmingType == '繼電器') return false;
+  }
+}
 
-    // 檢查電流是否符合
-    final current = fixture.watt / fixture.volt;
-    return current <= maxCurrentPerChannel;
+class Loop {
+  String name;
+  int voltage;
+  String dimmingType;
+  List<LoopFixture> fixtures;
+
+  Loop({
+    required this.name,
+    this.voltage = 12,
+    this.dimmingType = 'WRGB',
+    this.fixtures = const [],
+  });
+
+  Loop copyWith({
+    String? name,
+    int? voltage,
+    String? dimmingType,
+    List<LoopFixture>? fixtures,
+  }) {
+    return Loop(
+      name: name ?? this.name,
+      voltage: voltage ?? this.voltage,
+      dimmingType: dimmingType ?? this.dimmingType,
+      fixtures: fixtures ?? this.fixtures,
+    );
   }
 
-  // 獲取已分配的燈具列表（用於顯示）
-  List<LightFixture> get assignedFixtures {
-    return allocations.map((allocation) => allocation.fixture).toList();
-  }
+  // 獲取總瓦數
+  int get totalWatt =>
+      fixtures.fold(0, (sum, fixture) => sum + fixture.totalWatt);
 }
 
 class CustomerHomePage extends StatefulWidget {
@@ -189,12 +361,13 @@ class CustomerHomePage extends StatefulWidget {
 class _CustomerHomePageState extends State<CustomerHomePage> {
   int _currentStep = 0;
 
-  // 第一步：設備配置 - 動態燈具列表
-  final List<LightFixture> _lightFixtures = [];
+  // 第一步：迴路+設備配置
+  final List<Loop> _loops = [];
   final TextEditingController _switchCountController = TextEditingController();
   final TextEditingController _otherDevicesController = TextEditingController();
 
-  // 第二步：模組配置 - 動態模組列表
+  // 第二步：模組配置
+  final List<LightFixture> _lightFixtures = [];
   final List<Module> _modules = [];
 
   // 第三步：材料配置
@@ -217,24 +390,6 @@ class _CustomerHomePageState extends State<CustomerHomePage> {
     _boardMaterialsController.dispose();
     _wiringController.dispose();
     super.dispose();
-  }
-
-  void _addLightFixture() {
-    setState(() {
-      _lightFixtures.add(LightFixture(name: '燈具 ${_lightFixtures.length + 1}'));
-    });
-  }
-
-  void _removeLightFixture(int index) {
-    setState(() {
-      _lightFixtures.removeAt(index);
-    });
-  }
-
-  void _updateLightFixture(int index, LightFixture updatedFixture) {
-    setState(() {
-      _lightFixtures[index] = updatedFixture;
-    });
   }
 
   @override
@@ -270,12 +425,12 @@ class _CustomerHomePageState extends State<CustomerHomePage> {
         },
         steps: [
           Step(
-            title: const Text('第一步：設備配置'),
+            title: const Text('第一步：迴路+設備配置'),
             content: _buildStep1(),
             isActive: _currentStep >= 0,
           ),
           Step(
-            title: const Text('第二步：模組選擇'),
+            title: const Text('第二步：模組配置'),
             content: _buildStep2(),
             isActive: _currentStep >= 1,
           ),
@@ -293,38 +448,48 @@ class _CustomerHomePageState extends State<CustomerHomePage> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
+        const Text(
+          '迴路配置',
+          style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+        ),
+        const SizedBox(height: 16),
+
+        // 添加迴路按鈕
         Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
             const Text(
-              '燈具配置',
-              style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+              '已配置迴路',
+              style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
             ),
             ElevatedButton.icon(
-              onPressed: _addLightFixture,
+              onPressed: _addLoop,
               icon: const Icon(Icons.add),
-              label: const Text('添加燈具'),
+              label: const Text('添加迴路'),
             ),
           ],
         ),
         const SizedBox(height: 16),
-        if (_lightFixtures.isEmpty)
+
+        // 迴路列表
+        if (_loops.isEmpty)
           const Center(
             child: Padding(
               padding: EdgeInsets.all(32.0),
               child: Text(
-                '尚未添加任何燈具\n點擊上方按鈕添加第一個燈具',
+                '尚未添加任何迴路\n點擊上方按鈕添加第一個迴路',
                 textAlign: TextAlign.center,
                 style: TextStyle(color: Colors.grey),
               ),
             ),
           )
         else
-          ..._lightFixtures.asMap().entries.map((entry) {
+          ..._loops.asMap().entries.map((entry) {
             final index = entry.key;
-            final fixture = entry.value;
-            return _buildLightFixtureCard(index, fixture);
+            final loop = entry.value;
+            return _buildLoopCard(index, loop);
           }),
+
         const SizedBox(height: 24),
         const Text(
           '開關配置',
@@ -358,213 +523,7 @@ class _CustomerHomePageState extends State<CustomerHomePage> {
     );
   }
 
-  Widget _buildLightFixtureCard(int index, LightFixture fixture) {
-    return Card(
-      margin: const EdgeInsets.only(bottom: 16),
-      child: Padding(
-        padding: const EdgeInsets.all(16.0),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Text(
-                  fixture.name,
-                  style: const TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-                IconButton(
-                  onPressed: () => _removeLightFixture(index),
-                  icon: const Icon(Icons.delete, color: Colors.red),
-                  tooltip: '刪除此燈具',
-                ),
-              ],
-            ),
-            const SizedBox(height: 16),
-            Row(
-              children: [
-                Expanded(
-                  child: TextFormField(
-                    initialValue: fixture.name,
-                    decoration: const InputDecoration(
-                      labelText: '燈具名稱',
-                      border: OutlineInputBorder(),
-                    ),
-                    onChanged: (value) {
-                      _updateLightFixture(index, fixture.copyWith(name: value));
-                    },
-                  ),
-                ),
-                const SizedBox(width: 16),
-                Expanded(
-                  child: TextFormField(
-                    initialValue: fixture.count.toString(),
-                    decoration: const InputDecoration(
-                      labelText: '數量',
-                      border: OutlineInputBorder(),
-                    ),
-                    keyboardType: TextInputType.number,
-                    inputFormatters: [FilteringTextInputFormatter.digitsOnly],
-                    onChanged: (value) {
-                      final count = int.tryParse(value) ?? 1;
-                      _updateLightFixture(
-                        index,
-                        fixture.copyWith(count: count),
-                      );
-                    },
-                  ),
-                ),
-              ],
-            ),
-            const SizedBox(height: 16),
-            Row(
-              children: [
-                Expanded(
-                  child: TextFormField(
-                    initialValue: fixture.watt.toString(),
-                    decoration: const InputDecoration(
-                      labelText: '瓦數 (W)',
-                      border: OutlineInputBorder(),
-                    ),
-                    keyboardType: TextInputType.number,
-                    inputFormatters: [FilteringTextInputFormatter.digitsOnly],
-                    onChanged: (value) {
-                      final watt = int.tryParse(value) ?? 10;
-                      _updateLightFixture(index, fixture.copyWith(watt: watt));
-                    },
-                  ),
-                ),
-                const SizedBox(width: 16),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      DropdownButtonFormField<String>(
-                        initialValue: fixture.isCustomVolt
-                            ? '其他'
-                            : fixture.volt.toString(),
-                        decoration: const InputDecoration(
-                          labelText: '電壓 (V)',
-                          border: OutlineInputBorder(),
-                        ),
-                        items: const [
-                          DropdownMenuItem(value: '220', child: Text('220V')),
-                          DropdownMenuItem(value: '110', child: Text('110V')),
-                          DropdownMenuItem(value: '36', child: Text('36V')),
-                          DropdownMenuItem(value: '24', child: Text('24V')),
-                          DropdownMenuItem(value: '12', child: Text('12V')),
-                          DropdownMenuItem(value: '其他', child: Text('其他')),
-                        ],
-                        onChanged: (value) {
-                          if (value == '其他') {
-                            _updateLightFixture(
-                              index,
-                              fixture.copyWith(isCustomVolt: true),
-                            );
-                          } else {
-                            final volt = int.tryParse(value!) ?? 12;
-                            _updateLightFixture(
-                              index,
-                              fixture.copyWith(volt: volt, isCustomVolt: false),
-                            );
-                          }
-                        },
-                      ),
-                      if (fixture.isCustomVolt) ...[
-                        const SizedBox(height: 8),
-                        TextFormField(
-                          initialValue: fixture.volt.toString(),
-                          decoration: const InputDecoration(
-                            labelText: '自定義電壓 (V)',
-                            border: OutlineInputBorder(),
-                          ),
-                          keyboardType: TextInputType.number,
-                          inputFormatters: [
-                            FilteringTextInputFormatter.digitsOnly,
-                          ],
-                          onChanged: (value) {
-                            final volt = int.tryParse(value) ?? 12;
-                            _updateLightFixture(
-                              index,
-                              fixture.copyWith(volt: volt),
-                            );
-                          },
-                        ),
-                      ],
-                    ],
-                  ),
-                ),
-              ],
-            ),
-            const SizedBox(height: 16),
-            DropdownButtonFormField<String>(
-              initialValue: fixture.dimmingType,
-              decoration: const InputDecoration(
-                labelText: '調光類型',
-                border: OutlineInputBorder(),
-              ),
-              items: const [
-                DropdownMenuItem(value: 'WRGB', child: Text('WRGB')),
-                DropdownMenuItem(value: 'RGB', child: Text('RGB')),
-                DropdownMenuItem(value: '雙色溫', child: Text('雙色溫')),
-                DropdownMenuItem(value: '單色溫', child: Text('單色溫')),
-                DropdownMenuItem(value: '繼電器', child: Text('繼電器')),
-              ],
-              onChanged: (value) {
-                _updateLightFixture(
-                  index,
-                  fixture.copyWith(
-                    dimmingType: value!,
-                    needsRelay: value == '繼電器',
-                  ),
-                );
-              },
-            ),
-            if (fixture.needsRelay) ...[
-              const SizedBox(height: 16),
-              Row(
-                children: [
-                  const Text('繼電器類型：'),
-                  const SizedBox(width: 16),
-                  Radio<String>(
-                    value: '大功率',
-                    groupValue: fixture.relayType,
-                    onChanged: (value) {
-                      _updateLightFixture(
-                        index,
-                        fixture.copyWith(relayType: value!),
-                      );
-                    },
-                  ),
-                  const Text('大功率'),
-                  const SizedBox(width: 16),
-                  Radio<String>(
-                    value: '小功率',
-                    groupValue: fixture.relayType,
-                    onChanged: (value) {
-                      _updateLightFixture(
-                        index,
-                        fixture.copyWith(relayType: value!),
-                      );
-                    },
-                  ),
-                  const Text('小功率'),
-                ],
-              ),
-            ],
-          ],
-        ),
-      ),
-    );
-  }
-
   Widget _buildStep2() {
-    // 獲取未分配的燈具
-    final unassignedFixtures = _getUnassignedFixtures();
-
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -573,43 +532,6 @@ class _CustomerHomePageState extends State<CustomerHomePage> {
           style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
         ),
         const SizedBox(height: 16),
-
-        // 未分配燈具總覽
-        if (unassignedFixtures.isNotEmpty) ...[
-          Card(
-            color: Colors.orange.shade50,
-            child: Padding(
-              padding: const EdgeInsets.all(16.0),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  const Text(
-                    '待分配燈具：',
-                    style: TextStyle(
-                      fontSize: 16,
-                      fontWeight: FontWeight.bold,
-                      color: Colors.orange,
-                    ),
-                  ),
-                  const SizedBox(height: 8),
-                  ...unassignedFixtures.map(
-                    (item) {
-                    final fixture = item['fixture'] as LightFixture;
-                    final remaining = item['remaining'] as int;
-                    return Text(
-                      '• ${fixture.name} (剩餘${remaining}個${fixture.dimmingType})',
-                      style: const TextStyle(color: Colors.orange),
-                    );
-                  },
-                  ),
-                ],
-              ),
-            ),
-          ),
-          const SizedBox(height: 16),
-        ],
-
-        // 添加模組按鈕
         Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
@@ -625,8 +547,6 @@ class _CustomerHomePageState extends State<CustomerHomePage> {
           ],
         ),
         const SizedBox(height: 16),
-
-        // 模組列表
         if (_modules.isEmpty)
           const Center(
             child: Padding(
@@ -644,8 +564,6 @@ class _CustomerHomePageState extends State<CustomerHomePage> {
             final module = entry.value;
             return _buildModuleCard(index, module);
           }),
-
-        const SizedBox(height: 24),
       ],
     );
   }
@@ -706,6 +624,48 @@ class _CustomerHomePageState extends State<CustomerHomePage> {
                 '設備配置：',
                 style: TextStyle(fontWeight: FontWeight.bold),
               ),
+              Text(
+                '開關：${_switchCountController.text.isNotEmpty ? '${_switchCountController.text}個' : '未配置'}',
+              ),
+              if (_otherDevicesController.text.isNotEmpty)
+                Text('其他設備：${_otherDevicesController.text}'),
+              const SizedBox(height: 16),
+              const Text(
+                '迴路配置：',
+                style: TextStyle(fontWeight: FontWeight.bold),
+              ),
+              if (_loops.isEmpty)
+                const Text('尚未配置任何迴路')
+              else ...[
+                Text('總共 ${_loops.length} 個迴路：'),
+                const SizedBox(height: 8),
+                ..._loops.map(
+                  (loop) => Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        '• ${loop.name} (${loop.voltage}V, ${loop.dimmingType}, 總瓦數: ${loop.totalWatt}W)',
+                      ),
+                      if (loop.fixtures.isNotEmpty) ...[
+                        const SizedBox(height: 4),
+                        ...loop.fixtures.map(
+                          (fixture) => Padding(
+                            padding: const EdgeInsets.only(left: 16),
+                            child: Text(
+                              '- ${fixture.name}: ${fixture.totalWatt}W',
+                            ),
+                          ),
+                        ),
+                      ],
+                    ],
+                  ),
+                ),
+              ],
+              const SizedBox(height: 16),
+              const Text(
+                '燈具配置：',
+                style: TextStyle(fontWeight: FontWeight.bold),
+              ),
               if (_lightFixtures.isNotEmpty) ...[
                 const Text(
                   '燈具：',
@@ -721,12 +681,6 @@ class _CustomerHomePageState extends State<CustomerHomePage> {
                 ),
               ] else
                 const Text('燈具：未配置'),
-              const SizedBox(height: 8),
-              Text(
-                '開關：${_switchCountController.text.isNotEmpty ? '${_switchCountController.text}個' : '未配置'}',
-              ),
-              if (_otherDevicesController.text.isNotEmpty)
-                Text('其他設備：${_otherDevicesController.text}'),
               const SizedBox(height: 16),
               const Text(
                 '模組配置：',
@@ -738,16 +692,28 @@ class _CustomerHomePageState extends State<CustomerHomePage> {
                 Text('總共 ${_modules.length} 個模組：'),
                 const SizedBox(height: 8),
                 ..._modules.map(
-                  (module) => Text(
-                    '• ${module.model} (${module.usedChannels}/${module.channelCount}通道): ${module.allocations.map((a) => '${a.fixture.name}(${a.allocatedCount}個)').join(', ')}',
+                  (module) => Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        '• ${module.model} (${module.channelCount}通道, ${module.isDimmable ? '可調光' : '繼電器控制'})',
+                      ),
+                      if (module.allocations.isNotEmpty) ...[
+                        const SizedBox(height: 4),
+                        ...module.allocations.map(
+                          (allocation) => Padding(
+                            padding: const EdgeInsets.only(left: 16),
+                            child: Text(
+                              '- ${allocation.fixture.name}: ${allocation.allocatedCount}個',
+                            ),
+                          ),
+                        ),
+                      ],
+                    ],
                   ),
                 ),
               ],
               const SizedBox(height: 16),
-              const Text(
-                '材料配置：',
-                style: TextStyle(fontWeight: FontWeight.bold),
-              ),
               if (_powerSupplyController.text.isNotEmpty)
                 Text('電源：$_powerSupplyController.text'),
               if (_boardMaterialsController.text.isNotEmpty)
@@ -767,125 +733,61 @@ class _CustomerHomePageState extends State<CustomerHomePage> {
     );
   }
 
-  // 獲取未完全分配的燈具及其剩餘數量
-  List<Map<String, dynamic>> _getUnassignedFixtures() {
-    final allocatedCounts = <String, int>{};
-
-    // 統計每個燈具已經分配的數量
-    for (final module in _modules) {
-      for (final allocation in module.allocations) {
-        final key = '${allocation.fixture.name}_${allocation.fixture.hashCode}';
-        allocatedCounts[key] =
-            (allocatedCounts[key] ?? 0) + allocation.allocatedCount;
-      }
-    }
-
-    // 返回還有剩餘數量的燈具
-    return _lightFixtures
-        .map((fixture) {
-          final key = '${fixture.name}_${fixture.hashCode}';
-          final allocated = allocatedCounts[key] ?? 0;
-          final remaining = fixture.count - allocated;
-
-          return {'fixture': fixture, 'remaining': remaining};
-        })
-        .where((item) => (item['remaining'] as int) > 0)
-        .toList();
-  }
-
-  // 添加模組
   void _addModule() {
+    ModuleOption? selectedOption;
+
     showDialog(
       context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('選擇模組類型'),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            ListTile(
-              title: const Text('R410 - 繼電器模組 (4通道)'),
-              subtitle: const Text('適用於繼電器控制，不可調光'),
-              onTap: () {
-                setState(() {
-                  _modules.add(
-                    Module(
-                      model: 'R410',
-                      channelCount: 4,
-                      maxCurrentPerChannel: 10,
-                      isDimmable: false,
+      builder: (context) => StatefulBuilder(
+        builder: (context, setState) => AlertDialog(
+          title: const Text('添加新模組'),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              DropdownButtonFormField<ModuleOption>(
+                value: selectedOption,
+                decoration: const InputDecoration(
+                  labelText: '選擇模組型號',
+                  border: OutlineInputBorder(),
+                ),
+                items: moduleOptions.map((option) {
+                  return DropdownMenuItem<ModuleOption>(
+                    value: option,
+                    child: Text(
+                      '${option.model} - ${option.channelCount}通道 ${option.isDimmable ? '(可調光)' : '(繼電器)'}',
                     ),
                   );
-                });
-                Navigator.of(context).pop();
-              },
+                }).toList(),
+                onChanged: (value) {
+                  setState(() {
+                    selectedOption = value;
+                  });
+                },
+              ),
+            ],
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(),
+              child: const Text('取消'),
             ),
-            ListTile(
-              title: const Text('P404 - 可調光模組 (4通道)'),
-              subtitle: const Text('每通道4安培，適用於多種燈具'),
-              onTap: () {
-                setState(() {
-                  _modules.add(
-                    Module(
-                      model: 'P404',
-                      channelCount: 4,
-                      maxCurrentPerChannel: 4,
-                      isDimmable: true,
-                    ),
-                  );
-                });
-                Navigator.of(context).pop();
-              },
-            ),
-            ListTile(
-              title: const Text('P210 - 可調光模組 (2通道)'),
-              subtitle: const Text('每通道10安培，適用於大功率燈具'),
-              onTap: () {
-                setState(() {
-                  _modules.add(
-                    Module(
-                      model: 'P210',
-                      channelCount: 2,
-                      maxCurrentPerChannel: 10,
-                      isDimmable: true,
-                    ),
-                  );
-                });
-                Navigator.of(context).pop();
-              },
-            ),
-            ListTile(
-              title: const Text('P805 - 可調光模組 (8通道)'),
-              subtitle: const Text('每通道5安培，適用於多燈具控制'),
-              onTap: () {
-                setState(() {
-                  _modules.add(
-                    Module(
-                      model: 'P805',
-                      channelCount: 8,
-                      maxCurrentPerChannel: 5,
-                      isDimmable: true,
-                    ),
-                  );
-                });
-                Navigator.of(context).pop();
-              },
-            ),
-            ListTile(
-              title: const Text('P305 - 可調光模組 (3通道)'),
-              subtitle: const Text('總電流10安培，適用於混合燈具'),
-              onTap: () {
-                setState(() {
-                  _modules.add(
-                    Module(
-                      model: 'P305',
-                      channelCount: 3,
-                      maxCurrentPerChannel: 5,
-                      isDimmable: true,
-                    ),
-                  );
-                });
-                Navigator.of(context).pop();
-              },
+            ElevatedButton(
+              onPressed: selectedOption != null
+                  ? () {
+                      // 使用widget的setState來更新模組列表
+                      this.setState(() {
+                        _modules.add(
+                          Module(
+                            model: selectedOption!.model,
+                            channelCount: selectedOption!.channelCount,
+                            isDimmable: selectedOption!.isDimmable,
+                          ),
+                        );
+                      });
+                      Navigator.of(context).pop();
+                    }
+                  : null,
+              child: const Text('確定'),
             ),
           ],
         ),
@@ -893,16 +795,409 @@ class _CustomerHomePageState extends State<CustomerHomePage> {
     );
   }
 
-  // 刪除模組
   void _removeModule(int index) {
     setState(() {
       _modules.removeAt(index);
     });
   }
 
-  // 顯示模組卡片
+  // 添加迴路
+  void _addLoop() {
+    final TextEditingController nameController = TextEditingController();
+
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('添加新迴路'),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            TextField(
+              controller: nameController,
+              decoration: const InputDecoration(
+                labelText: '迴路名稱',
+                border: OutlineInputBorder(),
+                hintText: '例如：客廳主燈、廚房燈具',
+              ),
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(),
+            child: const Text('取消'),
+          ),
+          ElevatedButton(
+            onPressed: () {
+              if (nameController.text.trim().isNotEmpty) {
+                setState(() {
+                  _loops.add(Loop(name: nameController.text.trim()));
+                });
+                Navigator.of(context).pop();
+              }
+            },
+            child: const Text('確定'),
+          ),
+        ],
+      ),
+    );
+  }
+  // 構建迴路卡片
+  Widget _buildLoopCard(int index, Loop loop) {
+    return Card(
+      margin: const EdgeInsets.only(bottom: 16),
+      child: Padding(
+        padding: const EdgeInsets.all(16.0),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // 迴路標題和刪除按鈕
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Text(
+                  loop.name,
+                  style: const TextStyle(
+                    fontSize: 18,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+                IconButton(
+                  onPressed: () => _removeLoop(index),
+                  icon: const Icon(Icons.delete, color: Colors.red),
+                  tooltip: '刪除迴路',
+                ),
+              ],
+            ),
+            const SizedBox(height: 16),
+
+            // 迴路設定
+            Row(
+              children: [
+                Expanded(
+                  child: DropdownButtonFormField<int>(
+                    value: loop.voltage,
+                    decoration: const InputDecoration(
+                      labelText: '電壓 (V)',
+                      border: OutlineInputBorder(),
+                    ),
+                    items: const [
+                      DropdownMenuItem(value: 220, child: Text('220V')),
+                      DropdownMenuItem(value: 110, child: Text('110V')),
+                      DropdownMenuItem(value: 36, child: Text('36V')),
+                      DropdownMenuItem(value: 24, child: Text('24V')),
+                      DropdownMenuItem(value: 12, child: Text('12V')),
+                    ],
+                    onChanged: (value) {
+                      if (value != null) {
+                        _updateLoop(index, loop.copyWith(voltage: value));
+                      }
+                    },
+                  ),
+                ),
+                const SizedBox(width: 16),
+                Expanded(
+                  child: DropdownButtonFormField<String>(
+                    value: loop.dimmingType,
+                    decoration: const InputDecoration(
+                      labelText: '調光類型',
+                      border: OutlineInputBorder(),
+                    ),
+                    items: const [
+                      DropdownMenuItem(value: 'WRGB', child: Text('WRGB')),
+                      DropdownMenuItem(value: 'RGB', child: Text('RGB')),
+                      DropdownMenuItem(value: '雙色溫', child: Text('雙色溫')),
+                      DropdownMenuItem(value: '單色溫', child: Text('單色溫')),
+                      DropdownMenuItem(value: '繼電器', child: Text('繼電器')),
+                    ],
+                    onChanged: (value) {
+                      if (value != null) {
+                        _updateLoop(index, loop.copyWith(dimmingType: value));
+                      }
+                    },
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 16),
+
+            // 總瓦數顯示
+            Container(
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: Colors.blue.shade50,
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  const Text(
+                    '總瓦數:',
+                    style: TextStyle(
+                      fontSize: 16, fontWeight: FontWeight.w500),
+                  ),
+                  Text(
+                    '${loop.totalWatt} W',
+                    style: const TextStyle(
+                      fontSize: 18,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.blue,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(height: 16),
+
+            // 燈具列表
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Text(
+                  '燈具 (${loop.fixtures.length} 個)',
+                  style: const TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+                ElevatedButton.icon(
+                  onPressed: () => _addFixtureToLoop(index),
+                  icon: const Icon(Icons.add),
+                  label: const Text('添加燈具'),
+                ),
+              ],
+            ),
+            const SizedBox(height: 8),
+
+            if (loop.fixtures.isEmpty)
+              const Center(
+                child: Padding(
+                  padding: EdgeInsets.all(16.0),
+                  child: Text('尚未添加燈具', style: TextStyle(color: Colors.grey)),
+                ),
+              )
+            else
+              ...loop.fixtures.asMap().entries.map((entry) {
+                final fixtureIndex = entry.key;
+                final fixture = entry.value;
+                return Card(
+                  color: Colors.grey.shade50,
+                  child: Padding(
+                    padding: const EdgeInsets.all(12.0),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                fixture.name,
+                                style: const TextStyle(
+                                  fontWeight: FontWeight.w500,
+                                ),
+                              ),
+                              Text(
+                                '${fixture.totalWatt} W',
+                                style: TextStyle(color: Colors.grey.shade600),
+                              ),
+                            ],
+                          ),
+                        ),
+                        IconButton(
+                          onPressed: () =>
+                              _removeFixtureFromLoop(index, fixtureIndex),
+                          icon: const Icon(
+                            Icons.remove_circle,
+                            color: Colors.red,
+                          ),
+                          iconSize: 20,
+                          tooltip: '移除燈具',
+                        ),
+                      ],
+                    ),
+                  ),
+                );
+              }),
+          ],
+        ),
+      ),
+    );
+  }
+
+  // 更新迴路
+  void _updateLoop(int index, Loop updatedLoop) {
+    setState(() {
+      _loops[index] = updatedLoop;
+    });
+  }
+
+  // 刪除迴路
+  void _removeLoop(int index) {
+    setState(() {
+      _loops.removeAt(index);
+    });
+  }
+
+  // 向迴路添加燈具
+  void _addFixtureToLoop(int loopIndex) {
+    String selectedType = fixtureTypes[0]; // 預設選擇第一個
+    final TextEditingController nameController = TextEditingController();
+    final TextEditingController quantityController = TextEditingController();
+    final TextEditingController unitWattController = TextEditingController();
+
+    showDialog(
+      context: context,
+      builder: (context) => StatefulBuilder(
+        builder: (context, setState) => AlertDialog(
+          title: const Text('添加燈具'),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              // 燈具類型下拉選單
+              DropdownButtonFormField<String>(
+                value: selectedType,
+                decoration: const InputDecoration(
+                  labelText: '燈具類型',
+                  border: OutlineInputBorder(),
+                ),
+                items: fixtureTypes.map((type) {
+                  return DropdownMenuItem<String>(
+                    value: type,
+                    child: Text(type),
+                  );
+                }).toList(),
+                onChanged: (value) {
+                  setState(() {
+                    selectedType = value!;
+                    // 清空控制器以避免混亂
+                    quantityController.clear();
+                    unitWattController.clear();
+                  });
+                },
+              ),
+              const SizedBox(height: 16),
+
+              // 燈具名稱輸入
+              TextField(
+                controller: nameController,
+                decoration: InputDecoration(
+                  labelText: '燈具名稱',
+                  border: const OutlineInputBorder(),
+                  hintText: '例如：${selectedType}A區、${selectedType}B區',
+                ),
+              ),
+              const SizedBox(height: 16),
+
+              // 動態輸入欄位基於選擇的類型
+              Row(
+                children: [
+                  Expanded(
+                    child: TextField(
+                      controller: quantityController,
+                      decoration: InputDecoration(
+                        labelText: fixtureTypeData[selectedType]!.quantityLabel,
+                        border: const OutlineInputBorder(),
+                        hintText: fixtureTypeData[selectedType]!.isMeterBased ? '例如：5' : '例如：3',
+                      ),
+                      keyboardType: TextInputType.number,
+                      inputFormatters: [FilteringTextInputFormatter.digitsOnly],
+                    ),
+                  ),
+                  const SizedBox(width: 16),
+                  Expanded(
+                    child: TextField(
+                      controller: unitWattController,
+                      decoration: InputDecoration(
+                        labelText: fixtureTypeData[selectedType]!.unitLabel,
+                        border: const OutlineInputBorder(),
+                        hintText: '例如：10',
+                      ),
+                      keyboardType: TextInputType.number,
+                      inputFormatters: [FilteringTextInputFormatter.digitsOnly],
+                    ),
+                  ),
+                ],
+              ),
+
+              // 總瓦數顯示
+              if (quantityController.text.isNotEmpty && unitWattController.text.isNotEmpty)
+                Container(
+                  margin: const EdgeInsets.only(top: 16),
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: Colors.blue.shade50,
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      const Text(
+                        '總瓦數:',
+                        style: TextStyle(fontWeight: FontWeight.w500),
+                      ),
+                      Text(
+                        '${_calculateTotalWatt(quantityController.text, unitWattController.text)} W',
+                        style: const TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.bold,
+                          color: Colors.blue,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+            ],
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(),
+              child: const Text('取消'),
+            ),
+            ElevatedButton(
+              onPressed: () {
+                final name = nameController.text.trim();
+                final quantity = int.tryParse(quantityController.text) ?? 0;
+                final unitWatt = int.tryParse(unitWattController.text) ?? 0;
+                final totalWatt = _calculateTotalWatt(quantityController.text, unitWattController.text);
+
+                if (name.isNotEmpty && quantity > 0 && unitWatt > 0 && totalWatt > 0) {
+                  this.setState(() {
+                    final loop = _loops[loopIndex];
+                    final updatedFixtures = List<LoopFixture>.from(loop.fixtures)
+                      ..add(LoopFixture(name: name, totalWatt: totalWatt));
+                    _loops[loopIndex] = loop.copyWith(fixtures: updatedFixtures);
+                  });
+                  Navigator.of(context).pop();
+                }
+              },
+              child: const Text('確定'),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  // 計算總瓦數
+  int _calculateTotalWatt(String quantityText, String unitWattText) {
+    final quantity = int.tryParse(quantityText) ?? 0;
+    final unitWatt = int.tryParse(unitWattText) ?? 0;
+    return quantity * unitWatt;
+  }
+
+  // 從迴路移除燈具
+  void _removeFixtureFromLoop(int loopIndex, int fixtureIndex) {
+    setState(() {
+      final loop = _loops[loopIndex];
+      final updatedFixtures = List<LoopFixture>.from(loop.fixtures)
+        ..removeAt(fixtureIndex);
+      _loops[loopIndex] = loop.copyWith(fixtures: updatedFixtures);
+    });
+  }
+
   Widget _buildModuleCard(int index, Module module) {
-    final unassignedFixtures = _getUnassignedFixtures();
+    final unassignedLoops = _getUnassignedLoops();
 
     return Card(
       margin: const EdgeInsets.only(bottom: 16),
@@ -944,25 +1239,27 @@ class _CustomerHomePageState extends State<CustomerHomePage> {
             ),
             const SizedBox(height: 16),
 
-            // 已分配的燈具
-            if (module.allocations.isNotEmpty) ...[
+            // 已分配的迴路
+            if (module.loopAllocations.isNotEmpty) ...[
               const Text(
-                '已分配燈具:',
+                '已分配迴路:',
                 style: TextStyle(fontWeight: FontWeight.w500),
               ),
               const SizedBox(height: 8),
-              ...module.allocations.asMap().entries.map((entry) {
+              ...module.loopAllocations.asMap().entries.map((entry) {
                 final allocationIndex = entry.key;
                 final allocation = entry.value;
                 return Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    Text(
-                      '• ${allocation.fixture.name} (${allocation.allocatedCount}個, ${allocation.fixture.dimmingType})',
+                    Expanded(
+                      child: Text(
+                        '• ${allocation.loop.name} (${allocation.loop.voltage}V, ${allocation.loop.dimmingType})',
+                      ),
                     ),
                     IconButton(
                       onPressed: () =>
-                          _removeAllocationFromModule(index, allocationIndex),
+                          _removeLoopFromModule(index, allocationIndex),
                       icon: const Icon(Icons.remove_circle, color: Colors.red),
                       iconSize: 20,
                       tooltip: '移除此分配',
@@ -973,36 +1270,26 @@ class _CustomerHomePageState extends State<CustomerHomePage> {
               const SizedBox(height: 16),
             ],
 
-            // 添加燈具按鈕
-            if (module.availableChannels > 0 &&
-                unassignedFixtures.isNotEmpty) ...[
+            // 添加迴路按鈕
+            if (module.availableChannels > 0 && unassignedLoops.isNotEmpty) ...[
               const Text(
-                '添加燈具:',
+                '添加迴路:',
                 style: TextStyle(fontWeight: FontWeight.w500),
               ),
               const SizedBox(height: 8),
               Wrap(
                 spacing: 8,
                 runSpacing: 8,
-                children: unassignedFixtures
-                    .where((item) {
-                      final fixture = item['fixture'] as LightFixture;
-                      return module.canAssignFixture(
-                        fixture,
-                        1,
-                      ); // 檢查是否可以分配至少1個
-                    })
-                    .map(
-                      (item) {
-                      final fixture = item['fixture'] as LightFixture;
-                      final remaining = item['remaining'] as int;
+                children: unassignedLoops
+                    .where((loop) => module.canAssignLoop(loop, 1))
+                    .map((loop) {
                       return ElevatedButton(
-                        onPressed: () =>
-                            _showAllocationDialog(index, fixture, remaining),
-                        child: Text('${fixture.name} (${remaining}個剩餘)'),
+                        onPressed: () => _assignLoopToModule(index, loop),
+                        child: Text(
+                          '${loop.name} (${loop.voltage}V, ${loop.dimmingType})',
+                        ),
                       );
-                    },
-                    )
+                    })
                     .toList(),
               ),
             ],
@@ -1012,117 +1299,45 @@ class _CustomerHomePageState extends State<CustomerHomePage> {
     );
   }
 
-  // 顯示分配數量選擇對話框
-  void _showAllocationDialog(
-    int moduleIndex,
-    LightFixture fixture,
-    int maxCount,
-  ) {
-    int selectedCount = 1;
-
-    showDialog(
-      context: context,
-      builder: (context) => StatefulBuilder(
-        builder: (context, setState) => AlertDialog(
-          title: Text('分配 ${fixture.name}'),
-          content: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Text('剩餘數量: $maxCount 個'),
-              const SizedBox(height: 16),
-              Row(
-                children: [
-                  const Text('分配數量: '),
-                  Expanded(
-                    child: Slider(
-                      value: selectedCount.toDouble(),
-                      min: 1,
-                      max: maxCount.toDouble(),
-                      divisions: maxCount - 1,
-                      label: selectedCount.toString(),
-                      onChanged: (value) {
-                        setState(() {
-                          selectedCount = value.toInt();
-                        });
-                      },
-                    ),
-                  ),
-                  Text('$selectedCount 個'),
-                ],
-              ),
-              const SizedBox(height: 8),
-              Text(
-                '需要通道: ${selectedCount * _getChannelsPerFixture(fixture.dimmingType)}',
-                style: const TextStyle(fontWeight: FontWeight.w500),
-              ),
-            ],
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.of(context).pop(),
-              child: const Text('取消'),
-            ),
-            ElevatedButton(
-              onPressed: () {
-                _assignFixtureToModule(moduleIndex, fixture, selectedCount);
-                Navigator.of(context).pop();
-              },
-              child: const Text('分配'),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  // 獲取每個燈具類型需要的通道數
-  int _getChannelsPerFixture(String dimmingType) {
-    switch (dimmingType) {
-      case 'WRGB':
-        return 4;
-      case 'RGB':
-        return 3;
-      case '雙色溫':
-        return 2;
-      case '單色溫':
-      case '繼電器':
-        return 1;
-      default:
-        return 1;
+  // 獲取未分配的迴路
+  List<Loop> _getUnassignedLoops() {
+    final assignedLoopNames = <String>{};
+    for (final module in _modules) {
+      for (final allocation in module.loopAllocations) {
+        assignedLoopNames.add(allocation.loop.name);
+      }
     }
+    return _loops
+        .where((loop) => !assignedLoopNames.contains(loop.name))
+        .toList();
   }
 
-  // 分配燈具到模組（指定數量）
-  void _assignFixtureToModule(
-    int moduleIndex,
-    LightFixture fixture,
-    int count,
-  ) {
+  // 將迴路分配到模組
+  void _assignLoopToModule(int moduleIndex, Loop loop) {
     setState(() {
       final module = _modules[moduleIndex];
-      if (module.canAssignFixture(fixture, count)) {
-        final allocation = FixtureAllocation(
-          fixture: fixture,
-          allocatedCount: count,
-        );
-        final updatedAllocations = List<FixtureAllocation>.from(
-          module.allocations,
+      if (module.canAssignLoop(loop, 1)) {
+        final allocation = LoopAllocation(loop: loop);
+        final updatedLoopAllocations = List<LoopAllocation>.from(
+          module.loopAllocations,
         )..add(allocation);
         _modules[moduleIndex] = module.copyWith(
-          allocations: updatedAllocations,
+          loopAllocations: updatedLoopAllocations,
         );
       }
     });
   }
 
-  // 從模組移除分配記錄
-  void _removeAllocationFromModule(int moduleIndex, int allocationIndex) {
+  // 從模組移除迴路分配
+  void _removeLoopFromModule(int moduleIndex, int allocationIndex) {
     setState(() {
       final module = _modules[moduleIndex];
-      final updatedAllocations = List<FixtureAllocation>.from(
-        module.allocations,
+      final updatedLoopAllocations = List<LoopAllocation>.from(
+        module.loopAllocations,
       )..removeAt(allocationIndex);
-      _modules[moduleIndex] = module.copyWith(allocations: updatedAllocations);
+      _modules[moduleIndex] = module.copyWith(
+        loopAllocations: updatedLoopAllocations,
+      );
     });
   }
 }
