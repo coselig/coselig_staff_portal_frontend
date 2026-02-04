@@ -20,7 +20,7 @@ class AppDrawer extends StatelessWidget {
             child: Consumer<UiSettingsProvider>(
               builder: (context, uiSettings, child) {
                 return Text(
-                  '光悅員工系統',
+                  authService.isCustomer ? '光悅顧客系統' : '光悅員工系統',
                   style: TextStyle(
                     fontSize: (20 * uiSettings.fontSizeScale).toDouble(),
                     fontWeight: FontWeight.bold,
@@ -44,53 +44,96 @@ class AppDrawer extends StatelessWidget {
                 navigatorKey.currentState!.pushNamed('/admin_user_preview');
               },
             ),
-          ],
-          const Divider(),
-          ListTile(
-            leading: Icon(Icons.home),
-            title: Text('首頁'),
-            onTap: () {
-              navigatorKey.currentState!.pushNamed('/');
-            },
-          ),
-          ListTile(
-            leading: Icon(Icons.cloud),
-            title: Text('雲端硬碟'),
-            onTap: () async {
-              final Uri url = Uri.parse('https://drive.google.com/drive/folders/1KAwWpAqFOA6CqaQ508yQVm3B_zIlcGpr?usp=drive_link');
-              if (!await launchUrl(url, mode: LaunchMode.externalApplication)) {
-                throw Exception('Could not launch $url');
-              }
-            },
-          ),
-          ListTile(
-            leading: Icon(Icons.build),
-            title: Text('裝置註冊表生成器'),
-            onTap: () {
-              navigatorKey.currentState!.pushNamed('/discovery_generate');
-            },
-          ),
-          ListTile(
-            leading: Icon(Icons.person),
-            title: Text('我的資料'),
-            onTap: () {
-              navigatorKey.currentState!.pushNamed('/user_data');
-            },
-          ),
-          ListTile(
-            leading: Icon(Icons.work),
-            title: Text('顯示目前工作的員工'),
-            trailing: Consumer<UiSettingsProvider>(
-              builder: (context, uiSettings, child) {
-                return Switch(
-                  value: uiSettings.showWorkingStaffCard,
-                  onChanged: (bool value) {
-                    uiSettings.setShowWorkingStaffCard(value);
-                  },
-                );
+          ] else if (authService.isManager) ...[
+            ListTile(
+              leading: Icon(Icons.people),
+              title: Text('用戶資料預覽'),
+              onTap: () {
+                navigatorKey.currentState!.pushNamed('/admin_user_preview');
               },
             ),
-          ),
+          ],
+          const Divider(),
+          if (!authService.isCustomer) ...[
+            ListTile(
+              leading: Icon(Icons.home),
+              title: Text('首頁'),
+              onTap: () {
+                navigatorKey.currentState!.pushNamed('/');
+              },
+            ),
+            ListTile(
+              leading: Icon(Icons.cloud),
+              title: Text('雲端硬碟'),
+              onTap: () async {
+                final Uri url = Uri.parse(
+                  'https://drive.google.com/drive/folders/1KAwWpAqFOA6CqaQ508yQVm3B_zIlcGpr?usp=drive_link',
+                );
+                if (!await launchUrl(
+                  url,
+                  mode: LaunchMode.externalApplication,
+                )) {
+                  throw Exception('Could not launch $url');
+                }
+              },
+            ),
+            if (authService.isAdmin || authService.isManager) ...[
+              ListTile(
+                leading: Icon(Icons.build),
+                title: Text('裝置註冊表生成器'),
+                onTap: () {
+                  navigatorKey.currentState!.pushNamed('/discovery_generate');
+                },
+              ),
+            ],
+            ListTile(
+              leading: Icon(Icons.person),
+              title: Text('我的資料'),
+              onTap: () {
+                navigatorKey.currentState!.pushNamed('/user_data');
+              },
+            ),
+            if (authService.isAdmin ||
+                authService.isManager ||
+                authService.isStaff) ...[
+              ListTile(
+                leading: Icon(Icons.work),
+                title: Text('顯示目前工作的員工'),
+                trailing: Consumer<UiSettingsProvider>(
+                  builder: (context, uiSettings, child) {
+                    return Switch(
+                      value: uiSettings.showWorkingStaffCard,
+                      onChanged: (bool value) {
+                        uiSettings.setShowWorkingStaffCard(value);
+                      },
+                    );
+                  },
+                ),
+              ),
+            ],
+          ] else ...[
+            // 顧客特定的選項
+            ListTile(
+              leading: Icon(Icons.store),
+              title: Text('商店'),
+              onTap: () {
+                // TODO: 添加商店頁面
+                ScaffoldMessenger.of(
+                  context,
+                ).showSnackBar(const SnackBar(content: Text('商店功能即將推出')));
+              },
+            ),
+            ListTile(
+              leading: Icon(Icons.history),
+              title: Text('訂單記錄'),
+              onTap: () {
+                // TODO: 添加訂單記錄頁面
+                ScaffoldMessenger.of(
+                  context,
+                ).showSnackBar(const SnackBar(content: Text('訂單記錄功能即將推出')));
+              },
+            ),
+          ],
           ListTile(
             leading: Icon(Icons.text_fields),
             title: Text('字體大小'),

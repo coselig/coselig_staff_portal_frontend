@@ -49,7 +49,12 @@ class _SplashScreenState extends State<SplashScreen> {
             currentPath == '/ble') {
           targetRoute = currentPath!;
         } else {
-          targetRoute = '/home';
+          // 根據角色導航到不同主頁面
+          if (authService.isCustomer) {
+            targetRoute = '/customer_home';
+          } else {
+            targetRoute = '/home';
+          }
         }
       } else {
         targetRoute = '/login';

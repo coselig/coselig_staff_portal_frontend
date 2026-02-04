@@ -60,7 +60,8 @@ class _RegisterFrameState extends State<RegisterFrame> {
                   );
                   if (success) {
                     if (!mounted) return;
-                    navigatorKey.currentState!.pushReplacementNamed('/home');
+                    // 註冊成功後導航到登入頁面，讓用戶登入
+                    navigatorKey.currentState!.pushReplacementNamed('/login');
                   }
                   setState(() {});
                 },

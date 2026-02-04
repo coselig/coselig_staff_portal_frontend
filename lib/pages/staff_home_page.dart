@@ -26,7 +26,7 @@ class _StaffHomePageState extends State<StaffHomePage> {
   @override
   void initState() {
     super.initState();
-    html.document.title = '員工系統';
+    html.document.title = '光悅員工系統';
     Future.microtask(_initUserAndAttendance);
   }
 

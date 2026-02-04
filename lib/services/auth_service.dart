@@ -28,6 +28,15 @@ class AuthService extends ChangeNotifier {
   /// 是否為管理員
   bool get isAdmin => role == 'admin';
 
+  /// 是否為管理人員
+  bool get isManager => role == 'manager';
+
+  /// 是否為員工
+  bool get isStaff => role == 'staff' || role == 'employee';
+
+  /// 是否為顧客
+  bool get isCustomer => role == 'customer';
+
   /* ========================
    * 獲取員工列表（管理員功能）
    * ======================== */
@@ -169,7 +178,7 @@ class AuthService extends ChangeNotifier {
               'name': name,
               'email': email,
               'password': password,
-              'role': 'employee',
+              'role': 'customer',
             }),
           )
           .timeout(const Duration(seconds: 10));
