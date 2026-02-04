@@ -86,67 +86,37 @@ class ExcelExportService {
           }
         });
 
-        if (periods.isEmpty) {
-          // 如果沒有任何時段打卡記錄，當作未打卡
+        // 為每個時段寫一行
+        for (final period in periods) {
+          final checkInTime = record['${period}_check_in_time'];
+          final checkOutTime = record['${period}_check_out_time'];
+
+          String status = '已打卡';
+          double? workHours;
+          if (checkInTime != null && checkOutTime != null) {
+            workHours = _calculateWorkHours(checkInTime, checkOutTime);
+            status = '已打卡';
+            totalSeconds += workHours;
+          } else if (checkInTime != null && checkOutTime == null) {
+            status = '上班未下班';
+          } else if (checkInTime == null && checkOutTime != null) {
+            status = '下班未上班';
+          }
+
           _writeRow(
             sheet,
             rowIndex,
             date,
             employeeId,
             employeeName,
-            '',
-            null,
-            null,
-            '未打卡',
+            period, // 直接使用時段名稱
+            checkInTime,
+            checkOutTime,
+            status,
+            workHours: workHours,
           );
           rowIndex++;
-        } else {
-          // 為每個時段寫一行
-          for (final period in periods) {
-            final checkInTime = record['${period}_check_in_time'];
-            final checkOutTime = record['${period}_check_out_time'];
-
-            String status = '已打卡';
-            double? workHours;
-            if (checkInTime != null && checkOutTime != null) {
-              workHours = _calculateWorkHours(checkInTime, checkOutTime);
-              status = '已打卡';
-              totalSeconds += workHours;
-            } else if (checkInTime != null && checkOutTime == null) {
-              status = '上班未下班';
-            } else if (checkInTime == null && checkOutTime != null) {
-              status = '下班未上班';
-            }
-
-            _writeRow(
-              sheet,
-              rowIndex,
-              date,
-              employeeId,
-              employeeName,
-              period, // 直接使用時段名稱
-              checkInTime,
-              checkOutTime,
-              status,
-              workHours: workHours,
-            );
-            rowIndex++;
-          }
         }
-      } else {
-        // 未打卡
-        _writeRow(
-          sheet,
-          rowIndex,
-          date,
-          employeeId,
-          employeeName,
-          '',
-          null,
-          null,
-          '未打卡',
-        );
-        rowIndex++;
       }
     }
 

@@ -161,7 +161,7 @@ class _AttendanceCalendarViewState extends State<AttendanceCalendarView> {
       }
     }
     return Card(
-      color: Theme.of(context).colorScheme.surfaceVariant,
+      color: Theme.of(context).colorScheme.surfaceContainerHighest,
       elevation: 4,
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
       child: Padding(

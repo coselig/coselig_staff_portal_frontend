@@ -5,7 +5,6 @@ import 'package:coselig_staff_portal/services/ui_settings_provider.dart';
 import 'package:coselig_staff_portal/widgets/theme_toggle_switch.dart';
 import 'package:coselig_staff_portal/main.dart';
 import 'package:url_launcher/url_launcher.dart';
-import 'package:provider/provider.dart' show ReadContext;
 
 class AppDrawer extends StatelessWidget {
   const AppDrawer({super.key});
