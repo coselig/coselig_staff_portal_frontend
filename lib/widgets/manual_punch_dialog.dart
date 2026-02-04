@@ -116,18 +116,23 @@ class _ManualPunchDialogState extends State<ManualPunchDialog> {
                         ),
                         TextButton(
                           child: const Text('選擇'),
-                          onPressed: () async {
-                            final picked = await showTimePicker(
-                              context: context,
-                              initialTime: times['check_in'] ?? TimeOfDay.now(),
-                            );
-                            if (picked != null) {
-                              setState(() {
-                                _periodsTimes[period]!['check_in'] = picked;
-                                _maybeAddNextPeriod(period);
-                              });
-                            }
-                          },
+                          onPressed:
+                              widget.periodsData[period]!['check_in'] == null
+                              ? () async {
+                                  final picked = await showTimePicker(
+                                    context: context,
+                                    initialTime:
+                                        times['check_in'] ?? TimeOfDay.now(),
+                                  );
+                                  if (picked != null) {
+                                    setState(() {
+                                      _periodsTimes[period]!['check_in'] =
+                                          picked;
+                                      _maybeAddNextPeriod(period);
+                                    });
+                                  }
+                                }
+                              : null,
                         ),
                       ],
                     ),
@@ -140,19 +145,23 @@ class _ManualPunchDialogState extends State<ManualPunchDialog> {
                         ),
                         TextButton(
                           child: const Text('選擇'),
-                          onPressed: () async {
-                            final picked = await showTimePicker(
-                              context: context,
-                              initialTime:
-                                  times['check_out'] ?? TimeOfDay.now(),
-                            );
-                            if (picked != null) {
-                              setState(() {
-                                _periodsTimes[period]!['check_out'] = picked;
-                                _maybeAddNextPeriod(period);
-                              });
-                            }
-                          },
+                          onPressed:
+                              widget.periodsData[period]!['check_out'] == null
+                              ? () async {
+                                  final picked = await showTimePicker(
+                                    context: context,
+                                    initialTime:
+                                        times['check_out'] ?? TimeOfDay.now(),
+                                  );
+                                  if (picked != null) {
+                                    setState(() {
+                                      _periodsTimes[period]!['check_out'] =
+                                          picked;
+                                      _maybeAddNextPeriod(period);
+                                    });
+                                  }
+                                }
+                              : null,
                         ),
                       ],
                     ),
@@ -176,12 +185,16 @@ class _ManualPunchDialogState extends State<ManualPunchDialog> {
             final result = <String, Map<String, String?>>{};
             _periodsTimes.forEach((period, times) {
               result[period] = {
-                'check_in': times['check_in'] != null
-                    ? '${times['check_in']!.hour.toString().padLeft(2, '0')}:${times['check_in']!.minute.toString().padLeft(2, '0')}'
-                    : null,
-                'check_out': times['check_out'] != null
-                    ? '${times['check_out']!.hour.toString().padLeft(2, '0')}:${times['check_out']!.minute.toString().padLeft(2, '0')}'
-                    : null,
+                'check_in': widget.periodsData[period]!['check_in'] == null
+                    ? (times['check_in'] != null
+                          ? '${times['check_in']!.hour.toString().padLeft(2, '0')}:${times['check_in']!.minute.toString().padLeft(2, '0')}:00'
+                          : null)
+                    : widget.periodsData[period]!['check_in'],
+                'check_out': widget.periodsData[period]!['check_out'] == null
+                    ? (times['check_out'] != null
+                          ? '${times['check_out']!.hour.toString().padLeft(2, '0')}:${times['check_out']!.minute.toString().padLeft(2, '0')}:00'
+                          : null)
+                    : widget.periodsData[period]!['check_out'],
               };
             });
             widget.onSubmit(result);

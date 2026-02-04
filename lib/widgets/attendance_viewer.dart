@@ -234,6 +234,96 @@ class _AttendanceViewerState extends State<AttendanceViewer> {
                         _selectedMonth.month == DateTime.now().month)
                     ? DateTime.now().day
                     : null,
+                onManualPunch: (day, record) async {
+                  final authService = context.read<AuthService>();
+                  final userId = authService.userId;
+                  if (userId == null) return;
+
+                  final date = DateTime(
+                    _selectedMonth.year,
+                    _selectedMonth.month,
+                    day,
+                  );
+                  // 檢查是否為未來日期
+                  if (date.isAfter(DateTime.now())) {
+                    scaffoldMessengerKey.currentState!.showSnackBar(
+                      const SnackBar(content: Text('不能補打未來日期')),
+                    );
+                    return;
+                  }
+                  // 準備 periodsData，只包含沒有打卡的時段
+                  final Map<String, Map<String, String?>> periodsData = {};
+                  if (record is Map<String, dynamic>) {
+                    final Set<String> periods = {};
+                    record.forEach((key, value) {
+                      if (key.startsWith('period')) {
+                        final parts = key.split('_');
+                        if (parts.length >= 2 &&
+                            parts[0].startsWith('period')) {
+                          periods.add(parts[0]);
+                        }
+                      }
+                    });
+                    for (final period in periods) {
+                      periodsData[period] = {
+                        'check_in': record['${period}_check_in_time'],
+                        'check_out': record['${period}_check_out_time'],
+                      };
+                    }
+                  }
+                  // 總是允許新增時段
+                  int maxNum = 0;
+                  if (record is Map<String, dynamic>) {
+                    record.forEach((key, value) {
+                      if (key.startsWith('period')) {
+                        final parts = key.split('_');
+                        if (parts.length >= 2 &&
+                            parts[0].startsWith('period')) {
+                          final num =
+                              int.tryParse(parts[0].replaceAll('period', '')) ??
+                              0;
+                          if (num > maxNum) maxNum = num;
+                        }
+                      }
+                    });
+                  }
+                  final newPeriod = 'period${maxNum + 1}';
+                  periodsData[newPeriod] = {
+                    'check_in': null,
+                    'check_out': null,
+                  };
+                  // 總是顯示補打卡對話框
+                  await showDialog(
+                    context: context,
+                    builder: (context) => ManualPunchDialog(
+                      employeeName: '我',
+                      date: date,
+                      periodsData: periodsData,
+                      onSubmit: (periods) async {
+                        try {
+                          final attendance = context.read<AttendanceService>();
+                          await attendance.employeeManualPunch(
+                            userId,
+                            date,
+                            periods,
+                          );
+                          scaffoldMessengerKey.currentState!.showSnackBar(
+                            const SnackBar(content: Text('補打卡成功')),
+                          );
+                          // 重新載入個人資料
+                          await attendance.fetchAndCacheMonthAttendance(
+                            userId,
+                            _selectedMonth,
+                          );
+                        } catch (e) {
+                          scaffoldMessengerKey.currentState!.showSnackBar(
+                            SnackBar(content: Text('補打卡失敗: $e')),
+                          );
+                        }
+                      },
+                    ),
+                  );
+                },
               ),
             ),
           ),
@@ -447,6 +537,14 @@ class _AttendanceViewerState extends State<AttendanceViewer> {
                               ),
                               const SizedBox(height: 8),
                               Text('員工ID: $userId'),
+                              const SizedBox(height: 8),
+                              const Text(
+                                '提示：長按日期可補打卡（僅限未打卡的時段）',
+                                style: TextStyle(
+                                  fontSize: 12,
+                                  color: Colors.grey,
+                                ),
+                              ),
                               const SizedBox(height: 16),
                               Align(
                                 alignment: Alignment.center,
@@ -549,7 +647,127 @@ class _AttendanceViewerState extends State<AttendanceViewer> {
                                               ),
                                             );
                                           }
-                                        : null,
+                                        : (day, record) async {
+                                            final authService = context
+                                                .read<AuthService>();
+                                            final userId = authService.userId;
+                                            if (userId == null) return;
+
+                                            final date = DateTime(
+                                              _selectedMonth.year,
+                                              _selectedMonth.month,
+                                              day,
+                                            );
+                                            // 準備 periodsData，只包含沒有打卡的時段
+                                            final Map<
+                                              String,
+                                              Map<String, String?>
+                                            >
+                                            periodsData = {};
+                                            if (record
+                                                is Map<String, dynamic>) {
+                                              final Set<String> periods = {};
+                                              record.forEach((key, value) {
+                                                if (key.startsWith('period')) {
+                                                  final parts = key.split('_');
+                                                  if (parts.length >= 2 &&
+                                                      parts[0].startsWith(
+                                                        'period',
+                                                      )) {
+                                                    periods.add(parts[0]);
+                                                  }
+                                                }
+                                              });
+                                              for (final period in periods) {
+                                                final checkIn =
+                                                    record['${period}_check_in_time'];
+                                                final checkOut =
+                                                    record['${period}_check_out_time'];
+                                                // 只添加沒有打卡的時段
+                                                if (checkIn == null &&
+                                                    checkOut == null) {
+                                                  periodsData[period] = {
+                                                    'check_in': null,
+                                                    'check_out': null,
+                                                  };
+                                                }
+                                              }
+                                            }
+                                            // 如果沒有任何可補打的 period，添加 period1（如果沒有打卡）
+                                            if (periodsData.isEmpty) {
+                                              final checkIn = record != null
+                                                  ? record['period1_check_in_time']
+                                                  : null;
+                                              final checkOut = record != null
+                                                  ? record['period1_check_out_time']
+                                                  : null;
+                                              if (checkIn == null &&
+                                                  checkOut == null) {
+                                                periodsData['period1'] = {
+                                                  'check_in': null,
+                                                  'check_out': null,
+                                                };
+                                              }
+                                            }
+                                            if (periodsData.isNotEmpty) {
+                                              await showDialog(
+                                                context: context,
+                                                builder: (context) => ManualPunchDialog(
+                                                  employeeName: '我',
+                                                  date: date,
+                                                  periodsData: periodsData,
+                                                  onSubmit: (periods) async {
+                                                    try {
+                                                      final attendance = context
+                                                          .read<
+                                                            AttendanceService
+                                                          >();
+                                                      await attendance
+                                                          .employeeManualPunch(
+                                                            userId,
+                                                            date,
+                                                            periods,
+                                                          );
+                                                      scaffoldMessengerKey
+                                                          .currentState!
+                                                          .showSnackBar(
+                                                            const SnackBar(
+                                                              content: Text(
+                                                                '補打卡成功',
+                                                              ),
+                                                            ),
+                                                          );
+                                                      // 重新載入個人資料
+                                                      await attendance
+                                                          .fetchAndCacheMonthAttendance(
+                                                            userId,
+                                                            _selectedMonth,
+                                                          );
+                                                    } catch (e) {
+                                                      scaffoldMessengerKey
+                                                          .currentState!
+                                                          .showSnackBar(
+                                                            SnackBar(
+                                                              content: Text(
+                                                                '補打卡失敗: $e',
+                                                              ),
+                                                            ),
+                                                          );
+                                                    }
+                                                  },
+                                                ),
+                                              );
+                                            } else {
+                                              scaffoldMessengerKey.currentState!
+                                                  .showSnackBar(
+                                                    const SnackBar(
+                                                      content: Text(
+                                                        '該日期已完成打卡，無法補打',
+                                                      ),
+                                                    ),
+                                                  );
+                                            }
+                                          },
                                   ),
                                 ),
                               ),

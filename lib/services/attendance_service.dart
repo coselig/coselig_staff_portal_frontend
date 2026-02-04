@@ -213,6 +213,38 @@ class AttendanceService extends ChangeNotifier {
     }
   }
 
+  /// 員工補打卡（只能補打未打卡的時段）
+  Future<void> employeeManualPunch(
+    String userId,
+    DateTime date,
+    Map<String, Map<String, String?>> periods,
+  ) async {
+    // 檢查是否嘗試修改已有的打卡時間
+    final existingRecords = await getMonthAttendance(
+      userId,
+      date.year,
+      date.month,
+    );
+    final dayRecord = existingRecords[date.day];
+    if (dayRecord != null) {
+      for (final period in periods.keys) {
+        final checkInKey = '${period}_check_in_time';
+        final checkOutKey = '${period}_check_out_time';
+        if (dayRecord.containsKey(checkInKey) &&
+            dayRecord[checkInKey] != null) {
+          throw Exception('不能修改已有的打卡時間：$period');
+        }
+        if (dayRecord.containsKey(checkOutKey) &&
+            dayRecord[checkOutKey] != null) {
+          throw Exception('不能修改已有的打卡時間：$period');
+        }
+      }
+    }
+
+    // 如果檢查通過，調用 manualPunch
+    await manualPunch(userId, date, periods);
+  }
+
   /// 更新時段名稱
   Future<bool> updatePeriodName(String oldPeriod, String newPeriod) async {
     debugPrint(
