@@ -473,13 +473,17 @@ class _CustomerHomePageState extends State<CustomerHomePage> {
 
         // 迴路列表
         if (_loops.isEmpty)
-          const Center(
+          Center(
             child: Padding(
-              padding: EdgeInsets.all(32.0),
+              padding: const EdgeInsets.all(32.0),
               child: Text(
                 '尚未添加任何迴路\n點擊上方按鈕添加第一個迴路',
                 textAlign: TextAlign.center,
-                style: TextStyle(color: Colors.grey),
+                style: TextStyle(
+                  color: Theme.of(
+                    context,
+                  ).colorScheme.onSurface.withOpacity(0.6),
+                ),
               ),
             ),
           )
@@ -548,13 +552,17 @@ class _CustomerHomePageState extends State<CustomerHomePage> {
         ),
         const SizedBox(height: 16),
         if (_modules.isEmpty)
-          const Center(
+          Center(
             child: Padding(
-              padding: EdgeInsets.all(32.0),
+              padding: const EdgeInsets.all(32.0),
               child: Text(
                 '尚未添加任何模組\n點擊上方按鈕添加第一個模組',
                 textAlign: TextAlign.center,
-                style: TextStyle(color: Colors.grey),
+                style: TextStyle(
+                  color: Theme.of(
+                    context,
+                  ).colorScheme.onSurface.withOpacity(0.6),
+                ),
               ),
             ),
           )
@@ -864,7 +872,10 @@ class _CustomerHomePageState extends State<CustomerHomePage> {
                 ),
                 IconButton(
                   onPressed: () => _removeLoop(index),
-                  icon: const Icon(Icons.delete, color: Colors.red),
+                  icon: Icon(
+                    Icons.delete,
+                    color: Theme.of(context).colorScheme.error,
+                  ),
                   tooltip: '刪除迴路',
                 ),
               ],
@@ -925,7 +936,7 @@ class _CustomerHomePageState extends State<CustomerHomePage> {
             Container(
               padding: const EdgeInsets.all(12),
               decoration: BoxDecoration(
-                color: Colors.blue.shade50,
+                color: Theme.of(context).colorScheme.primaryContainer,
                 borderRadius: BorderRadius.circular(8),
               ),
               child: Row(
@@ -938,10 +949,10 @@ class _CustomerHomePageState extends State<CustomerHomePage> {
                   ),
                   Text(
                     '${loop.totalWatt} W',
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontSize: 18,
                       fontWeight: FontWeight.bold,
-                      color: Colors.blue,
+                      color: Theme.of(context).colorScheme.primary,
                     ),
                   ),
                 ],
@@ -970,10 +981,17 @@ class _CustomerHomePageState extends State<CustomerHomePage> {
             const SizedBox(height: 8),
 
             if (loop.fixtures.isEmpty)
-              const Center(
+              Center(
                 child: Padding(
-                  padding: EdgeInsets.all(16.0),
-                  child: Text('尚未添加燈具', style: TextStyle(color: Colors.grey)),
+                  padding: const EdgeInsets.all(16.0),
+                  child: Text(
+                    '尚未添加燈具',
+                    style: TextStyle(
+                      color: Theme.of(
+                        context,
+                      ).colorScheme.onSurface.withOpacity(0.6),
+                    ),
+                  ),
                 ),
               )
             else
@@ -981,7 +999,7 @@ class _CustomerHomePageState extends State<CustomerHomePage> {
                 final fixtureIndex = entry.key;
                 final fixture = entry.value;
                 return Card(
-                  color: Colors.grey.shade50,
+                  color: Theme.of(context).colorScheme.surfaceContainerHighest,
                   child: Padding(
                     padding: const EdgeInsets.all(12.0),
                     child: Row(
@@ -999,7 +1017,11 @@ class _CustomerHomePageState extends State<CustomerHomePage> {
                               ),
                               Text(
                                 '${fixture.totalWatt} W',
-                                style: TextStyle(color: Colors.grey.shade600),
+                                style: TextStyle(
+                                  color: Theme.of(
+                                    context,
+                                  ).colorScheme.onSurfaceVariant,
+                                ),
                               ),
                             ],
                           ),
@@ -1007,9 +1029,9 @@ class _CustomerHomePageState extends State<CustomerHomePage> {
                         IconButton(
                           onPressed: () =>
                               _removeFixtureFromLoop(index, fixtureIndex),
-                          icon: const Icon(
+                          icon: Icon(
                             Icons.remove_circle,
-                            color: Colors.red,
+                            color: Theme.of(context).colorScheme.error,
                           ),
                           iconSize: 20,
                           tooltip: '移除燈具',
@@ -1126,7 +1148,7 @@ class _CustomerHomePageState extends State<CustomerHomePage> {
                   margin: const EdgeInsets.only(top: 16),
                   padding: const EdgeInsets.all(12),
                   decoration: BoxDecoration(
-                    color: Colors.blue.shade50,
+                    color: Theme.of(context).colorScheme.primaryContainer,
                     borderRadius: BorderRadius.circular(8),
                   ),
                   child: Row(
@@ -1138,10 +1160,10 @@ class _CustomerHomePageState extends State<CustomerHomePage> {
                       ),
                       Text(
                         '${_calculateTotalWatt(quantityController.text, unitWattController.text)} W',
-                        style: const TextStyle(
+                        style: TextStyle(
                           fontSize: 16,
                           fontWeight: FontWeight.bold,
-                          color: Colors.blue,
+                          color: Theme.of(context).colorScheme.primary,
                         ),
                       ),
                     ],
@@ -1218,7 +1240,10 @@ class _CustomerHomePageState extends State<CustomerHomePage> {
                 ),
                 IconButton(
                   onPressed: () => _removeModule(index),
-                  icon: const Icon(Icons.delete, color: Colors.red),
+                  icon: Icon(
+                    Icons.delete,
+                    color: Theme.of(context).colorScheme.error,
+                  ),
                   tooltip: '刪除此模組',
                 ),
               ],
@@ -1227,14 +1252,18 @@ class _CustomerHomePageState extends State<CustomerHomePage> {
             Text(
               '通道: ${module.usedChannels}/${module.channelCount} (可用: ${module.availableChannels})',
               style: TextStyle(
-                color: module.availableChannels > 0 ? Colors.green : Colors.red,
+                color: module.availableChannels > 0
+                    ? Theme.of(context).colorScheme.primary
+                    : Theme.of(context).colorScheme.error,
                 fontWeight: FontWeight.w500,
               ),
             ),
             Text(
               module.isDimmable ? '可調光' : '繼電器控制',
               style: TextStyle(
-                color: module.isDimmable ? Colors.blue : Colors.orange,
+                color: module.isDimmable
+                    ? Theme.of(context).colorScheme.primary
+                    : Theme.of(context).colorScheme.secondary,
               ),
             ),
             const SizedBox(height: 16),
@@ -1260,7 +1289,10 @@ class _CustomerHomePageState extends State<CustomerHomePage> {
                     IconButton(
                       onPressed: () =>
                           _removeLoopFromModule(index, allocationIndex),
-                      icon: const Icon(Icons.remove_circle, color: Colors.red),
+                      icon: Icon(
+                        Icons.remove_circle,
+                        color: Theme.of(context).colorScheme.error,
+                      ),
                       iconSize: 20,
                       tooltip: '移除此分配',
                     ),
