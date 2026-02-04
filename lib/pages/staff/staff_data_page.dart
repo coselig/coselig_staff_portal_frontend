@@ -3,14 +3,14 @@ import 'package:flutter/material.dart';
 import 'package:coselig_staff_portal/services/user_data_service.dart';
 import 'package:coselig_staff_portal/widgets/app_drawer.dart';
 
-class UserDataPage extends StatefulWidget {
-  const UserDataPage({super.key});
+class StaffDataPage extends StatefulWidget {
+  const StaffDataPage({super.key});
 
   @override
-  State<UserDataPage> createState() => _UserDataPageState();
+  State<StaffDataPage> createState() => _StaffDataPageState();
 }
 
-class _UserDataPageState extends State<UserDataPage> {
+class _StaffDataPageState extends State<StaffDataPage> {
   final UserDataService _userDataService = UserDataService();
   final _formKey = GlobalKey<FormState>();
 

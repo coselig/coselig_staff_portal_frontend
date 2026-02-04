@@ -3,14 +3,14 @@ import 'package:flutter/material.dart';
 import 'package:coselig_staff_portal/services/user_data_service.dart';
 import 'package:coselig_staff_portal/widgets/app_drawer.dart';
 
-class AdminUserPreviewPage extends StatefulWidget {
-  const AdminUserPreviewPage({super.key});
+class UserDataViewPage extends StatefulWidget {
+  const UserDataViewPage({super.key});
 
   @override
-  State<AdminUserPreviewPage> createState() => _AdminUserPreviewPageState();
+  State<UserDataViewPage> createState() => _UserDataViewPageState();
 }
 
-class _AdminUserPreviewPageState extends State<AdminUserPreviewPage> {
+class _UserDataViewPageState extends State<UserDataViewPage> {
   final UserDataService _userDataService = UserDataService();
   
   // 表單控制器

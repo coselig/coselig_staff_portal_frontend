@@ -1,14 +1,14 @@
 import 'package:coselig_staff_portal/constants/app_constants.dart';
-import 'package:coselig_staff_portal/pages/admin_page.dart';
-import 'package:coselig_staff_portal/pages/admin_user_preview_page.dart';
-import 'package:coselig_staff_portal/pages/auth_page.dart';
-import 'package:coselig_staff_portal/pages/ble_page.dart';
-import 'package:coselig_staff_portal/pages/discovery_generate_page.dart';
-import 'package:coselig_staff_portal/pages/privacy_policy_page.dart';
-import 'package:coselig_staff_portal/pages/splash_screen.dart';
-import 'package:coselig_staff_portal/pages/staff_home_page.dart';
-import 'package:coselig_staff_portal/pages/customer_home_page.dart';
-import 'package:coselig_staff_portal/pages/user_data_page.dart';
+import 'package:coselig_staff_portal/pages/admin/attendance_view_page.dart';
+import 'package:coselig_staff_portal/pages/admin/user_data_view_page.dart';
+import 'package:coselig_staff_portal/pages/general/auth_page.dart';
+import 'package:coselig_staff_portal/pages/general/ble_page.dart';
+import 'package:coselig_staff_portal/pages/staff/discovery_generate_page.dart';
+import 'package:coselig_staff_portal/pages/general/privacy_policy_page.dart';
+import 'package:coselig_staff_portal/pages/general/splash_screen.dart';
+import 'package:coselig_staff_portal/pages/staff/staff_home_page.dart';
+import 'package:coselig_staff_portal/pages/customer/customer_home_page.dart';
+import 'package:coselig_staff_portal/pages/staff/staff_data_page.dart';
 import 'package:coselig_staff_portal/services/attendance_service.dart';
 import 'package:coselig_staff_portal/services/auth_service.dart';
 import 'package:coselig_staff_portal/services/theme_provider.dart';
@@ -144,13 +144,13 @@ class MainApp extends StatelessWidget {
                 '/home': (context) => const StaffHomePage(),
                 '/customer_home': (context) => const CustomerHomePage(),
                 '/register': (context) => const RegisterFrame(),
-                '/admin': (context) => const AdminPage(),
+                '/admin': (context) => const AllAttendanceViewPage(),
                 '/discovery_generate': (context) =>
                     const DiscoveryGeneratePage(),
                 '/ble': (context) => const BlePage(),
-                '/user_data': (context) => const UserDataPage(),
+                '/user_data': (context) => const StaffDataPage(),
                 '/admin_user_preview': (context) =>
-                    const AdminUserPreviewPage(),
+                    const UserDataViewPage(),
                 '/privacy': (context) => const PrivacyPolicyPage(),
               },
             );

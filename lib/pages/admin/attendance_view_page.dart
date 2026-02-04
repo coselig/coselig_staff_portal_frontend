@@ -4,8 +4,8 @@ import 'package:coselig_staff_portal/widgets/attendance_viewer.dart';
 import 'package:flutter/material.dart';
 import 'package:coselig_staff_portal/main.dart';
 
-class AdminPage extends StatelessWidget {
-  const AdminPage({super.key});
+class AllAttendanceViewPage extends StatelessWidget {
+  const AllAttendanceViewPage({super.key});
 
   @override
   Widget build(BuildContext context) {
