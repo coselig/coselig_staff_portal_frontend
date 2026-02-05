@@ -753,7 +753,7 @@ class _CustomerHomePageState extends State<CustomerHomePage> {
             mainAxisSize: MainAxisSize.min,
             children: [
               DropdownButtonFormField<ModuleOption>(
-                value: selectedOption,
+                initialValue: selectedOption,
                 decoration: const InputDecoration(
                   labelText: '選擇模組型號',
                   border: OutlineInputBorder(),
@@ -887,7 +887,7 @@ class _CustomerHomePageState extends State<CustomerHomePage> {
               children: [
                 Expanded(
                   child: DropdownButtonFormField<int>(
-                    value: loop.voltage,
+                    initialValue: loop.voltage,
                     decoration: const InputDecoration(
                       labelText: '電壓 (V)',
                       border: OutlineInputBorder(),
@@ -909,7 +909,7 @@ class _CustomerHomePageState extends State<CustomerHomePage> {
                 const SizedBox(width: 16),
                 Expanded(
                   child: DropdownButtonFormField<String>(
-                    value: loop.dimmingType,
+                    initialValue: loop.dimmingType,
                     decoration: const InputDecoration(
                       labelText: '調光類型',
                       border: OutlineInputBorder(),
@@ -1078,7 +1078,7 @@ class _CustomerHomePageState extends State<CustomerHomePage> {
             children: [
               // 燈具類型下拉選單
               DropdownButtonFormField<String>(
-                value: selectedType,
+                initialValue: selectedType,
                 decoration: const InputDecoration(
                   labelText: '燈具類型',
                   border: OutlineInputBorder(),
@@ -1418,7 +1418,7 @@ class _CustomerHomePageState extends State<CustomerHomePage> {
               ),
               const SizedBox(height: 16),
               DropdownButtonFormField<int>(
-                value: selectedVoltage,
+                initialValue: selectedVoltage,
                 decoration: const InputDecoration(
                   labelText: '電壓 (V)',
                   border: OutlineInputBorder(),
@@ -1438,7 +1438,7 @@ class _CustomerHomePageState extends State<CustomerHomePage> {
               ),
               const SizedBox(height: 16),
               DropdownButtonFormField<String>(
-                value: selectedDimmingType,
+                initialValue: selectedDimmingType,
                 decoration: const InputDecoration(
                   labelText: '調光類型',
                   border: OutlineInputBorder(),

@@ -115,7 +115,6 @@ class _ManualPunchDialogState extends State<ManualPunchDialog> {
                           ),
                         ),
                         TextButton(
-                          child: const Text('選擇'),
                           onPressed:
                               widget.periodsData[period]!['check_in'] == null
                               ? () async {
@@ -133,6 +132,7 @@ class _ManualPunchDialogState extends State<ManualPunchDialog> {
                                   }
                                 }
                               : null,
+                          child: const Text('選擇'),
                         ),
                       ],
                     ),
@@ -144,7 +144,6 @@ class _ManualPunchDialogState extends State<ManualPunchDialog> {
                           ),
                         ),
                         TextButton(
-                          child: const Text('選擇'),
                           onPressed:
                               widget.periodsData[period]!['check_out'] == null
                               ? () async {
@@ -162,6 +161,7 @@ class _ManualPunchDialogState extends State<ManualPunchDialog> {
                                   }
                                 }
                               : null,
+                          child: const Text('選擇'),
                         ),
                       ],
                     ),
@@ -185,16 +185,16 @@ class _ManualPunchDialogState extends State<ManualPunchDialog> {
             final result = <String, Map<String, String?>>{};
             _periodsTimes.forEach((period, times) {
               result[period] = {
-                'check_in': widget.periodsData[period]!['check_in'] == null
-                    ? (times['check_in'] != null
+                'check_in':
+                    widget.periodsData[period]!['check_in'] ??
+                    (times['check_in'] != null
                           ? '${times['check_in']!.hour.toString().padLeft(2, '0')}:${times['check_in']!.minute.toString().padLeft(2, '0')}:00'
-                          : null)
-                    : widget.periodsData[period]!['check_in'],
-                'check_out': widget.periodsData[period]!['check_out'] == null
-                    ? (times['check_out'] != null
+                        : null),
+                'check_out':
+                    widget.periodsData[period]!['check_out'] ??
+                    (times['check_out'] != null
                           ? '${times['check_out']!.hour.toString().padLeft(2, '0')}:${times['check_out']!.minute.toString().padLeft(2, '0')}:00'
-                          : null)
-                    : widget.periodsData[period]!['check_out'],
+                        : null),
               };
             });
             widget.onSubmit(result);
