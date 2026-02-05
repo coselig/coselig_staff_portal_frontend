@@ -68,31 +68,11 @@ class _CustomerHomePageState extends State<CustomerHomePage> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
+        title: Row(
           children: [
-            Row(
-              children: [
-                Icon(
-                  Icons.calculate,
-                  color: Theme.of(context).colorScheme.primary,
-                ),
-                const SizedBox(width: 8),
-                const Text('估價系統'),
-              ],
-            ),
-            if (_currentConfigurationName != '新估價配置')
-              Padding(
-                padding: const EdgeInsets.only(top: 4),
-                child: Text(
-                  '目前配置: $_currentConfigurationName',
-                  style: TextStyle(
-                    fontSize: 12,
-                    color: Theme.of(context).colorScheme.onSurfaceVariant,
-                    fontWeight: FontWeight.w400,
-                  ),
-                ),
-              ),
+            Icon(Icons.calculate, color: Theme.of(context).colorScheme.primary),
+            const SizedBox(width: 8),
+            const Text('估價系統'),
           ],
         ),
         backgroundColor: Theme.of(context).colorScheme.surface,
