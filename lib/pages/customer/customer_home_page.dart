@@ -65,7 +65,7 @@ class _CustomerHomePageState extends State<CustomerHomePage> {
             tooltip: '儲存配置',
           ),
           IconButton(
-            icon: const Icon(Icons.folder_open),
+            icon: const Icon(Icons.folder),
             onPressed: _isLoading ? null : _loadConfiguration,
             tooltip: '載入配置',
           ),
