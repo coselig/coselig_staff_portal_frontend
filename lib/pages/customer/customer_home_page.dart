@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:coselig_staff_portal/widgets/app_drawer.dart';
 import 'package:universal_html/html.dart' as html;
 import 'package:coselig_staff_portal/services/quote_service.dart';
+import 'package:coselig_staff_portal/services/auth_service.dart';
 import 'package:coselig_staff_portal/models/quote_models.dart';
 import 'package:provider/provider.dart';
 import 'widgets/step1_widget.dart';
@@ -40,13 +41,17 @@ class _CustomerHomePageState extends State<CustomerHomePage> {
 
   late QuoteService _quoteService;
   String _currentConfigurationName = '新估價配置';
+  String? _selectedConfigurationName; // 追蹤下拉選單中選中的配置
   bool _isLoading = false;
+  List<QuoteConfiguration> _configurations = [];
 
   @override
   void initState() {
     super.initState();
-    html.document.title = '光悅顧客系統';
+    final authService = Provider.of<AuthService>(context, listen: false);
+    html.document.title = authService.isCustomer ? '光悅顧客系統' : '光悅員工系統 - 估價系統';
     _quoteService = Provider.of<QuoteService>(context, listen: false);
+    _loadConfigurations();
   }
 
   @override
@@ -63,98 +68,571 @@ class _CustomerHomePageState extends State<CustomerHomePage> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('估價系統'),
-        backgroundColor: Theme.of(context).colorScheme.inversePrimary,
+        title: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Icon(
+                  Icons.calculate,
+                  color: Theme.of(context).colorScheme.primary,
+                ),
+                const SizedBox(width: 8),
+                const Text('估價系統'),
+              ],
+            ),
+            if (_currentConfigurationName != '新估價配置')
+              Padding(
+                padding: const EdgeInsets.only(top: 4),
+                child: Text(
+                  '目前配置: $_currentConfigurationName',
+                  style: TextStyle(
+                    fontSize: 12,
+                    color: Theme.of(context).colorScheme.onSurfaceVariant,
+                    fontWeight: FontWeight.w400,
+                  ),
+                ),
+              ),
+          ],
+        ),
+        backgroundColor: Theme.of(context).colorScheme.surface,
+        foregroundColor: Theme.of(context).colorScheme.onSurface,
+        elevation: 2,
+        shadowColor: Theme.of(
+          context,
+        ).colorScheme.shadow.withValues(alpha: 0.1),
         actions: [
-          IconButton(
-            icon: const Icon(Icons.save),
-            onPressed: _isLoading ? null : _saveConfiguration,
-            tooltip: '儲存配置',
-          ),
-          IconButton(
-            icon: const Icon(Icons.folder),
-            onPressed: _isLoading ? null : _loadConfiguration,
-            tooltip: '載入配置',
-          ),
-          IconButton(
-            icon: const Icon(Icons.delete),
-            onPressed: _isLoading ? null : _deleteConfiguration,
-            tooltip: '刪除配置',
-          ),
+          if (_isLoading)
+            Container(
+              width: 24,
+              height: 24,
+              margin: const EdgeInsets.symmetric(horizontal: 16),
+              child: CircularProgressIndicator(
+                strokeWidth: 2,
+                valueColor: AlwaysStoppedAnimation<Color>(
+                  Theme.of(context).colorScheme.primary,
+                ),
+              ),
+            )
+          else ...[
+            IconButton(
+              icon: Icon(
+                Icons.add,
+                color: Theme.of(context).colorScheme.primary,
+              ),
+              onPressed: _createNewConfiguration,
+              tooltip: '新建配置',
+            ),
+            IconButton(
+              icon: Icon(
+                Icons.save,
+                color: Theme.of(context).colorScheme.primary,
+              ),
+              onPressed: _saveConfiguration,
+              tooltip: '儲存配置',
+            ),
+            Container(
+              margin: const EdgeInsets.symmetric(horizontal: 8),
+              child: VerticalDivider(
+                color: Theme.of(
+                  context,
+                ).colorScheme.outline.withValues(alpha: 0.3),
+                width: 1,
+                thickness: 1,
+              ),
+            ),
+            if (_configurations.isNotEmpty)
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 8),
+                child: DropdownButton<String>(
+                  value: _selectedConfigurationName,
+                  hint: Row(
+                    children: [
+                      Icon(
+                        Icons.folder_open,
+                        size: 18,
+                        color: Theme.of(context).colorScheme.primary,
+                      ),
+                      const SizedBox(width: 4),
+                      Text(
+                        '載入配置',
+                        style: TextStyle(
+                          color: Theme.of(context).colorScheme.primary,
+                        ),
+                      ),
+                    ],
+                  ),
+                  selectedItemBuilder: (BuildContext context) {
+                    return _configurations.map((config) {
+                      return Row(
+                        children: [
+                          Icon(
+                            Icons.folder_open,
+                            size: 18,
+                            color: Theme.of(context).colorScheme.primary,
+                          ),
+                          const SizedBox(width: 4),
+                          Text(
+                            config.name,
+                            style: TextStyle(
+                              color: Theme.of(context).colorScheme.primary,
+                              fontWeight: FontWeight.w500,
+                            ),
+                          ),
+                        ],
+                      );
+                    }).toList();
+                  },
+                  icon: Icon(
+                    Icons.arrow_drop_down,
+                    color: Theme.of(context).colorScheme.primary,
+                  ),
+                  underline: const SizedBox(),
+                  dropdownColor: Theme.of(context).colorScheme.surface,
+                  items: _configurations.map((config) {
+                    return DropdownMenuItem<String>(
+                      value: config.name,
+                      child: Container(
+                        constraints: const BoxConstraints(minWidth: 200),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              config.name,
+                              style: TextStyle(
+                                fontWeight: FontWeight.w500,
+                                color: Theme.of(context).colorScheme.onSurface,
+                              ),
+                            ),
+                            Text(
+                              config.updatedAt,
+                              style: TextStyle(
+                                fontSize: 12,
+                                color: Theme.of(
+                                  context,
+                                ).colorScheme.onSurfaceVariant,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    );
+                  }).toList(),
+                  onChanged: (String? configName) {
+                    if (configName != null) {
+                      setState(() {
+                        _selectedConfigurationName = configName;
+                        _currentConfigurationName = configName;
+                      });
+                      _loadSelectedConfiguration(configName);
+                    }
+                  },
+                ),
+              )
+            else
+              IconButton(
+                icon: Icon(
+                  Icons.refresh,
+                  color: Theme.of(context).colorScheme.primary,
+                ),
+                onPressed: _loadConfigurations,
+                tooltip: '重新載入配置列表',
+              ),
+            if (_configurations.isNotEmpty)
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 8),
+                child: DropdownButton<String>(
+                  value: null,
+                  hint: Row(
+                    children: [
+                      Icon(
+                        Icons.delete_outline,
+                        size: 18,
+                        color: Theme.of(context).colorScheme.error,
+                      ),
+                      const SizedBox(width: 4),
+                      Text(
+                        '刪除配置',
+                        style: TextStyle(
+                          color: Theme.of(context).colorScheme.error,
+                        ),
+                      ),
+                    ],
+                  ),
+                  icon: Icon(
+                    Icons.arrow_drop_down,
+                    color: Theme.of(context).colorScheme.error,
+                  ),
+                  underline: const SizedBox(),
+                  dropdownColor: Theme.of(context).colorScheme.surface,
+                  items: _configurations.map((config) {
+                    return DropdownMenuItem<String>(
+                      value: config.name,
+                      child: Container(
+                        constraints: const BoxConstraints(minWidth: 200),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              config.name,
+                              style: TextStyle(
+                                fontWeight: FontWeight.w500,
+                                color: Theme.of(context).colorScheme.onSurface,
+                              ),
+                            ),
+                            Text(
+                              config.updatedAt,
+                              style: TextStyle(
+                                fontSize: 12,
+                                color: Theme.of(
+                                  context,
+                                ).colorScheme.onSurfaceVariant,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    );
+                  }).toList(),
+                  onChanged: (String? configName) {
+                    if (configName != null) {
+                      _showDeleteConfirmation(configName);
+                    }
+                  },
+                ),
+              )
+            else
+              IconButton(
+                icon: Icon(
+                  Icons.delete_outline,
+                  color: Theme.of(context).colorScheme.outline,
+                ),
+                onPressed: null,
+                tooltip: '無配置可刪除',
+              ),
+          ],
         ],
       ),
       drawer: const AppDrawer(),
-      body: Stepper(
-        currentStep: _currentStep,
-        onStepContinue: () {
-          if (_currentStep < 2) {
-            setState(() {
-              _currentStep += 1;
-            });
-          } else {
-            showDialog(
-              context: context,
-              builder: (context) => QuoteResultDialog(
-                loops: _loops,
-                modules: _modules,
-                switchCount: _switchCountController.text,
-                otherDevices: _otherDevicesController.text,
-                powerSupply: _powerSupplyController.text,
-                boardMaterials: _boardMaterialsController.text,
-                wiring: _wiringController.text,
+      body: Stack(
+        children: [
+          Container(
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                begin: Alignment.topCenter,
+                end: Alignment.bottomCenter,
+                colors: [
+                  Theme.of(context).colorScheme.surface,
+                  Theme.of(context).colorScheme.surface.withValues(alpha: 0.8),
+                ],
               ),
-            );
-          }
-        },
-        onStepCancel: () {
-          if (_currentStep > 0) {
-            setState(() {
-              _currentStep -= 1;
-            });
-          }
-        },
-        onStepTapped: (step) {
-          setState(() {
-            _currentStep = step;
-          });
-        },
-        steps: [
-          Step(
-            title: const Text('第一步：迴路+設備配置'),
-            content: Step1Widget(
-              loops: _loops,
-              switchCountController: _switchCountController,
-              otherDevicesController: _otherDevicesController,
-              onAddLoop: _showAddLoopDialog,
-              onRemoveLoop: _removeLoop,
-              onUpdateLoop: _updateLoop,
-              onAddFixtureToLoop: _showAddFixtureDialog,
-              onRemoveFixtureFromLoop: _removeFixtureFromLoop,
             ),
-            isActive: _currentStep >= 0,
-          ),
-          Step(
-            title: const Text('第二步：模組配置'),
-            content: Step2Widget(
-              modules: _modules,
-              onAddModule: _showAddModuleDialog,
-              onRemoveModule: _removeModule,
-              onAssignLoopToModule: _assignLoopToModule,
-              onRemoveLoopFromModule: _removeLoopFromModule,
-              onEditLoopInModule: _showEditLoopDialog,
-              unassignedLoops: _getUnassignedLoops(),
+            child: Stepper(
+              currentStep: _currentStep,
+              onStepContinue: () {
+                if (_currentStep < 2) {
+                  setState(() {
+                    _currentStep += 1;
+                  });
+                } else {
+                  showDialog(
+                    context: context,
+                    builder: (context) => QuoteResultDialog(
+                      loops: _loops,
+                      modules: _modules,
+                      switchCount: _switchCountController.text,
+                      otherDevices: _otherDevicesController.text,
+                      powerSupply: _powerSupplyController.text,
+                      boardMaterials: _boardMaterialsController.text,
+                      wiring: _wiringController.text,
+                    ),
+                  );
+                }
+              },
+              onStepCancel: () {
+                if (_currentStep > 0) {
+                  setState(() {
+                    _currentStep -= 1;
+                  });
+                }
+              },
+              onStepTapped: (step) {
+                setState(() {
+                  _currentStep = step;
+                });
+              },
+              controlsBuilder: (BuildContext context, ControlsDetails details) {
+                return Container(
+                  margin: const EdgeInsets.only(top: 16),
+                  child: Row(
+                    children: [
+                      if (_currentStep > 0)
+                        Expanded(
+                          child: OutlinedButton.icon(
+                            onPressed: details.onStepCancel,
+                            icon: const Icon(Icons.arrow_back),
+                            label: const Text('上一步'),
+                            style: OutlinedButton.styleFrom(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 24,
+                                vertical: 12,
+                              ),
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(8),
+                              ),
+                            ),
+                          ),
+                        ),
+                      if (_currentStep > 0 && _currentStep < 2)
+                        const SizedBox(width: 16),
+                      Expanded(
+                        child: ElevatedButton.icon(
+                          onPressed: details.onStepContinue,
+                          icon: _currentStep < 2
+                              ? const Icon(Icons.arrow_forward)
+                              : const Icon(Icons.calculate),
+                          label: Text(_currentStep < 2 ? '下一步' : '生成報價'),
+                          style: ElevatedButton.styleFrom(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 24,
+                              vertical: 12,
+                            ),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(8),
+                            ),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                );
+              },
+              steps: [
+                Step(
+                  title: Row(
+                    children: [
+                      Container(
+                        width: 32,
+                        height: 32,
+                        decoration: BoxDecoration(
+                          color: _currentStep >= 0
+                              ? Theme.of(context).colorScheme.primary
+                              : Theme.of(context).colorScheme.outline,
+                          shape: BoxShape.circle,
+                        ),
+                        child: Center(
+                          child: Text(
+                            '1',
+                            style: TextStyle(
+                              color: _currentStep >= 0
+                                  ? Theme.of(context).colorScheme.onPrimary
+                                  : Theme.of(
+                                      context,
+                                    ).colorScheme.onSurfaceVariant,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      const Text(
+                        '迴路+設備配置',
+                        style: TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
+                    ],
+                  ),
+                  content: Container(
+                    margin: const EdgeInsets.only(top: 8),
+                    padding: const EdgeInsets.all(16),
+                    decoration: BoxDecoration(
+                      color: Theme.of(context).colorScheme.surface,
+                      borderRadius: BorderRadius.circular(12),
+                      border: Border.all(
+                        color: Theme.of(
+                          context,
+                        ).colorScheme.outline.withValues(alpha: 0.2),
+                      ),
+                    ),
+                    child: Step1Widget(
+                      loops: _loops,
+                      switchCountController: _switchCountController,
+                      otherDevicesController: _otherDevicesController,
+                      onAddLoop: _showAddLoopDialog,
+                      onRemoveLoop: _removeLoop,
+                      onUpdateLoop: _updateLoop,
+                      onAddFixtureToLoop: _showAddFixtureDialog,
+                      onRemoveFixtureFromLoop: _removeFixtureFromLoop,
+                    ),
+                  ),
+                  isActive: _currentStep >= 0,
+                  state: _currentStep > 0
+                      ? StepState.complete
+                      : StepState.indexed,
+                ),
+                Step(
+                  title: Row(
+                    children: [
+                      Container(
+                        width: 32,
+                        height: 32,
+                        decoration: BoxDecoration(
+                          color: _currentStep >= 1
+                              ? Theme.of(context).colorScheme.primary
+                              : Theme.of(context).colorScheme.outline,
+                          shape: BoxShape.circle,
+                        ),
+                        child: Center(
+                          child: Text(
+                            '2',
+                            style: TextStyle(
+                              color: _currentStep >= 1
+                                  ? Theme.of(context).colorScheme.onPrimary
+                                  : Theme.of(
+                                      context,
+                                    ).colorScheme.onSurfaceVariant,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      const Text(
+                        '模組配置',
+                        style: TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
+                    ],
+                  ),
+                  content: Container(
+                    margin: const EdgeInsets.only(top: 8),
+                    padding: const EdgeInsets.all(16),
+                    decoration: BoxDecoration(
+                      color: Theme.of(context).colorScheme.surface,
+                      borderRadius: BorderRadius.circular(12),
+                      border: Border.all(
+                        color: Theme.of(
+                          context,
+                        ).colorScheme.outline.withValues(alpha: 0.2),
+                      ),
+                    ),
+                    child: Step2Widget(
+                      modules: _modules,
+                      onAddModule: _showAddModuleDialog,
+                      onRemoveModule: _removeModule,
+                      onAssignLoopToModule: _assignLoopToModule,
+                      onRemoveLoopFromModule: _removeLoopFromModule,
+                      onEditLoopInModule: _showEditLoopDialog,
+                      unassignedLoops: _getUnassignedLoops(),
+                    ),
+                  ),
+                  isActive: _currentStep >= 1,
+                  state: _currentStep > 1
+                      ? StepState.complete
+                      : (_currentStep == 1
+                            ? StepState.editing
+                            : StepState.indexed),
+                ),
+                Step(
+                  title: Row(
+                    children: [
+                      Container(
+                        width: 32,
+                        height: 32,
+                        decoration: BoxDecoration(
+                          color: _currentStep >= 2
+                              ? Theme.of(context).colorScheme.primary
+                              : Theme.of(context).colorScheme.outline,
+                          shape: BoxShape.circle,
+                        ),
+                        child: Center(
+                          child: Text(
+                            '3',
+                            style: TextStyle(
+                              color: _currentStep >= 2
+                                  ? Theme.of(context).colorScheme.onPrimary
+                                  : Theme.of(
+                                      context,
+                                    ).colorScheme.onSurfaceVariant,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      const Text(
+                        '材料配置',
+                        style: TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
+                    ],
+                  ),
+                  content: Container(
+                    margin: const EdgeInsets.only(top: 8),
+                    padding: const EdgeInsets.all(16),
+                    decoration: BoxDecoration(
+                      color: Theme.of(context).colorScheme.surface,
+                      borderRadius: BorderRadius.circular(12),
+                      border: Border.all(
+                        color: Theme.of(
+                          context,
+                        ).colorScheme.outline.withValues(alpha: 0.2),
+                      ),
+                    ),
+                    child: Step3Widget(
+                      powerSupplyController: _powerSupplyController,
+                      boardMaterialsController: _boardMaterialsController,
+                      wiringController: _wiringController,
+                    ),
+                  ),
+                  isActive: _currentStep >= 2,
+                  state: _currentStep == 2
+                      ? StepState.editing
+                      : StepState.indexed,
+                ),
+              ],
             ),
-            isActive: _currentStep >= 1,
           ),
-          Step(
-            title: const Text('第三步：材料配置'),
-            content: Step3Widget(
-              powerSupplyController: _powerSupplyController,
-              boardMaterialsController: _boardMaterialsController,
-              wiringController: _wiringController,
+          if (_isLoading)
+            Container(
+              color: Colors.black.withValues(alpha: 0.3),
+              child: Center(
+                child: Card(
+                  elevation: 8,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(16),
+                  ),
+                  child: Padding(
+                    padding: const EdgeInsets.all(24),
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        CircularProgressIndicator(
+                          valueColor: AlwaysStoppedAnimation<Color>(
+                            Theme.of(context).colorScheme.primary,
+                          ),
+                        ),
+                        const SizedBox(height: 16),
+                        Text(
+                          '處理中...',
+                          style: TextStyle(
+                            color: Theme.of(context).colorScheme.onSurface,
+                            fontSize: 16,
+                            fontWeight: FontWeight.w500,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ),
             ),
-            isActive: _currentStep >= 2,
-          ),
         ],
       ),
     );
@@ -297,6 +775,44 @@ class _CustomerHomePageState extends State<CustomerHomePage> {
     );
   }
 
+  void _createNewConfiguration() {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('新建估價配置'),
+        content: const Text('確定要新建配置嗎？這將清除所有當前數據。'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(),
+            child: const Text('取消'),
+          ),
+          ElevatedButton(
+            onPressed: () {
+              setState(() {
+                // 重置所有數據
+                _loops.clear();
+                _modules.clear();
+                _switchCountController.clear();
+                _otherDevicesController.clear();
+                _powerSupplyController.clear();
+                _boardMaterialsController.clear();
+                _wiringController.clear();
+                _currentConfigurationName = '新估價配置';
+                _selectedConfigurationName = null; // 重置下拉選單選擇狀態
+                _currentStep = 0; // 返回第一步
+              });
+              Navigator.of(context).pop();
+              ScaffoldMessenger.of(
+                context,
+              ).showSnackBar(const SnackBar(content: Text('已新建配置')));
+            },
+            child: const Text('確定'),
+          ),
+        ],
+      ),
+    );
+  }
+
   void _saveConfiguration() async {
     final TextEditingController nameController = TextEditingController(
       text: _currentConfigurationName,
@@ -358,165 +874,92 @@ class _CustomerHomePageState extends State<CustomerHomePage> {
     );
   }
 
-  void _loadConfiguration() async {
-    setState(() => _isLoading = true);
+  void _loadConfigurations() async {
     try {
       await _quoteService.fetchConfigurations();
-      final configurations = _quoteService.configurations;
+      setState(() {
+        _configurations = _quoteService.configurations;
+      });
+    } catch (e) {
+      // 靜默處理錯誤，用戶可以稍後重試
+      print('載入配置列表失敗: $e');
+    }
+  }
 
-      if (configurations.isEmpty) {
+  void _loadSelectedConfiguration(String configName) async {
+    final previousConfigName = _currentConfigurationName;
+    setState(() => _isLoading = true);
+    try {
+      final quoteData = await _quoteService.loadConfiguration(configName);
+      if (quoteData != null) {
+        setState(() {
+          _loops.clear();
+          _loops.addAll(quoteData.loops);
+          _modules.clear();
+          _modules.addAll(quoteData.modules);
+          _switchCountController.text = quoteData.switchCount;
+          _otherDevicesController.text = quoteData.otherDevices;
+          _powerSupplyController.text = quoteData.powerSupply;
+          _boardMaterialsController.text = quoteData.boardMaterials;
+          _wiringController.text = quoteData.wiring;
+          _currentConfigurationName = configName;
+        });
         ScaffoldMessenger.of(
           context,
-        ).showSnackBar(const SnackBar(content: Text('沒有可用的配置')));
-        return;
+        ).showSnackBar(const SnackBar(content: Text('配置已載入')));
       }
-
-      showDialog(
-        context: context,
-        builder: (context) => AlertDialog(
-          title: const Text('載入估價配置'),
-          content: SizedBox(
-            width: double.maxFinite,
-            child: ListView.builder(
-              shrinkWrap: true,
-              itemCount: configurations.length,
-              itemBuilder: (context, index) {
-                final config = configurations[index];
-                return ListTile(
-                  title: Text(config.name),
-                  subtitle: Text('${config.chineseName} - ${config.updatedAt}'),
-                  onTap: () async {
-                    try {
-                      final quoteData = await _quoteService.loadConfiguration(
-                        config.name,
-                      );
-                      if (quoteData != null) {
-                        setState(() {
-                          _loops.clear();
-                          _loops.addAll(quoteData.loops);
-                          _modules.clear();
-                          _modules.addAll(quoteData.modules);
-                          _switchCountController.text = quoteData.switchCount;
-                          _otherDevicesController.text = quoteData.otherDevices;
-                          _powerSupplyController.text = quoteData.powerSupply;
-                          _boardMaterialsController.text =
-                              quoteData.boardMaterials;
-                          _wiringController.text = quoteData.wiring;
-                          _currentConfigurationName = config.name;
-                        });
-                        Navigator.of(context).pop();
-                        ScaffoldMessenger.of(
-                          context,
-                        ).showSnackBar(const SnackBar(content: Text('配置已載入')));
-                      }
-                    } catch (e) {
-                      ScaffoldMessenger.of(
-                        context,
-                      ).showSnackBar(SnackBar(content: Text('載入失敗: $e')));
-                    }
-                  },
-                );
-              },
-            ),
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.of(context).pop(),
-              child: const Text('取消'),
-            ),
-          ],
-        ),
-      );
     } catch (e) {
+      // 載入失敗時恢復之前的配置名稱
+      setState(() {
+        _currentConfigurationName = previousConfigName;
+        _selectedConfigurationName = null; // 重置下拉選單選擇狀態
+      });
       ScaffoldMessenger.of(
         context,
-      ).showSnackBar(SnackBar(content: Text('載入配置列表失敗: $e')));
+      ).showSnackBar(SnackBar(content: Text('載入失敗: $e')));
     } finally {
       setState(() => _isLoading = false);
     }
   }
 
-  void _deleteConfiguration() async {
+  void _showDeleteConfirmation(String configName) async {
+    final confirm = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('確認刪除'),
+        content: Text('確定要刪除配置 "$configName" 嗎？'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(false),
+            child: const Text('取消'),
+          ),
+          ElevatedButton(
+            onPressed: () => Navigator.of(context).pop(true),
+            child: const Text('刪除'),
+          ),
+        ],
+      ),
+    );
+
+    if (confirm == true) {
+      _deleteSelectedConfiguration(configName);
+    }
+  }
+
+  void _deleteSelectedConfiguration(String configName) async {
     setState(() => _isLoading = true);
     try {
-      await _quoteService.fetchConfigurations();
-      final configurations = _quoteService.configurations;
-
-      if (configurations.isEmpty) {
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(const SnackBar(content: Text('沒有可用的配置')));
-        return;
-      }
-
-      showDialog(
-        context: context,
-        builder: (context) => AlertDialog(
-          title: const Text('刪除估價配置'),
-          content: SizedBox(
-            width: double.maxFinite,
-            child: ListView.builder(
-              shrinkWrap: true,
-              itemCount: configurations.length,
-              itemBuilder: (context, index) {
-                final config = configurations[index];
-                return ListTile(
-                  title: Text(config.name),
-                  subtitle: Text('${config.chineseName} - ${config.updatedAt}'),
-                  trailing: IconButton(
-                    icon: const Icon(Icons.delete, color: Colors.red),
-                    onPressed: () async {
-                      final confirm = await showDialog<bool>(
-                        context: context,
-                        builder: (context) => AlertDialog(
-                          title: const Text('確認刪除'),
-                          content: Text('確定要刪除配置 "${config.name}" 嗎？'),
-                          actions: [
-                            TextButton(
-                              onPressed: () => Navigator.of(context).pop(false),
-                              child: const Text('取消'),
-                            ),
-                            ElevatedButton(
-                              onPressed: () => Navigator.of(context).pop(true),
-                              child: const Text('刪除'),
-                            ),
-                          ],
-                        ),
-                      );
-
-                      if (confirm == true) {
-                        try {
-                          await _quoteService.deleteConfiguration(config.name);
-                          Navigator.of(
-                            context,
-                          ).pop(); // Close the delete dialog
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            const SnackBar(content: Text('配置已刪除')),
-                          );
-                        } catch (e) {
-                          ScaffoldMessenger.of(
-                            context,
-                          ).showSnackBar(SnackBar(content: Text('刪除失敗: $e')));
-                        }
-                      }
-                    },
-                  ),
-                );
-              },
-            ),
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.of(context).pop(),
-              child: const Text('關閉'),
-            ),
-          ],
-        ),
-      );
+      await _quoteService.deleteConfiguration(configName);
+      // 重新載入配置列表
+      _loadConfigurations();
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('配置已刪除')));
     } catch (e) {
       ScaffoldMessenger.of(
         context,
-      ).showSnackBar(SnackBar(content: Text('載入配置列表失敗: $e')));
+      ).showSnackBar(SnackBar(content: Text('刪除失敗: $e')),
+      );
     } finally {
       setState(() => _isLoading = false);
     }

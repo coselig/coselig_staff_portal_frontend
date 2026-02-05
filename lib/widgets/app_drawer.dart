@@ -111,6 +111,14 @@ class AppDrawer extends StatelessWidget {
                 ),
               ),
             ],
+            // 估價系統 - 員工和顧客都可以使用
+            ListTile(
+              leading: Icon(Icons.calculate),
+              title: Text('估價系統'),
+              onTap: () {
+                navigatorKey.currentState!.pushNamed('/customer_home');
+              },
+            ),
           ] else ...[
             // 顧客特定的選項
             ListTile(
