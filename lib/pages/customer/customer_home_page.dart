@@ -30,7 +30,6 @@ class _CustomerHomePageState extends State<CustomerHomePage> {
   final TextEditingController _otherDevicesController = TextEditingController();
 
   // 第二步：模組配置
-  final List<LightFixture> _lightFixtures = [];
   final List<Module> _modules = [];
 
   // 第三步：材料配置
