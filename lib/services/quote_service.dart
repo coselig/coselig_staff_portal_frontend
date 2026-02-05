@@ -268,4 +268,96 @@ class QuoteService extends ChangeNotifier {
       notifyListeners();
     }
   }
+
+  // 管理模組選項的方法
+  Future<List<Map<String, dynamic>>> fetchAllModuleOptions() async {
+    try {
+      final response = await _client.get(
+        Uri.parse('$baseUrl/api/module-options'),
+      );
+
+      if (response.statusCode == 200) {
+        final data = jsonDecode(response.body);
+        return List<Map<String, dynamic>>.from(data['moduleOptions']);
+      } else if (response.statusCode == 401) {
+        navigatorKey.currentState?.pushReplacementNamed('/login');
+        throw Exception('Unauthorized');
+      } else {
+        final error = jsonDecode(response.body);
+        throw Exception(error['error'] ?? 'Failed to fetch module options');
+      }
+    } catch (e) {
+      throw Exception('Network error: $e');
+    }
+  }
+
+  Future<void> addModuleOption(ModuleOption option) async {
+    try {
+      final response = await _client.post(
+        Uri.parse('$baseUrl/api/module-options'),
+        headers: {'Content-Type': 'application/json'},
+        body: jsonEncode({
+          'model': option.model,
+          'channelCount': option.channelCount,
+          'isDimmable': option.isDimmable,
+          'maxAmperePerChannel': option.maxAmperePerChannel,
+          'maxAmpereTotal': option.maxAmpereTotal,
+        }),
+      );
+
+      if (response.statusCode == 201) {
+        await fetchModuleOptions(); // 重新載入列表
+      } else if (response.statusCode == 401) {
+        navigatorKey.currentState?.pushReplacementNamed('/login');
+        throw Exception('Unauthorized');
+      } else {
+        final error = jsonDecode(response.body);
+        throw Exception(error['error'] ?? 'Failed to add module option');
+      }
+    } catch (e) {
+      throw Exception('Network error: $e');
+    }
+  }
+
+  Future<void> updateModuleOption(int id, Map<String, dynamic> updates) async {
+    try {
+      final response = await _client.put(
+        Uri.parse('$baseUrl/api/module-options?id=$id'),
+        headers: {'Content-Type': 'application/json'},
+        body: jsonEncode(updates),
+      );
+
+      if (response.statusCode == 200) {
+        await fetchModuleOptions(); // 重新載入列表
+      } else if (response.statusCode == 401) {
+        navigatorKey.currentState?.pushReplacementNamed('/login');
+        throw Exception('Unauthorized');
+      } else {
+        final error = jsonDecode(response.body);
+        throw Exception(error['error'] ?? 'Failed to update module option');
+      }
+    } catch (e) {
+      throw Exception('Network error: $e');
+    }
+  }
+
+  Future<void> deleteModuleOption(int id) async {
+    try {
+      final response = await _client.delete(
+        Uri.parse('$baseUrl/api/module-options?id=$id'),
+      );
+
+      if (response.statusCode == 200) {
+        await fetchModuleOptions(); // 重新載入列表
+      } else if (response.statusCode == 401) {
+        navigatorKey.currentState?.pushReplacementNamed('/login');
+        throw Exception('Unauthorized');
+      } else {
+        final error = jsonDecode(response.body);
+        throw Exception(error['error'] ?? 'Failed to delete module option');
+      }
+    } catch (e) {
+      throw Exception('Network error: $e');
+    }
+  }
 }

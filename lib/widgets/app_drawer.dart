@@ -44,6 +44,13 @@ class AppDrawer extends StatelessWidget {
                 navigatorKey.currentState!.pushNamed('/admin_user_preview');
               },
             ),
+            ListTile(
+              leading: Icon(Icons.settings),
+              title: Text('模組管理'),
+              onTap: () {
+                navigatorKey.currentState!.pushNamed('/module_management');
+              },
+            ),
           ] else if (authService.isManager) ...[
             ListTile(
               leading: Icon(Icons.people),
