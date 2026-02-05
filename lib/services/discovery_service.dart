@@ -467,9 +467,9 @@ class DiscoveryService extends ChangeNotifier {
 
       // 為每個設備生成一個 tile
       for (final device in devices) {
-        // 生成 entity ID: light.{type}_{module_id}_{channel}
+        // 生成 entity ID: light.{type}_{module_id}_{channel}_{tcp}
         final entityId =
-            'light.${device.type}_${device.moduleId}_${device.channel}';
+            'light.${device.type}_${device.moduleId}_${device.channel}_${device.tcp}';
 
         buffer.writeln('          - type: tile');
         buffer.writeln('            entity: $entityId');
