@@ -13,6 +13,7 @@ import 'package:coselig_staff_portal/services/attendance_service.dart';
 import 'package:coselig_staff_portal/services/auth_service.dart';
 import 'package:coselig_staff_portal/services/theme_provider.dart';
 import 'package:coselig_staff_portal/services/ui_settings_provider.dart';
+import 'package:coselig_staff_portal/services/quote_service.dart';
 import 'package:coselig_staff_portal/widgets/register_frame.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
@@ -46,6 +47,7 @@ void main() async {
         ChangeNotifierProvider(create: (_) => AuthService()),
         ChangeNotifierProvider(create: (_) => AttendanceService()),
         ChangeNotifierProvider(create: (_) => UiSettingsProvider()),
+        ChangeNotifierProvider(create: (_) => QuoteService()),
         ChangeNotifierProxyProvider<AuthService, ThemeProvider>(
           create: (context) =>
               ThemeProvider(Provider.of<AuthService>(context, listen: false)),

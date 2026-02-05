@@ -2,354 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:coselig_staff_portal/widgets/app_drawer.dart';
 import 'package:universal_html/html.dart' as html;
-
-class LightFixture {
-  String name;
-  int count = 1;
-  int watt = 10;
-  int volt = 12;
-  bool isCustomVolt = false;
-  String dimmingType = 'WRGB';
-  bool needsRelay = false;
-  String relayType = '大功率';
-
-  LightFixture({
-    required this.name,
-    int? count,
-    int? watt,
-    int? volt,
-    bool? isCustomVolt,
-    String? dimmingType,
-    bool? needsRelay,
-    String? relayType,
-  }) {
-    this.count = count ?? this.count;
-    this.watt = watt ?? this.watt;
-    this.volt = volt ?? this.volt;
-    this.isCustomVolt = isCustomVolt ?? this.isCustomVolt;
-    this.dimmingType = dimmingType ?? this.dimmingType;
-    this.needsRelay = needsRelay ?? this.needsRelay;
-    this.relayType = relayType ?? this.relayType;
-  }
-
-  LightFixture copyWith({
-    String? name,
-    int? count,
-    int? watt,
-    int? volt,
-    bool? isCustomVolt,
-    String? dimmingType,
-    bool? needsRelay,
-    String? relayType,
-  }) {
-    return LightFixture(
-      name: name ?? this.name,
-      count: count ?? this.count,
-      watt: watt ?? this.watt,
-      volt: volt ?? this.volt,
-      isCustomVolt: isCustomVolt ?? this.isCustomVolt,
-      dimmingType: dimmingType ?? this.dimmingType,
-      needsRelay: needsRelay ?? this.needsRelay,
-      relayType: relayType ?? this.relayType,
-    );
-  }
-
-  // 獲取燈具需要的總通道數 (數量 × 單個燈具需要的通道數)
-  int get requiredChannels {
-    int channelsPerFixture;
-    switch (dimmingType) {
-      case 'WRGB':
-        channelsPerFixture = 4;
-        break;
-      case 'RGB':
-        channelsPerFixture = 3;
-        break;
-      case '雙色溫':
-        channelsPerFixture = 2;
-        break;
-      case '單色溫':
-      case '繼電器':
-        channelsPerFixture = 1;
-        break;
-      default:
-        channelsPerFixture = 1;
-    }
-    return count * channelsPerFixture;
-  }
-}
-
-class FixtureAllocation {
-  LightFixture fixture;
-  int allocatedCount;
-
-  FixtureAllocation({required this.fixture, required this.allocatedCount});
-
-  // 獲取本次分配需要的通道數
-  int get requiredChannels {
-    int channelsPerFixture;
-    switch (fixture.dimmingType) {
-      case 'WRGB':
-        channelsPerFixture = 4;
-        break;
-      case 'RGB':
-        channelsPerFixture = 3;
-        break;
-      case '雙色溫':
-        channelsPerFixture = 2;
-        break;
-      case '單色溫':
-      case '繼電器':
-        channelsPerFixture = 1;
-        break;
-      default:
-        channelsPerFixture = 1;
-    }
-    return allocatedCount * channelsPerFixture;
-  }
-
-  FixtureAllocation copyWith({LightFixture? fixture, int? allocatedCount}) {
-    return FixtureAllocation(
-      fixture: fixture ?? this.fixture,
-      allocatedCount: allocatedCount ?? this.allocatedCount,
-    );
-  }
-}
-
-class LoopAllocation {
-  Loop loop;
-  int allocatedCount; // 分配的迴路數量（通常為1，因為一個迴路對應一個模組通道組）
-
-  LoopAllocation({required this.loop, this.allocatedCount = 1});
-
-  // 獲取本次分配需要的通道數（基於迴路的調光類型）
-  int get requiredChannels {
-    int channelsPerLoop;
-    switch (loop.dimmingType) {
-      case 'WRGB':
-        channelsPerLoop = 4;
-        break;
-      case 'RGB':
-        channelsPerLoop = 3;
-        break;
-      case '雙色溫':
-        channelsPerLoop = 2;
-        break;
-      case '單色溫':
-      case '繼電器':
-        channelsPerLoop = 1;
-        break;
-      default:
-        channelsPerLoop = 1;
-    }
-    return allocatedCount * channelsPerLoop;
-  }
-
-  LoopAllocation copyWith({Loop? loop, int? allocatedCount}) {
-    return LoopAllocation(
-      loop: loop ?? this.loop,
-      allocatedCount: allocatedCount ?? this.allocatedCount,
-    );
-  }
-}
-
-class ModuleOption {
-  final String model;
-  final int channelCount;
-  final bool isDimmable;
-
-  const ModuleOption({
-    required this.model,
-    required this.channelCount,
-    required this.isDimmable,
-  });
-}
-
-class Module {
-  String model;
-  int channelCount;
-  bool isDimmable;
-  List<FixtureAllocation> allocations;
-  List<LoopAllocation> loopAllocations;
-
-  Module({
-    required this.model,
-    required this.channelCount,
-    required this.isDimmable,
-    this.allocations = const [],
-    this.loopAllocations = const [],
-  });
-
-  Module copyWith({
-    String? model,
-    int? channelCount,
-    bool? isDimmable,
-    List<FixtureAllocation>? allocations,
-    List<LoopAllocation>? loopAllocations,
-  }) {
-    return Module(
-      model: model ?? this.model,
-      channelCount: channelCount ?? this.channelCount,
-      isDimmable: isDimmable ?? this.isDimmable,
-      allocations: allocations ?? this.allocations,
-      loopAllocations: loopAllocations ?? this.loopAllocations,
-    );
-  }
-
-  // 獲取已使用的通道數
-  int get usedChannels =>
-      allocations.fold(
-        0,
-        (sum, allocation) => sum + allocation.requiredChannels,
-      ) +
-      loopAllocations.fold(
-        0,
-        (sum, allocation) => sum + allocation.requiredChannels,
-      );
-
-  // 獲取可用通道數
-  int get availableChannels => channelCount - usedChannels;
-
-  // 檢查是否可以分配指定數量的燈具
-  bool canAssignFixture(LightFixture fixture, int count) {
-    int requiredChannels = count * fixture.requiredChannels ~/ fixture.count;
-    return availableChannels >= requiredChannels;
-  }
-
-  // 檢查是否可以分配迴路
-  bool canAssignLoop(Loop loop, int count) {
-    int requiredChannels = count * _getChannelsPerLoop(loop.dimmingType);
-    return availableChannels >= requiredChannels;
-  }
-
-  // 獲取迴路需要的通道數
-  int _getChannelsPerLoop(String dimmingType) {
-    switch (dimmingType) {
-      case 'WRGB':
-        return 4;
-      case 'RGB':
-        return 3;
-      case '雙色溫':
-        return 2;
-      case '單色溫':
-      case '繼電器':
-        return 1;
-      default:
-        return 1;
-    }
-  }
-}
-
-// 預定義模組選項
-const List<ModuleOption> moduleOptions = [
-  ModuleOption(model: 'P210', channelCount: 2, isDimmable: true),
-  ModuleOption(model: 'P404', channelCount: 4, isDimmable: true),
-  ModuleOption(model: 'R410', channelCount: 4, isDimmable: false),
-  ModuleOption(model: 'P805', channelCount: 8, isDimmable: true),
-  ModuleOption(model: 'P305', channelCount: 3, isDimmable: true),
-];
-
-// 燈具類型選項
-const List<String> fixtureTypes = [
-  '軌道燈',
-  '燈帶',
-  '崁燈',
-  '射燈',
-  '吊燈',
-];
-
-class FixtureTypeData {
-  final String type;
-  final String quantityLabel;
-  final String unitLabel;
-  final bool isMeterBased;
-
-  const FixtureTypeData({
-    required this.type,
-    required this.quantityLabel,
-    required this.unitLabel,
-    this.isMeterBased = false,
-  });
-}
-
-const Map<String, FixtureTypeData> fixtureTypeData = {
-  '軌道燈': FixtureTypeData(
-    type: '軌道燈',
-    quantityLabel: '燈具數量',
-    unitLabel: '每顆瓦數 (W)',
-  ),
-  '燈帶': FixtureTypeData(
-    type: '燈帶',
-    quantityLabel: '米數',
-    unitLabel: '每米瓦數 (W/m)',
-    isMeterBased: true,
-  ),
-  '崁燈': FixtureTypeData(
-    type: '崁燈',
-    quantityLabel: '燈具數量',
-    unitLabel: '每顆瓦數 (W)',
-  ),
-  '射燈': FixtureTypeData(
-    type: '射燈',
-    quantityLabel: '燈具數量',
-    unitLabel: '每顆瓦數 (W)',
-  ),
-  '吊燈': FixtureTypeData(
-    type: '吊燈',
-    quantityLabel: '燈具數量',
-    unitLabel: '每顆瓦數 (W)',
-  ),
-};
-
-class LoopFixture {
-  String name;
-  int totalWatt;
-
-  LoopFixture({
-    required this.name,
-    required this.totalWatt});
-
-  LoopFixture copyWith({
-    String? name,
-    int? totalWatt,
-  }) {
-    return LoopFixture(
-      name: name ?? this.name,
-      totalWatt: totalWatt ?? this.totalWatt,
-    );
-  }
-}
-
-class Loop {
-  String name;
-  int voltage;
-  String dimmingType;
-  List<LoopFixture> fixtures;
-
-  Loop({
-    required this.name,
-    this.voltage = 12,
-    this.dimmingType = 'WRGB',
-    this.fixtures = const [],
-  });
-
-  Loop copyWith({
-    String? name,
-    int? voltage,
-    String? dimmingType,
-    List<LoopFixture>? fixtures,
-  }) {
-    return Loop(
-      name: name ?? this.name,
-      voltage: voltage ?? this.voltage,
-      dimmingType: dimmingType ?? this.dimmingType,
-      fixtures: fixtures ?? this.fixtures,
-    );
-  }
-
-  // 獲取總瓦數
-  int get totalWatt =>
-      fixtures.fold(0, (sum, fixture) => sum + fixture.totalWatt);
-}
+import 'package:coselig_staff_portal/services/quote_service.dart';
+import 'package:coselig_staff_portal/models/quote_models.dart';
+import 'package:provider/provider.dart';
 
 class CustomerHomePage extends StatefulWidget {
   const CustomerHomePage({super.key});
@@ -376,10 +31,15 @@ class _CustomerHomePageState extends State<CustomerHomePage> {
       TextEditingController();
   final TextEditingController _wiringController = TextEditingController();
 
+  late QuoteService _quoteService;
+  String _currentConfigurationName = '新估價配置';
+  bool _isLoading = false;
+
   @override
   void initState() {
     super.initState();
     html.document.title = '光悅顧客系統';
+    _quoteService = Provider.of<QuoteService>(context, listen: false);
   }
 
   @override
@@ -398,6 +58,23 @@ class _CustomerHomePageState extends State<CustomerHomePage> {
       appBar: AppBar(
         title: const Text('估價系統'),
         backgroundColor: Theme.of(context).colorScheme.inversePrimary,
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.save),
+            onPressed: _isLoading ? null : _saveConfiguration,
+            tooltip: '儲存配置',
+          ),
+          IconButton(
+            icon: const Icon(Icons.folder_open),
+            onPressed: _isLoading ? null : _loadConfiguration,
+            tooltip: '載入配置',
+          ),
+          IconButton(
+            icon: const Icon(Icons.delete),
+            onPressed: _isLoading ? null : _deleteConfiguration,
+            tooltip: '刪除配置',
+          ),
+        ],
       ),
       drawer: const AppDrawer(),
       body: Stepper(
@@ -1493,5 +1170,230 @@ class _CustomerHomePageState extends State<CustomerHomePage> {
         ),
       ),
     );
+  }
+
+  void _saveConfiguration() async {
+    final TextEditingController nameController = TextEditingController(
+      text: _currentConfigurationName,
+    );
+
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('儲存估價配置'),
+        content: TextField(
+          controller: nameController,
+          decoration: const InputDecoration(
+            labelText: '配置名稱',
+            hintText: '輸入配置名稱',
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(),
+            child: const Text('取消'),
+          ),
+          ElevatedButton(
+            onPressed: () async {
+              if (nameController.text.trim().isNotEmpty) {
+                setState(() => _isLoading = true);
+                try {
+                  final quoteData = QuoteData(
+                    loops: _loops,
+                    modules: _modules,
+                    switchCount: _switchCountController.text,
+                    otherDevices: _otherDevicesController.text,
+                    powerSupply: _powerSupplyController.text,
+                    boardMaterials: _boardMaterialsController.text,
+                    wiring: _wiringController.text,
+                  );
+
+                  await _quoteService.saveConfiguration(
+                    nameController.text.trim(),
+                    quoteData,
+                  );
+                  _currentConfigurationName = nameController.text.trim();
+                  Navigator.of(context).pop();
+                  ScaffoldMessenger.of(
+                    context,
+                  ).showSnackBar(const SnackBar(content: Text('配置已儲存')));
+                } catch (e) {
+                  ScaffoldMessenger.of(
+                    context,
+                  ).showSnackBar(SnackBar(content: Text('儲存失敗: $e')));
+                } finally {
+                  setState(() => _isLoading = false);
+                }
+              }
+            },
+            child: const Text('儲存'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _loadConfiguration() async {
+    setState(() => _isLoading = true);
+    try {
+      await _quoteService.fetchConfigurations();
+      final configurations = _quoteService.configurations;
+
+      if (configurations.isEmpty) {
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(const SnackBar(content: Text('沒有可用的配置')));
+        return;
+      }
+
+      showDialog(
+        context: context,
+        builder: (context) => AlertDialog(
+          title: const Text('載入估價配置'),
+          content: SizedBox(
+            width: double.maxFinite,
+            child: ListView.builder(
+              shrinkWrap: true,
+              itemCount: configurations.length,
+              itemBuilder: (context, index) {
+                final config = configurations[index];
+                return ListTile(
+                  title: Text(config.name),
+                  subtitle: Text('${config.chineseName} - ${config.updatedAt}'),
+                  onTap: () async {
+                    try {
+                      final quoteData = await _quoteService.loadConfiguration(
+                        config.name,
+                      );
+                      if (quoteData != null) {
+                        setState(() {
+                          _loops.clear();
+                          _loops.addAll(quoteData.loops);
+                          _modules.clear();
+                          _modules.addAll(quoteData.modules);
+                          _switchCountController.text = quoteData.switchCount;
+                          _otherDevicesController.text = quoteData.otherDevices;
+                          _powerSupplyController.text = quoteData.powerSupply;
+                          _boardMaterialsController.text =
+                              quoteData.boardMaterials;
+                          _wiringController.text = quoteData.wiring;
+                          _currentConfigurationName = config.name;
+                        });
+                        Navigator.of(context).pop();
+                        ScaffoldMessenger.of(
+                          context,
+                        ).showSnackBar(const SnackBar(content: Text('配置已載入')));
+                      }
+                    } catch (e) {
+                      ScaffoldMessenger.of(
+                        context,
+                      ).showSnackBar(SnackBar(content: Text('載入失敗: $e')));
+                    }
+                  },
+                );
+              },
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(),
+              child: const Text('取消'),
+            ),
+          ],
+        ),
+      );
+    } catch (e) {
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('載入配置列表失敗: $e')));
+    } finally {
+      setState(() => _isLoading = false);
+    }
+  }
+
+  void _deleteConfiguration() async {
+    setState(() => _isLoading = true);
+    try {
+      await _quoteService.fetchConfigurations();
+      final configurations = _quoteService.configurations;
+
+      if (configurations.isEmpty) {
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(const SnackBar(content: Text('沒有可用的配置')));
+        return;
+      }
+
+      showDialog(
+        context: context,
+        builder: (context) => AlertDialog(
+          title: const Text('刪除估價配置'),
+          content: SizedBox(
+            width: double.maxFinite,
+            child: ListView.builder(
+              shrinkWrap: true,
+              itemCount: configurations.length,
+              itemBuilder: (context, index) {
+                final config = configurations[index];
+                return ListTile(
+                  title: Text(config.name),
+                  subtitle: Text('${config.chineseName} - ${config.updatedAt}'),
+                  trailing: IconButton(
+                    icon: const Icon(Icons.delete, color: Colors.red),
+                    onPressed: () async {
+                      final confirm = await showDialog<bool>(
+                        context: context,
+                        builder: (context) => AlertDialog(
+                          title: const Text('確認刪除'),
+                          content: Text('確定要刪除配置 "${config.name}" 嗎？'),
+                          actions: [
+                            TextButton(
+                              onPressed: () => Navigator.of(context).pop(false),
+                              child: const Text('取消'),
+                            ),
+                            ElevatedButton(
+                              onPressed: () => Navigator.of(context).pop(true),
+                              child: const Text('刪除'),
+                            ),
+                          ],
+                        ),
+                      );
+
+                      if (confirm == true) {
+                        try {
+                          await _quoteService.deleteConfiguration(config.name);
+                          Navigator.of(
+                            context,
+                          ).pop(); // Close the delete dialog
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            const SnackBar(content: Text('配置已刪除')),
+                          );
+                        } catch (e) {
+                          ScaffoldMessenger.of(
+                            context,
+                          ).showSnackBar(SnackBar(content: Text('刪除失敗: $e')));
+                        }
+                      }
+                    },
+                  ),
+                );
+              },
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(),
+              child: const Text('關閉'),
+            ),
+          ],
+        ),
+      );
+    } catch (e) {
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('載入配置列表失敗: $e')));
+    } finally {
+      setState(() => _isLoading = false);
+    }
   }
 }
