@@ -704,9 +704,62 @@ class _CustomerHomePageState extends State<CustomerHomePage> {
   }
 
   // 將迴路分配到模組
-  void _assignLoopToModule(int moduleIndex, Loop loop) {
+  void _assignLoopToModule(int moduleIndex, Loop loop) async {
+    final module = _modules[moduleIndex];
+    final ampereCheck = module.checkLoopAmpereLimit(loop, 1);
+
+    if (ampereCheck == AmpereCheckResult.blocked) {
+      // 超過最大限制，顯示錯誤對話框
+      await showDialog(
+        context: context,
+        builder: (context) => AlertDialog(
+          title: const Text('無法添加迴路'),
+          content: Text(
+            '添加此迴路將使模組總安培數超過最大限制 (${module.maxAmpereTotal}A)。\n'
+            '請選擇其他模組或減少負載。',
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(),
+              child: const Text('確定'),
+            ),
+          ],
+        ),
+      );
+      return;
+    }
+
+    if (ampereCheck == AmpereCheckResult.warning) {
+      // 超過80%，顯示警告但允許繼續
+      final shouldContinue = await showDialog<bool>(
+        context: context,
+        builder: (context) => AlertDialog(
+          title: const Text('安培數警告'),
+          content: Text(
+            '添加此迴路將使模組總安培數超過80%的額定值。\n'
+            '建議檢查電路安全性和散熱條件。\n\n'
+            '確定要繼續嗎？',
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(false),
+              child: const Text('取消'),
+            ),
+            ElevatedButton(
+              onPressed: () => Navigator.of(context).pop(true),
+              child: const Text('繼續'),
+            ),
+          ],
+        ),
+      );
+
+      if (shouldContinue != true) {
+        return;
+      }
+    }
+
+    // 正常添加迴路
     setState(() {
-      final module = _modules[moduleIndex];
       if (module.canAssignLoop(loop, 1)) {
         final allocation = LoopAllocation(loop: loop);
         final updatedLoopAllocations = List<LoopAllocation>.from(
@@ -856,6 +909,7 @@ class _CustomerHomePageState extends State<CustomerHomePage> {
   void _loadConfigurations() async {
     try {
       await _quoteService.fetchConfigurations();
+      await _quoteService.fetchModuleOptions();
       setState(() {
         _configurations = _quoteService.configurations;
       });

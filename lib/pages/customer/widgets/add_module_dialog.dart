@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 import 'package:coselig_staff_portal/models/quote_models.dart';
+import 'package:coselig_staff_portal/services/quote_service.dart';
 
 class AddModuleDialog extends StatefulWidget {
   final Function(Module) onAddModule;
@@ -15,6 +17,8 @@ class _AddModuleDialogState extends State<AddModuleDialog> {
 
   @override
   Widget build(BuildContext context) {
+    final quoteService = Provider.of<QuoteService>(context);
+
     return StatefulBuilder(
       builder: (context, setState) => AlertDialog(
         title: const Text('添加新模組'),
@@ -27,7 +31,7 @@ class _AddModuleDialogState extends State<AddModuleDialog> {
                 labelText: '選擇模組型號',
                 border: OutlineInputBorder(),
               ),
-              items: moduleOptions.map((option) {
+              items: quoteService.moduleOptions.map((option) {
                 return DropdownMenuItem<ModuleOption>(
                   value: option,
                   child: Text(
@@ -56,6 +60,9 @@ class _AddModuleDialogState extends State<AddModuleDialog> {
                         model: selectedOption!.model,
                         channelCount: selectedOption!.channelCount,
                         isDimmable: selectedOption!.isDimmable,
+                        maxAmperePerChannel:
+                            selectedOption!.maxAmperePerChannel,
+                        maxAmpereTotal: selectedOption!.maxAmpereTotal,
                       ),
                     );
                     Navigator.of(context).pop();

@@ -89,10 +89,12 @@ class QuoteService extends ChangeNotifier {
   final String baseUrl = 'https://employeeservice.coseligtest.workers.dev';
   final BrowserClient _client = BrowserClient()..withCredentials = true;
   final List<QuoteConfiguration> _configurations = [];
+  List<ModuleOption> _moduleOptions = [];
   bool _isLoading = false;
   String? _error;
 
   List<QuoteConfiguration> get configurations => List.unmodifiable(_configurations);
+  List<ModuleOption> get moduleOptions => List.unmodifiable(_moduleOptions);
   bool get isLoading => _isLoading;
   String? get error => _error;
 
@@ -218,6 +220,49 @@ class QuoteService extends ChangeNotifier {
     } catch (e) {
       _error = 'Network error: $e';
       notifyListeners();
+    } finally {
+      _isLoading = false;
+      notifyListeners();
+    }
+  }
+
+  Future<void> fetchModuleOptions() async {
+    _isLoading = true;
+    _error = null;
+    notifyListeners();
+
+    try {
+      final response = await _client.get(
+        Uri.parse('$baseUrl/api/module-options'),
+      );
+
+      if (response.statusCode == 200) {
+        final data = jsonDecode(response.body);
+        final options = data['moduleOptions'] as List;
+        _moduleOptions.clear();
+        _moduleOptions.addAll(
+          options
+              .map(
+                (json) => ModuleOption(
+                  model: json['model'],
+                  channelCount: json['channelCount'],
+                  isDimmable: json['isDimmable'],
+                  maxAmperePerChannel:
+                      json['maxAmperePerChannel']?.toDouble() ?? 0.0,
+                  maxAmpereTotal: json['maxAmpereTotal']?.toDouble() ?? 0.0,
+                ),
+              )
+              .toList(),
+        );
+      } else if (response.statusCode == 401) {
+        _error = 'Unauthorized';
+        navigatorKey.currentState?.pushReplacementNamed('/login');
+      } else {
+        final error = jsonDecode(response.body);
+        _error = error['error'] ?? 'Failed to fetch module options';
+      }
+    } catch (e) {
+      _error = 'Network error: $e';
     } finally {
       _isLoading = false;
       notifyListeners();

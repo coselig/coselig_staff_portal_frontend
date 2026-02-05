@@ -1,3 +1,10 @@
+// 安培數檢查結果枚舉
+enum AmpereCheckResult {
+  ok, // 可以正常加入
+  warning, // 超過80%，警告但允許加入
+  blocked, // 超過最大限制，不允許加入
+}
+
 class LightFixture {
   String name;
   int count = 1;
@@ -205,11 +212,15 @@ class ModuleOption {
   final String model;
   final int channelCount;
   final bool isDimmable;
+  final double maxAmperePerChannel;
+  final double maxAmpereTotal;
 
   const ModuleOption({
     required this.model,
     required this.channelCount,
     required this.isDimmable,
+    required this.maxAmperePerChannel,
+    required this.maxAmpereTotal,
   });
 }
 
@@ -217,6 +228,8 @@ class Module {
   String model;
   int channelCount;
   bool isDimmable;
+  double maxAmperePerChannel;
+  double maxAmpereTotal;
   List<FixtureAllocation> allocations;
   List<LoopAllocation> loopAllocations;
 
@@ -224,6 +237,8 @@ class Module {
     required this.model,
     required this.channelCount,
     required this.isDimmable,
+    required this.maxAmperePerChannel,
+    required this.maxAmpereTotal,
     this.allocations = const [],
     this.loopAllocations = const [],
   });
@@ -232,6 +247,8 @@ class Module {
     String? model,
     int? channelCount,
     bool? isDimmable,
+    double? maxAmperePerChannel,
+    double? maxAmpereTotal,
     List<FixtureAllocation>? allocations,
     List<LoopAllocation>? loopAllocations,
   }) {
@@ -239,6 +256,8 @@ class Module {
       model: model ?? this.model,
       channelCount: channelCount ?? this.channelCount,
       isDimmable: isDimmable ?? this.isDimmable,
+      maxAmperePerChannel: maxAmperePerChannel ?? this.maxAmperePerChannel,
+      maxAmpereTotal: maxAmpereTotal ?? this.maxAmpereTotal,
       allocations: allocations ?? this.allocations,
       loopAllocations: loopAllocations ?? this.loopAllocations,
     );
@@ -258,6 +277,61 @@ class Module {
   // 獲取可用通道數
   int get availableChannels => channelCount - usedChannels;
 
+  // 獲取每個通道的最大安培數（基於分配的燈具和迴路）
+  List<double> get channelMaxAmperes {
+    List<double> amperes = List.filled(channelCount, 0.0);
+    int currentChannel = 0;
+
+    // 處理燈具分配
+    for (final allocation in allocations) {
+      final fixture = allocation.fixture;
+      final channelsPerFixture = fixture.requiredChannels ~/ fixture.count;
+      final amperePerFixture = fixture.watt / fixture.volt; // 安培 = 瓦特 / 電壓
+
+      for (int i = 0; i < allocation.allocatedCount; i++) {
+        for (
+          int j = 0;
+          j < channelsPerFixture && currentChannel < channelCount;
+          j++
+        ) {
+          amperes[currentChannel] += amperePerFixture;
+          currentChannel++;
+        }
+      }
+    }
+
+    // 處理迴路分配
+    for (final allocation in loopAllocations) {
+      final loop = allocation.loop;
+      final channelsPerLoop = _getChannelsPerLoop(loop.dimmingType);
+      final totalWatt = loop.fixtures.fold(
+        0,
+        (sum, fixture) => sum + fixture.totalWatt,
+      );
+      final amperePerLoop = totalWatt / loop.voltage; // 總安培 = 總瓦特 / 電壓
+
+      // 將總安培平均分配到各個通道
+      final amperePerChannel = amperePerLoop / channelsPerLoop;
+
+      for (int i = 0; i < allocation.allocatedCount; i++) {
+        for (
+          int j = 0;
+          j < channelsPerLoop && currentChannel < channelCount;
+          j++
+        ) {
+          amperes[currentChannel] += amperePerChannel;
+          currentChannel++;
+        }
+      }
+    }
+
+    return amperes;
+  }
+
+  // 獲取模組總最大安培
+  double get totalMaxAmpere =>
+      channelMaxAmperes.fold(0.0, (sum, ampere) => sum + ampere);
+
   // 檢查是否可以分配指定數量的燈具
   bool canAssignFixture(LightFixture fixture, int count) {
     int requiredChannels = count * fixture.requiredChannels ~/ fixture.count;
@@ -268,6 +342,33 @@ class Module {
   bool canAssignLoop(Loop loop, int count) {
     int requiredChannels = count * _getChannelsPerLoop(loop.dimmingType);
     return availableChannels >= requiredChannels;
+  }
+
+  // 檢查迴路分配的安培數狀態
+  AmpereCheckResult checkLoopAmpereLimit(Loop loop, int count) {
+    // 計算新迴路需要的安培數
+    final channelsPerLoop = _getChannelsPerLoop(loop.dimmingType);
+    final totalWatt = loop.fixtures.fold(
+      0,
+      (sum, fixture) => sum + fixture.totalWatt,
+    );
+    final amperePerLoop = totalWatt / loop.voltage;
+
+    // 計算加入新迴路後的總安培數
+    final currentTotalAmpere = totalMaxAmpere;
+    final newTotalAmpere = currentTotalAmpere + (amperePerLoop * count);
+
+    // 檢查是否超過最大限制
+    if (newTotalAmpere > maxAmpereTotal) {
+      return AmpereCheckResult.blocked;
+    }
+
+    // 檢查是否超過80%警告線
+    if (newTotalAmpere > maxAmpereTotal * 0.8) {
+      return AmpereCheckResult.warning;
+    }
+
+    return AmpereCheckResult.ok;
   }
 
   // 獲取迴路需要的通道數
@@ -292,6 +393,8 @@ class Module {
       'model': model,
       'channelCount': channelCount,
       'isDimmable': isDimmable,
+      'maxAmperePerChannel': maxAmperePerChannel,
+      'maxAmpereTotal': maxAmpereTotal,
       'allocations': allocations.map((a) => a.toJson()).toList(),
       'loopAllocations': loopAllocations.map((l) => l.toJson()).toList(),
     };
@@ -302,20 +405,13 @@ class Module {
       model: json['model'] ?? '',
       channelCount: json['channelCount'] ?? 0,
       isDimmable: json['isDimmable'] ?? true,
+      maxAmperePerChannel: json['maxAmperePerChannel']?.toDouble() ?? 0.0,
+      maxAmpereTotal: json['maxAmpereTotal']?.toDouble() ?? 0.0,
       allocations: (json['allocations'] as List?)?.map((a) => FixtureAllocation.fromJson(a)).toList() ?? [],
       loopAllocations: (json['loopAllocations'] as List?)?.map((l) => LoopAllocation.fromJson(l)).toList() ?? [],
     );
   }
 }
-
-// 預定義模組選項
-const List<ModuleOption> moduleOptions = [
-  ModuleOption(model: 'P210', channelCount: 2, isDimmable: true),
-  ModuleOption(model: 'P404', channelCount: 4, isDimmable: true),
-  ModuleOption(model: 'R410', channelCount: 4, isDimmable: false),
-  ModuleOption(model: 'P805', channelCount: 8, isDimmable: true),
-  ModuleOption(model: 'P305', channelCount: 3, isDimmable: true),
-];
 
 // 燈具類型選項
 const List<String> fixtureTypes = [

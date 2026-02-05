@@ -61,6 +61,13 @@ class ModuleCardWidget extends StatelessWidget {
               ),
             ),
             Text(
+              '總最大安培: ${module.totalMaxAmpere.toStringAsFixed(2)}A',
+              style: TextStyle(
+                color: Theme.of(context).colorScheme.secondary,
+                fontWeight: FontWeight.w500,
+              ),
+            ),
+            Text(
               module.isDimmable ? '可調光' : '繼電器控制',
               style: TextStyle(
                 color: module.isDimmable
@@ -68,7 +75,49 @@ class ModuleCardWidget extends StatelessWidget {
                     : Theme.of(context).colorScheme.secondary,
               ),
             ),
-            const SizedBox(height: 16),
+            const SizedBox(height: 8),
+
+            // 顯示每個通道的安培信息
+            if (module.channelMaxAmperes.any((ampere) => ampere > 0)) ...[
+              const Text(
+                '各通道最大安培:',
+                style: TextStyle(fontWeight: FontWeight.w500),
+              ),
+              const SizedBox(height: 4),
+              Wrap(
+                spacing: 8,
+                runSpacing: 4,
+                children: module.channelMaxAmperes.asMap().entries.map((entry) {
+                  final channelIndex = entry.key;
+                  final ampere = entry.value;
+                  return Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 8,
+                      vertical: 4,
+                    ),
+                    decoration: BoxDecoration(
+                      color: ampere > 0
+                          ? Theme.of(context).colorScheme.primaryContainer
+                          : Theme.of(
+                              context,
+                            ).colorScheme.surfaceContainerHighest,
+                      borderRadius: BorderRadius.circular(4),
+                    ),
+                    child: Text(
+                      'CH${channelIndex + 1}: ${ampere.toStringAsFixed(2)}A',
+                      style: TextStyle(
+                        fontSize: 12,
+                        color: ampere > 0
+                            ? Theme.of(context).colorScheme.onPrimaryContainer
+                            : Theme.of(context).colorScheme.onSurfaceVariant,
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                  );
+                }).toList(),
+              ),
+              const SizedBox(height: 16),
+            ],
 
             // 已分配的迴路
             if (module.loopAllocations.isNotEmpty) ...[
@@ -132,10 +181,41 @@ class ModuleCardWidget extends StatelessWidget {
                 children: unassignedLoops
                     .where((loop) => module.canAssignLoop(loop, 1))
                     .map((loop) {
+                      final ampereCheck = module.checkLoopAmpereLimit(loop, 1);
+                      final isBlocked =
+                          ampereCheck == AmpereCheckResult.blocked;
+                      final showWarning =
+                          ampereCheck == AmpereCheckResult.warning;
+
                       return ElevatedButton(
-                        onPressed: () => onAssignLoop(index, loop),
-                        child: Text(
-                          '${loop.name} (${loop.voltage}V, ${loop.dimmingType})',
+                        onPressed: isBlocked ? null : () => onAssignLoop(index, loop),
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: isBlocked
+                              ? Colors.red.shade100
+                              : showWarning
+                                  ? Colors.orange.shade100
+                                  : null,
+                          foregroundColor: isBlocked
+                              ? Colors.red.shade800
+                              : showWarning
+                                  ? Colors.orange.shade800
+                                  : null,
+                        ),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Text(
+                              '${loop.name} (${loop.voltage}V, ${loop.dimmingType})',
+                            ),
+                            if (showWarning) ...[
+                              const SizedBox(width: 4),
+                              Icon(Icons.warning, size: 16, color: Colors.orange.shade800),
+                            ],
+                            if (isBlocked) ...[
+                              const SizedBox(width: 4),
+                              Icon(Icons.block, size: 16, color: Colors.red.shade800),
+                            ],
+                          ],
                         ),
                       );
                     })
