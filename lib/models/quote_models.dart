@@ -346,24 +346,39 @@ class Module {
 
   // 檢查迴路分配的安培數狀態
   AmpereCheckResult checkLoopAmpereLimit(Loop loop, int count) {
-    // 計算新迴路需要的安培數
-    final channelsPerLoop = _getChannelsPerLoop(loop.dimmingType);
+    // 計算新迴路需要的總安培數
     final totalWatt = loop.fixtures.fold(
       0,
       (sum, fixture) => sum + fixture.totalWatt,
     );
-    final amperePerLoop = totalWatt / loop.voltage;
+    final totalAmpereForLoop = totalWatt / loop.voltage;
 
-    // 計算加入新迴路後的總安培數
+    // 計算迴路需要的通道數
+    final channelsPerLoop = _getChannelsPerLoop(loop.dimmingType);
+
+    // 計算每個通道的安培數
+    final amperePerChannel = totalAmpereForLoop / channelsPerLoop;
+
+    // 檢查是否超過每通道最大安培限制
+    if (amperePerChannel > maxAmperePerChannel) {
+      return AmpereCheckResult.blocked;
+    }
+
+    // 模擬加入新迴路後的總安培數
     final currentTotalAmpere = totalMaxAmpere;
-    final newTotalAmpere = currentTotalAmpere + (amperePerLoop * count);
+    final newTotalAmpere = currentTotalAmpere + totalAmpereForLoop;
 
-    // 檢查是否超過最大限制
+    // 檢查是否超過模組總最大安培限制
     if (newTotalAmpere > maxAmpereTotal) {
       return AmpereCheckResult.blocked;
     }
 
-    // 檢查是否超過80%警告線
+    // 檢查單個迴路是否超過每通道80%警告線
+    if (amperePerChannel > maxAmperePerChannel * 0.8) {
+      return AmpereCheckResult.warning;
+    }
+
+    // 檢查模組總安培是否超過80%警告線
     if (newTotalAmpere > maxAmpereTotal * 0.8) {
       return AmpereCheckResult.warning;
     }
