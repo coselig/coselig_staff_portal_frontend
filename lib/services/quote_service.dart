@@ -130,16 +130,24 @@ class QuoteService extends ChangeNotifier {
     }
   }
 
-  Future<void> saveConfiguration(String name, QuoteData quoteData) async {
+  Future<void> saveConfiguration(
+    String name,
+    QuoteData quoteData, {
+    int? customerId,
+  }) async {
     _isLoading = true;
     _error = null;
     notifyListeners();
 
     try {
+      final requestBody = {'name': name, 'quoteData': quoteData.toJson()};
+      if (customerId != null) {
+        requestBody['customerId'] = customerId;
+      }
       final response = await _client.post(
         Uri.parse('$baseUrl/api/quote-configurations'),
         headers: {'Content-Type': 'application/json'},
-        body: jsonEncode({'name': name, 'quoteData': quoteData.toJson()}),
+        body: jsonEncode(requestBody),
       );
 
       if (response.statusCode == 200) {

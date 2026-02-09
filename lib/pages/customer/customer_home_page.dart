@@ -1,7 +1,8 @@
+import 'package:coselig_staff_portal/services/quote_service.dart';
 import 'package:flutter/material.dart';
 import 'package:coselig_staff_portal/widgets/app_drawer.dart';
 import 'package:universal_html/html.dart' as html;
-import 'package:coselig_staff_portal/services/quote_service.dart';
+import 'package:coselig_staff_portal/services/customer_service.dart';
 import 'package:coselig_staff_portal/services/auth_service.dart';
 import 'package:coselig_staff_portal/models/quote_models.dart';
 import 'package:provider/provider.dart';
@@ -39,10 +40,12 @@ class _CustomerHomePageState extends State<CustomerHomePage> {
   final TextEditingController _wiringController = TextEditingController();
 
   late QuoteService _quoteService;
+  late CustomerService _customerService;
   String _currentConfigurationName = '新估價配置';
   String? _selectedConfigurationName; // 追蹤下拉選單中選中的配置
   bool _isLoading = false;
   List<QuoteConfiguration> _configurations = [];
+  Customer? _selectedCustomer; // 選中的客戶
 
   @override
   void initState() {
@@ -50,7 +53,11 @@ class _CustomerHomePageState extends State<CustomerHomePage> {
     final authService = Provider.of<AuthService>(context, listen: false);
     html.document.title = authService.isCustomer ? '光悅顧客系統' : '光悅員工系統 - 估價系統';
     _quoteService = Provider.of<QuoteService>(context, listen: false);
+    _customerService = Provider.of<CustomerService>(context, listen: false);
     _loadConfigurations();
+    if (!authService.isCustomer) {
+      _loadCustomers();
+    }
   }
 
   @override
@@ -65,13 +72,32 @@ class _CustomerHomePageState extends State<CustomerHomePage> {
 
   @override
   Widget build(BuildContext context) {
+    final authService = Provider.of<AuthService>(context);
     return Scaffold(
       appBar: AppBar(
-        title: Row(
+        title: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Icon(Icons.calculate, color: Theme.of(context).colorScheme.primary),
-            const SizedBox(width: 8),
-            const Text('估價系統'),
+            Row(
+              children: [
+                Icon(
+                  Icons.calculate,
+                  color: Theme.of(context).colorScheme.primary,
+                ),
+                const SizedBox(width: 8),
+                const Text('估價系統'),
+              ],
+            ),
+            if (_selectedCustomer != null && !authService.isCustomer)
+              Text(
+                '客戶: ${_selectedCustomer!.name}${_selectedCustomer!.company != null ? ' (${_selectedCustomer!.company})' : ''}',
+                style: TextStyle(
+                  fontSize: 12,
+                  color: Theme.of(
+                    context,
+                  ).colorScheme.onSurface.withValues(alpha: 0.7),
+                ),
+              ),
           ],
         ),
         backgroundColor: Theme.of(context).colorScheme.surface,
@@ -102,6 +128,162 @@ class _CustomerHomePageState extends State<CustomerHomePage> {
               onPressed: _createNewConfiguration,
               tooltip: '新建配置',
             ),
+            Container(
+              margin: const EdgeInsets.symmetric(horizontal: 8),
+              child: VerticalDivider(
+                color: Theme.of(
+                  context,
+                ).colorScheme.outline.withValues(alpha: 0.3),
+                width: 1,
+                thickness: 1,
+              ),
+            ),
+            if (!authService.isCustomer) ...[
+              Container(
+                margin: const EdgeInsets.symmetric(horizontal: 8),
+                child: VerticalDivider(
+                  color: Theme.of(
+                    context,
+                  ).colorScheme.outline.withValues(alpha: 0.3),
+                  width: 1,
+                  thickness: 1,
+                ),
+              ),
+              DropdownButton<Customer?>(
+              value: _selectedCustomer,
+              hint: Row(
+                children: [
+                  Icon(
+                    Icons.person,
+                    size: 18,
+                    color: Theme.of(context).colorScheme.primary,
+                  ),
+                  const SizedBox(width: 4),
+                  Text(
+                    '選擇客戶',
+                    style: TextStyle(
+                      color: Theme.of(context).colorScheme.primary,
+                    ),
+                  ),
+                ],
+              ),
+              selectedItemBuilder: (BuildContext context) {
+                return _customerService.customers.map((customer) {
+                  return Row(
+                    children: [
+                      Icon(
+                        Icons.person,
+                        size: 18,
+                        color: Theme.of(context).colorScheme.primary,
+                      ),
+                      const SizedBox(width: 4),
+                      Expanded(
+                        child: Text(
+                          customer.name,
+                          style: TextStyle(
+                            color: Theme.of(context).colorScheme.primary,
+                            fontWeight: FontWeight.w500,
+                          ),
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ),
+                    ],
+                  );
+                }).toList()..insert(
+                  0,
+                  Row(
+                    children: [
+                      Icon(
+                        Icons.person_off,
+                        size: 18,
+                        color: Theme.of(context).colorScheme.primary,
+                      ),
+                      const SizedBox(width: 4),
+                      Text(
+                        '未選擇客戶',
+                        style: TextStyle(
+                          color: Theme.of(context).colorScheme.primary,
+                        ),
+                      ),
+                    ],
+                  ),
+                );
+              },
+              icon: Icon(
+                Icons.arrow_drop_down,
+                color: Theme.of(context).colorScheme.primary,
+              ),
+              underline: const SizedBox(),
+              dropdownColor: Theme.of(context).colorScheme.surface,
+              items: [
+                DropdownMenuItem<Customer?>(
+                  value: null,
+                  child: Row(
+                    children: [
+                      Icon(
+                        Icons.person_off,
+                        color: Theme.of(context).colorScheme.onSurface,
+                      ),
+                      const SizedBox(width: 8),
+                      Text(
+                        '未選擇客戶',
+                        style: TextStyle(
+                          color: Theme.of(context).colorScheme.onSurface,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                ..._customerService.customers.map((customer) {
+                  return DropdownMenuItem<Customer?>(
+                    value: customer,
+                    child: Container(
+                      constraints: const BoxConstraints(minWidth: 250),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            customer.name,
+                            style: TextStyle(
+                              fontWeight: FontWeight.w500,
+                              color: Theme.of(context).colorScheme.onSurface,
+                            ),
+                          ),
+                          if (customer.company != null &&
+                              customer.company!.isNotEmpty)
+                            Text(
+                              customer.company!,
+                              style: TextStyle(
+                                fontSize: 12,
+                                color: Theme.of(
+                                  context,
+                                ).colorScheme.onSurfaceVariant,
+                              ),
+                            ),
+                          if (customer.projectName != null &&
+                              customer.projectName!.isNotEmpty)
+                            Text(
+                              '項目: ${customer.projectName}',
+                              style: TextStyle(
+                                fontSize: 12,
+                                color: Theme.of(
+                                  context,
+                                ).colorScheme.onSurfaceVariant,
+                              ),
+                            ),
+                        ],
+                      ),
+                    ),
+                  );
+                }).toList(),
+              ],
+              onChanged: (Customer? customer) {
+                setState(() {
+                  _selectedCustomer = customer;
+                });
+              },
+            ),
+            ],
             IconButton(
               icon: Icon(
                 Icons.save,
@@ -884,6 +1066,7 @@ class _CustomerHomePageState extends State<CustomerHomePage> {
                   await _quoteService.saveConfiguration(
                     nameController.text.trim(),
                     quoteData,
+                    customerId: _selectedCustomer?.id,
                   );
                   _currentConfigurationName = nameController.text.trim();
                   Navigator.of(context).pop();
@@ -916,6 +1099,14 @@ class _CustomerHomePageState extends State<CustomerHomePage> {
     } catch (e) {
       // 靜默處理錯誤，用戶可以稍後重試
       print('載入配置列表失敗: $e');
+    }
+  }
+
+  void _loadCustomers() async {
+    try {
+      await _customerService.fetchCustomers();
+    } catch (e) {
+      print('載入客戶列表失敗: $e');
     }
   }
 
