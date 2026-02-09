@@ -557,7 +557,9 @@ class _AttendanceViewerState extends State<AttendanceViewer> {
                                     recordsMap: records,
                                     leaveDaysMap: const {},
                                     todayDay: null,
-                                    onManualPunch: widget.isAdminMode
+                                    onManualPunch:
+                                        widget.isAdminMode &&
+                                            _selectedEmployeeId != null
                                         ? (day, record) async {
                                             final date = DateTime(
                                               _selectedMonth.year,
@@ -574,13 +576,42 @@ class _AttendanceViewerState extends State<AttendanceViewer> {
                                                 is Map<String, dynamic>) {
                                               final Set<String> periods = {};
                                               record.forEach((key, value) {
-                                                if (key.startsWith('period')) {
-                                                  final parts = key.split('_');
-                                                  if (parts.length >= 2 &&
-                                                      parts[0].startsWith(
-                                                        'period',
-                                                      )) {
-                                                    periods.add(parts[0]);
+                                                if (key is String &&
+                                                    value != null &&
+                                                    (key.endsWith(
+                                                          '_check_in_time',
+                                                        ) ||
+                                                        key.endsWith(
+                                                          '_check_out_time',
+                                                        ))) {
+                                                  // 提取時段名稱（去掉 _check_in_time 或 _check_out_time 後綴）
+                                                  String periodName;
+                                                  try {
+                                                    if (key.endsWith(
+                                                      '_check_in_time',
+                                                    )) {
+                                                      periodName = key
+                                                          .substring(
+                                                            0,
+                                                            key.length -
+                                                                '_check_in_time'
+                                                                    .length,
+                                                          );
+                                                    } else {
+                                                      periodName = key.substring(
+                                                        0,
+                                                        key.length -
+                                                            '_check_out_time'
+                                                                .length,
+                                                      );
+                                                    }
+
+                                                    // 防護：確保 periodName 不為空
+                                                    if (periodName.isNotEmpty) {
+                                                      periods.add(periodName);
+                                                    }
+                                                  } catch (e) {
+                                                    // 如果字串處理出錯，跳過這個記錄
                                                   }
                                                 }
                                               });
@@ -668,13 +699,42 @@ class _AttendanceViewerState extends State<AttendanceViewer> {
                                                 is Map<String, dynamic>) {
                                               final Set<String> periods = {};
                                               record.forEach((key, value) {
-                                                if (key.startsWith('period')) {
-                                                  final parts = key.split('_');
-                                                  if (parts.length >= 2 &&
-                                                      parts[0].startsWith(
-                                                        'period',
-                                                      )) {
-                                                    periods.add(parts[0]);
+                                                if (key is String &&
+                                                    value != null &&
+                                                    (key.endsWith(
+                                                          '_check_in_time',
+                                                        ) ||
+                                                        key.endsWith(
+                                                          '_check_out_time',
+                                                        ))) {
+                                                  // 提取時段名稱（去掉 _check_in_time 或 _check_out_time 後綴）
+                                                  String periodName;
+                                                  try {
+                                                    if (key.endsWith(
+                                                      '_check_in_time',
+                                                    )) {
+                                                      periodName = key
+                                                          .substring(
+                                                            0,
+                                                            key.length -
+                                                                '_check_in_time'
+                                                                    .length,
+                                                          );
+                                                    } else {
+                                                      periodName = key.substring(
+                                                        0,
+                                                        key.length -
+                                                            '_check_out_time'
+                                                                .length,
+                                                      );
+                                                    }
+
+                                                    // 防護：確保 periodName 不為空
+                                                    if (periodName.isNotEmpty) {
+                                                      periods.add(periodName);
+                                                    }
+                                                  } catch (e) {
+                                                    // 如果字串處理出錯，跳過這個記錄
                                                   }
                                                 }
                                               });
@@ -683,17 +743,14 @@ class _AttendanceViewerState extends State<AttendanceViewer> {
                                                     record['${period}_check_in_time'];
                                                 final checkOut =
                                                     record['${period}_check_out_time'];
-                                                // 只添加沒有打卡的時段
-                                                if (checkIn == null &&
-                                                    checkOut == null) {
-                                                  periodsData[period] = {
-                                                    'check_in': null,
-                                                    'check_out': null,
-                                                  };
-                                                }
+                                                // 包含所有時段，讓員工可以看到自己的打卡記錄
+                                                periodsData[period] = {
+                                                  'check_in': checkIn,
+                                                  'check_out': checkOut,
+                                                };
                                               }
                                             }
-                                            // 如果沒有任何可補打的 period，添加 period1（如果沒有打卡）
+                                            // 如果沒有任何 period，添加 period1
                                             if (periodsData.isEmpty) {
                                               final checkIn = record != null
                                                   ? record['period1_check_in_time']
@@ -701,13 +758,10 @@ class _AttendanceViewerState extends State<AttendanceViewer> {
                                               final checkOut = record != null
                                                   ? record['period1_check_out_time']
                                                   : null;
-                                              if (checkIn == null &&
-                                                  checkOut == null) {
-                                                periodsData['period1'] = {
-                                                  'check_in': null,
-                                                  'check_out': null,
-                                                };
-                                              }
+                                              periodsData['period1'] = {
+                                                'check_in': checkIn,
+                                                'check_out': checkOut,
+                                              };
                                             }
                                             if (periodsData.isNotEmpty) {
                                               await showDialog(
@@ -769,6 +823,18 @@ class _AttendanceViewerState extends State<AttendanceViewer> {
                                             }
                                           },
                                   ),
+                                ),
+                              ),
+                              const SizedBox(height: 8),
+                              Text(
+                                _selectedEmployeeId != null
+                                    ? '提示：長按日期可補打卡'
+                                    : '請先選擇員工以啟用補打卡功能',
+                                style: TextStyle(
+                                  fontSize: 12,
+                                  color: _selectedEmployeeId != null
+                                      ? Colors.grey
+                                      : Colors.red,
                                 ),
                               ),
                             ],
