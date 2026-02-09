@@ -35,15 +35,6 @@ class _ManualPunchDialogState extends State<ManualPunchDialog> {
         'check_out': _parseTime(data['check_out']),
       };
     }
-    // 移除自動新增時段邏輯，完全基於資料庫中的實際記錄顯示
-    // _tryAddNextPeriodIfApplicable();
-  }
-
-  // 移除自動新增時段邏輯，完全基於資料庫中的實際記錄顯示
-
-// 直接顯示時段名稱，不進行任何轉換
-  String _getPeriodDisplayName(String periodKey) {
-    return periodKey;
   }
 
   TimeOfDay? _parseTime(String? timeStr) {
@@ -62,7 +53,52 @@ class _ManualPunchDialogState extends State<ManualPunchDialog> {
     return null;
   }
 
-  // 移除自動新增時段邏輯，完全基於資料庫中的實際記錄顯示
+  // 直接顯示時段名稱，不進行任何轉換
+  String _getPeriodDisplayName(String periodKey) {
+    return periodKey;
+  }
+
+  // 檢查是否可以新增時段（至少有一個時段設置了上班時間）
+  bool _canAddNewPeriod() {
+    return _periodsTimes.values.any((times) => times['check_in'] != null);
+  }
+
+  // 新增一個空的時段
+  void _addNewPeriod() {
+    // 生成新的時段名稱，基於現有時段
+    String newPeriodName = _generateNewPeriodName();
+
+    setState(() {
+      _periodsTimes[newPeriodName] = {'check_in': null, 'check_out': null};
+    });
+  }
+
+  // 生成新的時段名稱，統一使用"補打卡時段X"格式
+  String _generateNewPeriodName() {
+    int maxNum = 0;
+    // 查找所有現有的補打卡時段
+    _periodsTimes.keys.forEach((period) {
+      if (period.startsWith('補打卡時段')) {
+        final numStr = period.replaceAll('補打卡時段', '');
+        final num = int.tryParse(numStr) ?? 0;
+        if (num > maxNum) maxNum = num;
+      }
+    });
+    return '補打卡時段${maxNum + 1}';
+  }
+
+  // 在設置上班時間後檢查是否自動新增下一個時段
+  void _checkAndAddNextPeriod(String period) {
+    // 只有在設置上班時間後，才檢查是否需要自動新增
+    final times = _periodsTimes[period];
+    if (times != null && times['check_in'] != null) {
+      // 如果這是最後一個時段，自動新增下一個補打卡時段
+      final sortedPeriods = _periodsTimes.keys.toList()..sort();
+      if (period == sortedPeriods.last) {
+        _addNewPeriod();
+      }
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -108,8 +144,8 @@ class _ManualPunchDialogState extends State<ManualPunchDialog> {
                                     setState(() {
                                       _periodsTimes[period]!['check_in'] =
                                           picked;
-                                      // 移除自動新增時段邏輯
-                                      // _maybeAddNextPeriod(period);
+                                      // 設置上班時間後，檢查是否可以新增下一個時段
+                                      _checkAndAddNextPeriod(period);
                                     });
                                   }
                                 }
@@ -138,8 +174,6 @@ class _ManualPunchDialogState extends State<ManualPunchDialog> {
                                     setState(() {
                                       _periodsTimes[period]!['check_out'] =
                                           picked;
-                                      // 移除自動新增時段邏輯
-                                      // _maybeAddNextPeriod(period);
                                     });
                                   }
                                 }
@@ -152,6 +186,17 @@ class _ManualPunchDialogState extends State<ManualPunchDialog> {
                   ],
                 );
               }),
+
+              // 新增時段按鈕
+              ElevatedButton.icon(
+                onPressed: _canAddNewPeriod() ? _addNewPeriod : null,
+                icon: const Icon(Icons.add),
+                label: const Text('新增時段'),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: _canAddNewPeriod() ? null : Colors.grey,
+                ),
+              ),
+              const SizedBox(height: 16),
 
             ],
           ),
