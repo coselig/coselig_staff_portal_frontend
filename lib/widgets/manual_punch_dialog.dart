@@ -228,7 +228,7 @@ class _ManualPunchDialogState extends State<ManualPunchDialog> {
             final result = <String, Map<String, String?>>{};
             // 找到現有 period 的最大編號
             int maxExistingNum = 0;
-            _periodsTimes.keys.forEach((period) {
+            for (var period in _periodsTimes.keys) {
               if (!period.startsWith('補打卡時段')) {
                 if (period.startsWith('period')) {
                   final numStr = period.replaceAll('period', '');
@@ -244,7 +244,7 @@ class _ManualPunchDialogState extends State<ManualPunchDialog> {
                   }
                 }
               }
-            });
+            }
             int nextNum = maxExistingNum + 1;
             _periodsTimes.forEach((period, times) {
               String periodKey;
