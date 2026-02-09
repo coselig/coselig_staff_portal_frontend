@@ -5,6 +5,8 @@ class ManualPunchDialog extends StatefulWidget {
   final String employeeName;
   final DateTime date;
   final Map<String, Map<String, String?>> periodsData;
+  final Map<String, String>? displayNames;
+  final Map<String, String>? periodKeys;
   final void Function(Map<String, Map<String, String?>> periods) onSubmit;
 
   const ManualPunchDialog({
@@ -12,6 +14,8 @@ class ManualPunchDialog extends StatefulWidget {
     required this.employeeName,
     required this.date,
     required this.periodsData,
+    this.displayNames,
+    this.periodKeys,
     required this.onSubmit,
   });
 
@@ -55,6 +59,17 @@ class _ManualPunchDialogState extends State<ManualPunchDialog> {
 
   // 直接顯示時段名稱，不進行任何轉換
   String _getPeriodDisplayName(String periodKey) {
+    if (widget.displayNames != null) {
+      return widget.displayNames![periodKey] ?? periodKey;
+    }
+    // 如果沒有提供 displayNames，嘗試從 periodKey 生成顯示名稱
+    if (periodKey.startsWith('period')) {
+      final numStr = periodKey.replaceAll('period', '');
+      final num = int.tryParse(numStr);
+      if (num != null) {
+        return '時段$num';
+      }
+    }
     return periodKey;
   }
 
@@ -211,18 +226,61 @@ class _ManualPunchDialogState extends State<ManualPunchDialog> {
           child: const Text('送出'),
           onPressed: () {
             final result = <String, Map<String, String?>>{};
+            // 找到現有 period 的最大編號
+            int maxExistingNum = 0;
+            _periodsTimes.keys.forEach((period) {
+              if (!period.startsWith('補打卡時段')) {
+                if (period.startsWith('period')) {
+                  final numStr = period.replaceAll('period', '');
+                  final num = int.tryParse(numStr) ?? 0;
+                  if (num > maxExistingNum) maxExistingNum = num;
+                } else if (widget.periodKeys != null &&
+                    widget.periodKeys!.containsKey(period)) {
+                  final pKey = widget.periodKeys![period]!;
+                  if (pKey.startsWith('period')) {
+                    final numStr = pKey.replaceAll('period', '');
+                    final num = int.tryParse(numStr) ?? 0;
+                    if (num > maxExistingNum) maxExistingNum = num;
+                  }
+                }
+              }
+            });
+            int nextNum = maxExistingNum + 1;
             _periodsTimes.forEach((period, times) {
-              result[period] = {
-                'check_in':
-                    widget.periodsData[period]?['check_in'] ??
-                    (times['check_in'] != null
-                          ? '${times['check_in']!.hour.toString().padLeft(2, '0')}:${times['check_in']!.minute.toString().padLeft(2, '0')}:00'
-                        : null),
-                'check_out':
-                    widget.periodsData[period]?['check_out'] ??
-                    (times['check_out'] != null
-                          ? '${times['check_out']!.hour.toString().padLeft(2, '0')}:${times['check_out']!.minute.toString().padLeft(2, '0')}:00'
-                        : null),
+              String periodKey;
+              if (period.startsWith('補打卡時段')) {
+                periodKey = 'period$nextNum';
+                nextNum++;
+              } else {
+                periodKey = widget.periodKeys?[period] ?? period;
+              }
+              result[periodKey] = {
+                'check_in': () {
+                  final originalCheckIn =
+                      widget.periodsData[period]?['check_in'];
+                  if (originalCheckIn != null) {
+                    final time = _parseTime(originalCheckIn);
+                    return time != null
+                        ? '${time.hour.toString().padLeft(2, '0')}:${time.minute.toString().padLeft(2, '0')}'
+                        : null;
+                  } else if (times['check_in'] != null) {
+                    return '${times['check_in']!.hour.toString().padLeft(2, '0')}:${times['check_in']!.minute.toString().padLeft(2, '0')}';
+                  }
+                  return null;
+                }(),
+                'check_out': () {
+                  final originalCheckOut =
+                      widget.periodsData[period]?['check_out'];
+                  if (originalCheckOut != null) {
+                    final time = _parseTime(originalCheckOut);
+                    return time != null
+                        ? '${time.hour.toString().padLeft(2, '0')}:${time.minute.toString().padLeft(2, '0')}'
+                        : null;
+                  } else if (times['check_out'] != null) {
+                    return '${times['check_out']!.hour.toString().padLeft(2, '0')}:${times['check_out']!.minute.toString().padLeft(2, '0')}';
+                  }
+                  return null;
+                }(),
               };
             });
             widget.onSubmit(result);

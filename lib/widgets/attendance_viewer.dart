@@ -253,12 +253,20 @@ class _AttendanceViewerState extends State<AttendanceViewer> {
                   }
                   // 準備 periodsData，顯示所有動態時段
                   final Map<String, Map<String, String?>> periodsData = {};
+                  final Map<String, String> periodKeys = {};
                   final attendance = context.read<AttendanceService>();
-                  for (final period in attendance.dynamicPeriods) {
-                    periodsData[period] = {
-                      'check_in': record is Map<String, dynamic> ? record['${period}_check_in_time'] : null,
-                      'check_out': record is Map<String, dynamic> ? record['${period}_check_out_time'] : null,
+                  for (int i = 0; i < attendance.dynamicPeriods.length; i++) {
+                    final displayName = attendance.dynamicPeriods[i];
+                    final periodKey = 'period${i + 1}';
+                    periodsData[displayName] = {
+                      'check_in': record is Map<String, dynamic>
+                          ? record['${displayName}_check_in_time']
+                          : null,
+                      'check_out': record is Map<String, dynamic>
+                          ? record['${displayName}_check_out_time']
+                          : null,
                     };
+                    periodKeys[displayName] = periodKey;
                   }
                   // 總是顯示補打卡對話框
                   await showDialog(
@@ -267,6 +275,7 @@ class _AttendanceViewerState extends State<AttendanceViewer> {
                       employeeName: '我',
                       date: date,
                       periodsData: periodsData,
+                      periodKeys: periodKeys,
                       onSubmit: (periods) async {
                         try {
                           final attendance = context.read<AttendanceService>();
