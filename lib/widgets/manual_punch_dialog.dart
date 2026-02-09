@@ -35,37 +35,11 @@ class _ManualPunchDialogState extends State<ManualPunchDialog> {
         'check_out': _parseTime(data['check_out']),
       };
     }
-    // 嘗試自動新增下一個時段（只適用於以period開頭的傳統格式）
-    _tryAddNextPeriodIfApplicable();
+    // 移除自動新增時段邏輯，完全基於資料庫中的實際記錄顯示
+    // _tryAddNextPeriodIfApplicable();
   }
 
-  // 嘗試自動新增下一個時段（只適用於period1, period2...格式）
-  void _tryAddNextPeriodIfApplicable() {
-    // 檢查是否所有時段都遵循period格式
-    bool allArePeriodFormat = _periodsTimes.keys.every((period) {
-      return period.startsWith('period') &&
-          int.tryParse(period.replaceAll('period', '')) != null;
-    });
-
-    if (!allArePeriodFormat) return; // 如果不是傳統格式，不自動新增
-
-    int maxNum = 0;
-    int highestFilled = 0;
-    _periodsTimes.forEach((period, times) {
-      final num = int.tryParse(period.replaceAll('period', '')) ?? 0;
-      if (num > maxNum) maxNum = num;
-      if (times['check_in'] != null || times['check_out'] != null) {
-        if (num > highestFilled) highestFilled = num;
-      }
-    });
-    if (highestFilled >= 1 &&
-        !_periodsTimes.containsKey('period${highestFilled + 1}')) {
-      _periodsTimes['period${highestFilled + 1}'] = {
-        'check_in': null,
-        'check_out': null,
-      };
-    }
-  }
+  // 移除自動新增時段邏輯，完全基於資料庫中的實際記錄顯示
 
 // 直接顯示時段名稱，不進行任何轉換
   String _getPeriodDisplayName(String periodKey) {
@@ -88,21 +62,7 @@ class _ManualPunchDialogState extends State<ManualPunchDialog> {
     return null;
   }
 
-  // 當某個時段有任何時間被設定時，自動新增下一個空時段（若不存在）
-  void _maybeAddNextPeriod(String period) {
-    // 只對傳統的period格式自動新增
-    if (!period.startsWith('period')) return;
-    
-    final num = int.tryParse(period.replaceAll('period', '')) ?? 0;
-    if (num == 0) return;
-    final times = _periodsTimes[period];
-    if (times == null) return;
-    if (times['check_in'] == null && times['check_out'] == null) return;
-    final nextPeriod = 'period${num + 1}';
-    if (!_periodsTimes.containsKey(nextPeriod)) {
-      _periodsTimes[nextPeriod] = {'check_in': null, 'check_out': null};
-    }
-  }
+  // 移除自動新增時段邏輯，完全基於資料庫中的實際記錄顯示
 
   @override
   Widget build(BuildContext context) {
@@ -148,7 +108,8 @@ class _ManualPunchDialogState extends State<ManualPunchDialog> {
                                     setState(() {
                                       _periodsTimes[period]!['check_in'] =
                                           picked;
-                                      _maybeAddNextPeriod(period);
+                                      // 移除自動新增時段邏輯
+                                      // _maybeAddNextPeriod(period);
                                     });
                                   }
                                 }
@@ -177,7 +138,8 @@ class _ManualPunchDialogState extends State<ManualPunchDialog> {
                                     setState(() {
                                       _periodsTimes[period]!['check_out'] =
                                           picked;
-                                      _maybeAddNextPeriod(period);
+                                      // 移除自動新增時段邏輯
+                                      // _maybeAddNextPeriod(period);
                                     });
                                   }
                                 }
