@@ -48,7 +48,7 @@ class _EditLoopDialogState extends State<EditLoopDialog> {
             ),
             const SizedBox(height: 16),
             DropdownButtonFormField<int>(
-              value: selectedVoltage,
+              initialValue: selectedVoltage,
               decoration: const InputDecoration(
                 labelText: '電壓 (V)',
                 border: OutlineInputBorder(),
@@ -68,7 +68,7 @@ class _EditLoopDialogState extends State<EditLoopDialog> {
             ),
             const SizedBox(height: 16),
             DropdownButtonFormField<String>(
-              value: selectedDimmingType,
+              initialValue: selectedDimmingType,
               decoration: const InputDecoration(
                 labelText: '調光類型',
                 border: OutlineInputBorder(),

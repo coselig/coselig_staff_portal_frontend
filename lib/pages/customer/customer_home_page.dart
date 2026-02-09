@@ -275,7 +275,7 @@ class _CustomerHomePageState extends State<CustomerHomePage> {
                       ),
                     ),
                   );
-                }).toList(),
+                  }),
               ],
               onChanged: (Customer? customer) {
                 setState(() {

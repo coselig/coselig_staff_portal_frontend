@@ -89,7 +89,7 @@ class QuoteService extends ChangeNotifier {
   final String baseUrl = 'https://employeeservice.coseligtest.workers.dev';
   final BrowserClient _client = BrowserClient()..withCredentials = true;
   final List<QuoteConfiguration> _configurations = [];
-  List<ModuleOption> _moduleOptions = [];
+  final List<ModuleOption> _moduleOptions = [];
   bool _isLoading = false;
   String? _error;
 
@@ -198,7 +198,7 @@ class QuoteService extends ChangeNotifier {
     } catch (e) {
       _error = 'Network error: $e';
       notifyListeners();
-      throw e;
+      rethrow;
     } finally {
       _isLoading = false;
       notifyListeners();

@@ -77,13 +77,13 @@ class _ManualPunchDialogState extends State<ManualPunchDialog> {
   String _generateNewPeriodName() {
     int maxNum = 0;
     // 查找所有現有的補打卡時段
-    _periodsTimes.keys.forEach((period) {
+    for (var period in _periodsTimes.keys) {
       if (period.startsWith('補打卡時段')) {
         final numStr = period.replaceAll('補打卡時段', '');
         final num = int.tryParse(numStr) ?? 0;
         if (num > maxNum) maxNum = num;
       }
-    });
+    }
     return '補打卡時段${maxNum + 1}';
   }
 

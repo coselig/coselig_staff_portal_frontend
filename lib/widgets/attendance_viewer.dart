@@ -576,8 +576,7 @@ class _AttendanceViewerState extends State<AttendanceViewer> {
                                                 is Map<String, dynamic>) {
                                               final Set<String> periods = {};
                                               record.forEach((key, value) {
-                                                if (key is String &&
-                                                    value != null &&
+                                                if (value != null &&
                                                     (key.endsWith(
                                                           '_check_in_time',
                                                         ) ||
@@ -699,8 +698,7 @@ class _AttendanceViewerState extends State<AttendanceViewer> {
                                                 is Map<String, dynamic>) {
                                               final Set<String> periods = {};
                                               record.forEach((key, value) {
-                                                if (key is String &&
-                                                    value != null &&
+                                                if (value != null &&
                                                     (key.endsWith(
                                                           '_check_in_time',
                                                         ) ||
