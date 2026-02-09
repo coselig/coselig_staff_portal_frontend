@@ -251,47 +251,15 @@ class _AttendanceViewerState extends State<AttendanceViewer> {
                     );
                     return;
                   }
-                  // 準備 periodsData，只包含沒有打卡的時段
+                  // 準備 periodsData，顯示所有動態時段
                   final Map<String, Map<String, String?>> periodsData = {};
-                  if (record is Map<String, dynamic>) {
-                    final Set<String> periods = {};
-                    record.forEach((key, value) {
-                      if (key.startsWith('period')) {
-                        final parts = key.split('_');
-                        if (parts.length >= 2 &&
-                            parts[0].startsWith('period')) {
-                          periods.add(parts[0]);
-                        }
-                      }
-                    });
-                    for (final period in periods) {
-                      periodsData[period] = {
-                        'check_in': record['${period}_check_in_time'],
-                        'check_out': record['${period}_check_out_time'],
-                      };
-                    }
+                  final attendance = context.read<AttendanceService>();
+                  for (final period in attendance.dynamicPeriods) {
+                    periodsData[period] = {
+                      'check_in': record is Map<String, dynamic> ? record['${period}_check_in_time'] : null,
+                      'check_out': record is Map<String, dynamic> ? record['${period}_check_out_time'] : null,
+                    };
                   }
-                  // 總是允許新增時段
-                  int maxNum = 0;
-                  if (record is Map<String, dynamic>) {
-                    record.forEach((key, value) {
-                      if (key.startsWith('period')) {
-                        final parts = key.split('_');
-                        if (parts.length >= 2 &&
-                            parts[0].startsWith('period')) {
-                          final num =
-                              int.tryParse(parts[0].replaceAll('period', '')) ??
-                              0;
-                          if (num > maxNum) maxNum = num;
-                        }
-                      }
-                    });
-                  }
-                  final newPeriod = 'period${maxNum + 1}';
-                  periodsData[newPeriod] = {
-                    'check_in': null,
-                    'check_out': null,
-                  };
                   // 總是顯示補打卡對話框
                   await showDialog(
                     context: context,
