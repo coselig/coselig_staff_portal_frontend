@@ -32,19 +32,46 @@ class Step2Widget extends StatelessWidget {
           style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
         ),
         const SizedBox(height: 16),
-        Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          children: [
-            const Text(
-              '已配置模組',
-              style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
-            ),
-            ElevatedButton.icon(
-              onPressed: onAddModule,
-              icon: const Icon(Icons.add),
-              label: const Text('添加模組'),
-            ),
-          ],
+        LayoutBuilder(
+          builder: (context, constraints) {
+            final isSmallScreen = constraints.maxWidth < 600;
+            return isSmallScreen
+                ? Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const Text(
+                        '已配置模組',
+                        style: TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                      const SizedBox(height: 8),
+                      ElevatedButton.icon(
+                        onPressed: onAddModule,
+                        icon: const Icon(Icons.add),
+                        label: const Text('添加模組'),
+                      ),
+                    ],
+                  )
+                : Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      const Text(
+                        '已配置模組',
+                        style: TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                      ElevatedButton.icon(
+                        onPressed: onAddModule,
+                        icon: const Icon(Icons.add),
+                        label: const Text('添加模組'),
+                      ),
+                    ],
+                  );
+          },
         ),
         const SizedBox(height: 16),
         if (modules.isEmpty)

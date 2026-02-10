@@ -525,46 +525,96 @@ class _CustomerHomePageState extends State<CustomerHomePage> {
               controlsBuilder: (BuildContext context, ControlsDetails details) {
                 return Container(
                   margin: const EdgeInsets.only(top: 16),
-                  child: Row(
-                    children: [
-                      if (_currentStep > 0)
-                        Expanded(
-                          child: OutlinedButton.icon(
-                            onPressed: details.onStepCancel,
-                            icon: const Icon(Icons.arrow_back),
-                            label: const Text('上一步'),
-                            style: OutlinedButton.styleFrom(
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: 24,
-                                vertical: 12,
-                              ),
-                              shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(8),
-                              ),
-                            ),
-                          ),
-                        ),
-                      if (_currentStep > 0 && _currentStep < 2)
-                        const SizedBox(width: 16),
-                      Expanded(
-                        child: ElevatedButton.icon(
-                          onPressed: details.onStepContinue,
-                          icon: _currentStep < 2
-                              ? const Icon(Icons.arrow_forward)
-                              : const Icon(Icons.calculate),
-                          label: Text(_currentStep < 2 ? '下一步' : '生成報價'),
-                          style: ElevatedButton.styleFrom(
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 24,
-                              vertical: 12,
-                            ),
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(8),
-                            ),
-                          ),
-                        ),
-                      ),
-                    ],
+                  child: LayoutBuilder(
+                    builder: (context, constraints) {
+                      final isSmallScreen = constraints.maxWidth < 600;
+                      return isSmallScreen
+                          ? Column(
+                              crossAxisAlignment: CrossAxisAlignment.stretch,
+                              children: [
+                                if (_currentStep > 0)
+                                  OutlinedButton.icon(
+                                    onPressed: details.onStepCancel,
+                                    icon: const Icon(Icons.arrow_back),
+                                    label: const Text('上一步'),
+                                    style: OutlinedButton.styleFrom(
+                                      padding: const EdgeInsets.symmetric(
+                                        horizontal: 24,
+                                        vertical: 12,
+                                      ),
+                                      shape: RoundedRectangleBorder(
+                                        borderRadius: BorderRadius.circular(8),
+                                      ),
+                                    ),
+                                  ),
+                                if (_currentStep > 0 && _currentStep < 2)
+                                  const SizedBox(height: 16),
+                                ElevatedButton.icon(
+                                  onPressed: details.onStepContinue,
+                                  icon: _currentStep < 2
+                                      ? const Icon(Icons.arrow_forward)
+                                      : const Icon(Icons.calculate),
+                                  label: Text(
+                                    _currentStep < 2 ? '下一步' : '生成報價',
+                                  ),
+                                  style: ElevatedButton.styleFrom(
+                                    padding: const EdgeInsets.symmetric(
+                                      horizontal: 24,
+                                      vertical: 12,
+                                    ),
+                                    shape: RoundedRectangleBorder(
+                                      borderRadius: BorderRadius.circular(8),
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            )
+                          : Row(
+                              children: [
+                                if (_currentStep > 0)
+                                  Expanded(
+                                    child: OutlinedButton.icon(
+                                      onPressed: details.onStepCancel,
+                                      icon: const Icon(Icons.arrow_back),
+                                      label: const Text('上一步'),
+                                      style: OutlinedButton.styleFrom(
+                                        padding: const EdgeInsets.symmetric(
+                                          horizontal: 24,
+                                          vertical: 12,
+                                        ),
+                                        shape: RoundedRectangleBorder(
+                                          borderRadius: BorderRadius.circular(
+                                            8,
+                                          ),
+                                        ),
+                                      ),
+                                    ),
+                                  ),
+                                if (_currentStep > 0 && _currentStep < 2)
+                                  const SizedBox(width: 16),
+                                Expanded(
+                                  child: ElevatedButton.icon(
+                                    onPressed: details.onStepContinue,
+                                    icon: _currentStep < 2
+                                        ? const Icon(Icons.arrow_forward)
+                                        : const Icon(Icons.calculate),
+                                    label: Text(
+                                      _currentStep < 2 ? '下一步' : '生成報價',
+                                    ),
+                                    style: ElevatedButton.styleFrom(
+                                      padding: const EdgeInsets.symmetric(
+                                        horizontal: 24,
+                                        vertical: 12,
+                                      ),
+                                      shape: RoundedRectangleBorder(
+                                        borderRadius: BorderRadius.circular(8),
+                                      ),
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            );
+                    },
                   ),
                 );
               },

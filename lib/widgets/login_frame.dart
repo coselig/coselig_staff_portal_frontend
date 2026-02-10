@@ -17,70 +17,31 @@ class LoginFrame extends StatefulWidget {
 class _LoginFrameState extends State<LoginFrame> {
   TextEditingController accountController = TextEditingController();
   TextEditingController passwordController = TextEditingController();
+  bool showPasswordLogin = false; // 新增狀態：控制是否顯示帳號密碼登入
   @override
   Widget build(BuildContext context) {
     final authService = context.watch<AuthService>();
     final uiSettings = context.watch<UiSettingsProvider>();
+    final screenWidth = MediaQuery.of(context).size.width;
+    final isSmallScreen = screenWidth < 600;
+    final frameWidth = isSmallScreen ? screenWidth * 0.85 : screenWidth * 0.4;
     return Container(
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(12),
         color: Color.fromARGB(28, 211, 80, 40),
       ),
       padding: const EdgeInsets.all(16.0),
-      width: MediaQuery.of(context).size.width * 0.4,
+      width: frameWidth,
       constraints: BoxConstraints(
-        minHeight: 250,
-        maxHeight: MediaQuery.of(context).size.height * 0.8,
+        minHeight: isSmallScreen ? 300 : 250,
+        maxHeight:
+            MediaQuery.of(context).size.height * (isSmallScreen ? 0.9 : 0.8),
       ),
       child: SingleChildScrollView(
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-          TextField(
-            controller: accountController,
-            decoration: const InputDecoration(labelText: '電子郵件/帳號'),
-          ),
-          TextField(
-            controller: passwordController,
-            decoration: const InputDecoration(labelText: '密碼'),
-            obscureText: true,
-          ),
-            SizedBox(height: 20),
-            SizedBox(
-              width: double.infinity,
-              height: 56,
-              child: ElevatedButton(
-                onPressed: () async {
-                  final success = await authService.login(
-                    accountController.text,
-                    passwordController.text,
-                  );
-                  if (success) {
-                    if (mounted) {
-                      navigatorKey.currentState!.pushReplacementNamed('/home');
-                    }
-                  }
-                  setState(() {});
-                },
-                style: ElevatedButton.styleFrom(
-                  padding: const EdgeInsets.symmetric(
-                    vertical: 16,
-                    horizontal: 32,
-                  ),
-                  textStyle: TextStyle(
-                    fontSize: (18 * uiSettings.fontSizeScale).toDouble(),
-                    fontWeight: FontWeight.bold,
-                  ),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(8),
-                  ),
-                  elevation: 3,
-                  tapTargetSize: MaterialTapTargetSize.padded,
-                ),
-                child: const Text('登入'),
-              ),
-          ),
-            SizedBox(height: 16),
+            // Google 登入按鈕（主要方式）
             SizedBox(
               width: double.infinity,
               height: 56,
@@ -176,7 +137,7 @@ class _LoginFrameState extends State<LoginFrame> {
                     }
                   }
                 },
-                icon: const Icon(Icons.login),
+                icon: const Icon(Icons.login, color: Colors.blue),
                 label: const Text('使用 Google 登入'),
                 style: OutlinedButton.styleFrom(
                   padding: const EdgeInsets.symmetric(
@@ -184,31 +145,93 @@ class _LoginFrameState extends State<LoginFrame> {
                     horizontal: 32,
                   ),
                   textStyle: TextStyle(
-                    fontSize: (18 * uiSettings.fontSizeScale).toDouble(),
+                    fontSize: (20 * uiSettings.fontSizeScale).toDouble(),
                     fontWeight: FontWeight.bold,
                   ),
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(8),
                   ),
-                  side: const BorderSide(color: Colors.blue),
+                  side: const BorderSide(color: Colors.blue, width: 2),
                 ),
               ),
             ),
             SizedBox(height: 16),
-            Center(
-              child: TextButton(
+            // 切換到帳號密碼登入的按鈕
+            SizedBox(
+              width: double.infinity,
+              height: 48,
+              child: OutlinedButton(
                 onPressed: () {
-                  navigatorKey.currentState!.pushNamed('/privacy');
+                  setState(() {
+                    showPasswordLogin = !showPasswordLogin;
+                  });
                 },
-                child: const Text(
-                  '隱私權政策',
+                style: OutlinedButton.styleFrom(
+                  side: BorderSide(
+                    color: Theme.of(context).colorScheme.outline,
+                  ),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                ),
+                child: Text(
+                  showPasswordLogin ? '隱藏帳號密碼登入' : '使用帳號密碼登入',
                   style: TextStyle(
-                    color: Colors.blue,
-                    decoration: TextDecoration.underline,
+                    fontSize: (16 * uiSettings.fontSizeScale).toDouble(),
                   ),
                 ),
               ),
             ),
+            // 帳號密碼登入欄位（條件顯示）
+            if (showPasswordLogin) ...[
+              SizedBox(height: 16),
+              TextField(
+                controller: accountController,
+                decoration: const InputDecoration(labelText: '電子郵件/帳號'),
+              ),
+              TextField(
+                controller: passwordController,
+                decoration: const InputDecoration(labelText: '密碼'),
+                obscureText: true,
+              ),
+              SizedBox(height: 20),
+              SizedBox(
+                width: double.infinity,
+                height: 56,
+                child: ElevatedButton(
+                  onPressed: () async {
+                    final success = await authService.login(
+                      accountController.text,
+                      passwordController.text,
+                    );
+                    if (success) {
+                      if (mounted) {
+                        navigatorKey.currentState!.pushReplacementNamed(
+                          '/home',
+                        );
+                      }
+                    }
+                    setState(() {});
+                  },
+                  style: ElevatedButton.styleFrom(
+                    padding: const EdgeInsets.symmetric(
+                      vertical: 16,
+                      horizontal: 32,
+                    ),
+                    textStyle: TextStyle(
+                      fontSize: (18 * uiSettings.fontSizeScale).toDouble(),
+                      fontWeight: FontWeight.bold,
+                    ),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    elevation: 3,
+                    tapTargetSize: MaterialTapTargetSize.padded,
+                  ),
+                  child: const Text('登入'),
+                ),
+              ),
+            ],
             // SizedBox(height: 8),
           //     child: Text(
           //       authService.message,

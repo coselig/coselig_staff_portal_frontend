@@ -15,7 +15,6 @@ class _AuthPageState extends State<AuthPage> {
   TextEditingController nameController = TextEditingController();
   TextEditingController passwordController = TextEditingController();
   TextEditingController emailController = TextEditingController();
-  String mode = "login";
 
   @override
   void initState() {
@@ -25,6 +24,9 @@ class _AuthPageState extends State<AuthPage> {
 
   @override
   Widget build(BuildContext context) {
+    final screenWidth = MediaQuery.of(context).size.width;
+    final isSmallScreen = screenWidth < 600;
+    final paddingValue = isSmallScreen ? 8.0 : 20.0;
 
     return Scaffold(
       appBar: AppBar(
@@ -34,7 +36,7 @@ class _AuthPageState extends State<AuthPage> {
         ],
       ),
       body: Padding(
-        padding: const EdgeInsets.all(20.0),
+        padding: EdgeInsets.all(paddingValue),
         child: Column(
           children: [
             // 應用程式用途說明
@@ -73,40 +75,10 @@ class _AuthPageState extends State<AuthPage> {
                 ],
               ),
             ),
-            // 登入/註冊區域
+            // 登入區域
             Expanded(
               child: Center(
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    mode == "login"
-                        ? const LoginFrame()
-                        : const RegisterFrame(),
-                    SizedBox(width: 8),
-                    SizedBox(
-                      width: 60,
-                      height: 150,
-                      child: TextButton(
-                        style: TextButton.styleFrom(
-                          backgroundColor: Color.fromARGB(40, 200, 100, 100),
-                          padding: const EdgeInsets.symmetric(
-                            vertical: 16,
-                            horizontal: 12,
-                          ),
-                        ),
-                        onPressed: () {
-                          setState(() {
-                            mode = mode == "login" ? "register" : "login";
-                          });
-                        },
-                        child: Text(
-                          mode == "login" ? "\n註\n冊\n" : "\n登\n入\n",
-                          style: const TextStyle(fontSize: 16),
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
+                child: const LoginFrame(),
               ),
             ),
           ],

@@ -37,19 +37,46 @@ class Step1Widget extends StatelessWidget {
         const SizedBox(height: 16),
 
         // 添加迴路按鈕
-        Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          children: [
-            const Text(
-              '已配置迴路',
-              style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
-            ),
-            ElevatedButton.icon(
-              onPressed: onAddLoop,
-              icon: const Icon(Icons.add),
-              label: const Text('添加迴路'),
-            ),
-          ],
+        LayoutBuilder(
+          builder: (context, constraints) {
+            final isSmallScreen = constraints.maxWidth < 600;
+            return isSmallScreen
+                ? Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const Text(
+                        '已配置迴路',
+                        style: TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                      const SizedBox(height: 8),
+                      ElevatedButton.icon(
+                        onPressed: onAddLoop,
+                        icon: const Icon(Icons.add),
+                        label: const Text('添加迴路'),
+                      ),
+                    ],
+                  )
+                : Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      const Text(
+                        '已配置迴路',
+                        style: TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                      ElevatedButton.icon(
+                        onPressed: onAddLoop,
+                        icon: const Icon(Icons.add),
+                        label: const Text('添加迴路'),
+                      ),
+                    ],
+                  );
+          },
         ),
         const SizedBox(height: 16),
 
