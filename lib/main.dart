@@ -1,3 +1,5 @@
+import 'dart:js_interop';
+
 import 'package:coselig_staff_portal/constants/app_constants.dart';
 import 'package:coselig_staff_portal/pages/admin/attendance_view_page.dart';
 import 'package:coselig_staff_portal/pages/admin/user_data_view_page.dart';
@@ -20,7 +22,7 @@ import 'package:coselig_staff_portal/widgets/register_frame.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:url_strategy/url_strategy.dart';
-import 'dart:html' as html;
+import 'package:web/web.dart';
 
 final GlobalKey<NavigatorState> navigatorKey = GlobalKey<NavigatorState>();
 final GlobalKey<ScaffoldMessengerState> scaffoldMessengerKey =
@@ -36,11 +38,11 @@ void main() async {
   // 顯示版本信息
   final currentTime = DateTime.now().toIso8601String();
 
-  html.window.console.log('=== Coselig 員工系統啟動 ===');
-  html.window.console.log('版本: ${AppConstants.appVersion}');
-  html.window.console.log('構建: ${AppConstants.buildNumber}');
-  html.window.console.log('時間: $currentTime');
-  html.window.console.log('=======================');
+  console.log('=== Coselig 員工系統啟動 ==='.toJS);
+  console.log('版本: ${AppConstants.appVersion}'.toJS);
+  console.log('構建: ${AppConstants.buildNumber}'.toJS);
+  console.log('時間: $currentTime'.toJS);
+  console.log('======================='.toJS);
   
   setPathUrlStrategy();
   runApp(
