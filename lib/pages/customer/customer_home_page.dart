@@ -324,134 +324,148 @@ class _CustomerHomePageState extends State<CustomerHomePage> {
                 thickness: 1,
               ),
             ),
-            if (_configurations.isNotEmpty)
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 8),
-                child: DropdownButton<String>(
-                  value: _selectedConfigurationName,
-                  hint: Row(
-                    children: [
-                      Icon(
-                        Icons.folder_open,
-                        size: 18,
-                        color: Theme.of(context).colorScheme.primary,
-                      ),
-                      const SizedBox(width: 4),
-                      Text(
-                        '載入配置',
-                        style: TextStyle(
-                          color: Theme.of(context).colorScheme.primary,
-                        ),
-                      ),
-                    ],
-                  ),
-                  selectedItemBuilder: (BuildContext context) {
-                    return _configurations.map((config) {
-                      return Row(
-                        children: [
-                          Icon(
-                            Icons.folder_open,
-                            size: 18,
+            Consumer<QuoteService>(
+              builder: (context, quoteService, child) {
+                final configurations = quoteService.configurations;
+                return configurations.isNotEmpty
+                    ? Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 8),
+                        child: DropdownButton<String>(
+                          value: _selectedConfigurationName,
+                          hint: Row(
+                            children: [
+                              Icon(
+                                Icons.folder_open,
+                                size: 18,
+                                color: Theme.of(context).colorScheme.primary,
+                              ),
+                              const SizedBox(width: 4),
+                              Text(
+                                '載入配置',
+                                style: TextStyle(
+                                  color: Theme.of(context).colorScheme.primary,
+                                ),
+                              ),
+                            ],
+                          ),
+                          selectedItemBuilder: (BuildContext context) {
+                            return configurations.map((config) {
+                              return Row(
+                                children: [
+                                  Icon(
+                                    Icons.folder_open,
+                                    size: 18,
+                                    color: Theme.of(
+                                      context,
+                                    ).colorScheme.primary,
+                                  ),
+                                  const SizedBox(width: 4),
+                                  Text(
+                                    config.name,
+                                    style: TextStyle(
+                                      color: Theme.of(
+                                        context,
+                                      ).colorScheme.primary,
+                                      fontWeight: FontWeight.w500,
+                                    ),
+                                  ),
+                                ],
+                              );
+                            }).toList();
+                          },
+                          icon: Icon(
+                            Icons.arrow_drop_down,
                             color: Theme.of(context).colorScheme.primary,
                           ),
-                          const SizedBox(width: 4),
-                          Text(
-                            config.name,
-                            style: TextStyle(
-                              color: Theme.of(context).colorScheme.primary,
-                              fontWeight: FontWeight.w500,
-                            ),
-                          ),
-                        ],
-                      );
-                    }).toList();
-                  },
-                  icon: Icon(
-                    Icons.arrow_drop_down,
-                    color: Theme.of(context).colorScheme.primary,
-                  ),
-                  underline: const SizedBox(),
-                  dropdownColor: Theme.of(context).colorScheme.surface,
-                  items: _configurations.map((config) {
-                    return DropdownMenuItem<String>(
-                      value: config.name,
-                      child: Container(
-                        constraints: const BoxConstraints(minWidth: 350),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              config.name,
-                              style: TextStyle(
-                                fontWeight: FontWeight.w500,
-                                color: Theme.of(context).colorScheme.onSurface,
-                              ),
-                            ),
-                            Text(
-                              config.updatedAt,
-                              style: TextStyle(
-                                fontSize: 12,
-                                color: Theme.of(
-                                  context,
-                                ).colorScheme.onSurfaceVariant,
-                              ),
-                            ),
-                            if (config.customerName != null)
-                              Text(
-                                '客戶: ${config.customerName}${config.customerCompany != null ? ' (${config.customerCompany})' : ''}',
-                                style: TextStyle(
-                                  fontSize: 12,
-                                  color: Theme.of(context).colorScheme.primary,
-                                  fontWeight: FontWeight.w500,
+                          underline: const SizedBox(),
+                          dropdownColor: Theme.of(context).colorScheme.surface,
+                          items: configurations.map((config) {
+                            return DropdownMenuItem<String>(
+                              value: config.name,
+                              child: Container(
+                                constraints: const BoxConstraints(
+                                  minWidth: 350,
+                                ),
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Text(
+                                      config.name,
+                                      style: TextStyle(
+                                        fontWeight: FontWeight.w500,
+                                        color: Theme.of(
+                                          context,
+                                        ).colorScheme.onSurface,
+                                      ),
+                                    ),
+                                    Text(
+                                      config.updatedAt,
+                                      style: TextStyle(
+                                        fontSize: 12,
+                                        color: Theme.of(
+                                          context,
+                                        ).colorScheme.onSurfaceVariant,
+                                      ),
+                                    ),
+                                    if (config.customerName != null)
+                                      Text(
+                                        '客戶: ${config.customerName}${config.customerCompany != null ? ' (${config.customerCompany})' : ''}',
+                                        style: TextStyle(
+                                          fontSize: 12,
+                                          color: Theme.of(
+                                            context,
+                                          ).colorScheme.primary,
+                                          fontWeight: FontWeight.w500,
+                                        ),
+                                      ),
+                                    if (config.projectName != null &&
+                                        config.projectName!.isNotEmpty)
+                                      Text(
+                                        '項目: ${config.projectName}',
+                                        style: TextStyle(
+                                          fontSize: 12,
+                                          color: Theme.of(
+                                            context,
+                                          ).colorScheme.secondary,
+                                        ),
+                                      ),
+                                    if (config.projectAddress != null &&
+                                        config.projectAddress!.isNotEmpty)
+                                      Text(
+                                        '地址: ${config.projectAddress}',
+                                        style: TextStyle(
+                                          fontSize: 12,
+                                          color: Theme.of(
+                                            context,
+                                          ).colorScheme.secondary,
+                                        ),
+                                      ),
+                                  ],
                                 ),
                               ),
-                            if (config.projectName != null &&
-                                config.projectName!.isNotEmpty)
-                              Text(
-                                '項目: ${config.projectName}',
-                                style: TextStyle(
-                                  fontSize: 12,
-                                  color: Theme.of(
-                                    context,
-                                  ).colorScheme.secondary,
-                                ),
-                              ),
-                            if (config.projectAddress != null &&
-                                config.projectAddress!.isNotEmpty)
-                              Text(
-                                '地址: ${config.projectAddress}',
-                                style: TextStyle(
-                                  fontSize: 12,
-                                  color: Theme.of(
-                                    context,
-                                  ).colorScheme.secondary,
-                                ),
-                              ),
-                          ],
+                            );
+                          }).toList(),
+                          onChanged: (String? configName) {
+                            if (configName != null) {
+                              setState(() {
+                                _selectedConfigurationName = configName;
+                                _currentConfigurationName = configName;
+                              });
+                              _loadSelectedConfiguration(configName);
+                            }
+                          },
                         ),
-                      ),
-                    );
-                  }).toList(),
-                  onChanged: (String? configName) {
-                    if (configName != null) {
-                      setState(() {
-                        _selectedConfigurationName = configName;
-                        _currentConfigurationName = configName;
-                      });
-                      _loadSelectedConfiguration(configName);
-                    }
-                  },
-                ),
-              )
-            else
-              IconButton(
-                icon: Icon(
-                  Icons.refresh,
-                  color: Theme.of(context).colorScheme.primary,
-                ),
-                onPressed: _loadConfigurations,
-                tooltip: '重新載入配置列表',
-              ),
+                      )
+                    : IconButton(
+                        icon: Icon(
+                          Icons.refresh,
+                          color: Theme.of(context).colorScheme.primary,
+                        ),
+                        onPressed: _loadConfigurations,
+                        tooltip: '重新載入配置列表',
+                      );
+              },
+            ),
             if (_configurations.isNotEmpty)
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 8),
@@ -1203,6 +1217,7 @@ class _CustomerHomePageState extends State<CustomerHomePage> {
                         : null,
                   );
                   _currentConfigurationName = nameController.text.trim();
+                  _loadConfigurations(); // 刷新配置列表
                   Navigator.of(context).pop();
                   ScaffoldMessenger.of(
                     context,
