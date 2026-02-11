@@ -238,7 +238,7 @@ class _CustomerHomePageState extends State<CustomerHomePage> {
                   return DropdownMenuItem<Customer?>(
                     value: customer,
                     child: Container(
-                      constraints: const BoxConstraints(minWidth: 250),
+                        constraints: const BoxConstraints(minWidth: 400),
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
@@ -249,6 +249,17 @@ class _CustomerHomePageState extends State<CustomerHomePage> {
                               color: Theme.of(context).colorScheme.onSurface,
                             ),
                           ),
+                            if (customer.chineseName != null &&
+                                customer.chineseName!.isNotEmpty)
+                              Text(
+                                customer.chineseName!,
+                                style: TextStyle(
+                                  fontSize: 12,
+                                  color: Theme.of(
+                                    context,
+                                  ).colorScheme.onSurfaceVariant,
+                                ),
+                              ),
                           if (customer.company != null &&
                               customer.company!.isNotEmpty)
                             Text(
@@ -260,17 +271,28 @@ class _CustomerHomePageState extends State<CustomerHomePage> {
                                 ).colorScheme.onSurfaceVariant,
                               ),
                             ),
-                          if (customer.projectName != null &&
-                              customer.projectName!.isNotEmpty)
-                            Text(
-                              '項目: ${customer.projectName}',
-                              style: TextStyle(
-                                fontSize: 12,
-                                color: Theme.of(
-                                  context,
-                                ).colorScheme.onSurfaceVariant,
+                            if (customer.email != null &&
+                                customer.email!.isNotEmpty)
+                              Text(
+                                customer.email!,
+                                style: TextStyle(
+                                  fontSize: 12,
+                                  color: Theme.of(
+                                    context,
+                                  ).colorScheme.onSurfaceVariant,
+                                ),
                               ),
-                            ),
+                            if (customer.phone != null &&
+                                customer.phone!.isNotEmpty)
+                              Text(
+                                '電話: ${customer.phone}',
+                                style: TextStyle(
+                                  fontSize: 12,
+                                  color: Theme.of(
+                                    context,
+                                  ).colorScheme.onSurfaceVariant,
+                                ),
+                              ),
                         ],
                       ),
                     ),
@@ -354,7 +376,7 @@ class _CustomerHomePageState extends State<CustomerHomePage> {
                     return DropdownMenuItem<String>(
                       value: config.name,
                       child: Container(
-                        constraints: const BoxConstraints(minWidth: 200),
+                        constraints: const BoxConstraints(minWidth: 350),
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
@@ -374,6 +396,37 @@ class _CustomerHomePageState extends State<CustomerHomePage> {
                                 ).colorScheme.onSurfaceVariant,
                               ),
                             ),
+                            if (config.customerName != null)
+                              Text(
+                                '客戶: ${config.customerName}${config.customerCompany != null ? ' (${config.customerCompany})' : ''}',
+                                style: TextStyle(
+                                  fontSize: 12,
+                                  color: Theme.of(context).colorScheme.primary,
+                                  fontWeight: FontWeight.w500,
+                                ),
+                              ),
+                            if (config.projectName != null &&
+                                config.projectName!.isNotEmpty)
+                              Text(
+                                '項目: ${config.projectName}',
+                                style: TextStyle(
+                                  fontSize: 12,
+                                  color: Theme.of(
+                                    context,
+                                  ).colorScheme.secondary,
+                                ),
+                              ),
+                            if (config.projectAddress != null &&
+                                config.projectAddress!.isNotEmpty)
+                              Text(
+                                '地址: ${config.projectAddress}',
+                                style: TextStyle(
+                                  fontSize: 12,
+                                  color: Theme.of(
+                                    context,
+                                  ).colorScheme.secondary,
+                                ),
+                              ),
                           ],
                         ),
                       ),
@@ -1081,17 +1134,41 @@ class _CustomerHomePageState extends State<CustomerHomePage> {
     final TextEditingController nameController = TextEditingController(
       text: _currentConfigurationName,
     );
+    final TextEditingController projectNameController = TextEditingController();
+    final TextEditingController projectAddressController =
+        TextEditingController();
 
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
         title: const Text('儲存估價配置'),
-        content: TextField(
-          controller: nameController,
-          decoration: const InputDecoration(
-            labelText: '配置名稱',
-            hintText: '輸入配置名稱',
-          ),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            TextField(
+              controller: nameController,
+              decoration: const InputDecoration(
+                labelText: '配置名稱',
+                hintText: '輸入配置名稱',
+              ),
+            ),
+            const SizedBox(height: 16),
+            TextField(
+              controller: projectNameController,
+              decoration: const InputDecoration(
+                labelText: '項目名稱 (選填)',
+                hintText: '輸入項目名稱',
+              ),
+            ),
+            const SizedBox(height: 16),
+            TextField(
+              controller: projectAddressController,
+              decoration: const InputDecoration(
+                labelText: '項目地址 (選填)',
+                hintText: '輸入項目地址',
+              ),
+            ),
+          ],
         ),
         actions: [
           TextButton(
@@ -1117,6 +1194,13 @@ class _CustomerHomePageState extends State<CustomerHomePage> {
                     nameController.text.trim(),
                     quoteData,
                     customerId: _selectedCustomer?.id,
+                    projectName: projectNameController.text.trim().isNotEmpty
+                        ? projectNameController.text.trim()
+                        : null,
+                    projectAddress:
+                        projectAddressController.text.trim().isNotEmpty
+                        ? projectAddressController.text.trim()
+                        : null,
                   );
                   _currentConfigurationName = nameController.text.trim();
                   Navigator.of(context).pop();

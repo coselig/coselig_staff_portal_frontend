@@ -47,8 +47,8 @@ class Customer {
       email: json['email'],
       phone: json['phone'],
       address: json['address'],
-      projectName: json['project_name'],
-      projectAddress: json['project_address'],
+      projectName: null, // 項目信息已移動到報價配置
+      projectAddress: null, // 項目信息已移動到報價配置
       contactPerson: json['contact_person'],
       notes: json['notes'],
       isActive: json['is_active'] == 1,

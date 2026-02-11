@@ -12,6 +12,11 @@ class QuoteConfiguration {
   final String userName;
   final String createdAt;
   final String updatedAt;
+  final int? customerId;
+  final String? customerName;
+  final String? customerCompany;
+  final String? projectName;
+  final String? projectAddress;
   final QuoteData? quoteData;
 
   QuoteConfiguration({
@@ -22,6 +27,11 @@ class QuoteConfiguration {
     required this.userName,
     required this.createdAt,
     required this.updatedAt,
+    this.customerId,
+    this.customerName,
+    this.customerCompany,
+    this.projectName,
+    this.projectAddress,
     this.quoteData,
   });
 
@@ -34,6 +44,11 @@ class QuoteConfiguration {
       userName: json['user_name'] ?? '',
       createdAt: json['created_at'] ?? '',
       updatedAt: json['updated_at'] ?? '',
+      customerId: json['customer_id'],
+      customerName: json['customer_name'],
+      customerCompany: json['customer_company'],
+      projectName: json['project_name'],
+      projectAddress: json['project_address'],
       quoteData: json['quote_data'] != null
           ? QuoteData.fromJson(jsonDecode(json['quote_data']))
           : null,
@@ -134,6 +149,8 @@ class QuoteService extends ChangeNotifier {
     String name,
     QuoteData quoteData, {
     int? customerId,
+    String? projectName,
+    String? projectAddress,
   }) async {
     _isLoading = true;
     _error = null;
@@ -143,6 +160,12 @@ class QuoteService extends ChangeNotifier {
       final requestBody = {'name': name, 'quoteData': quoteData.toJson()};
       if (customerId != null) {
         requestBody['customerId'] = customerId;
+      }
+      if (projectName != null && projectName.isNotEmpty) {
+        requestBody['projectName'] = projectName;
+      }
+      if (projectAddress != null && projectAddress.isNotEmpty) {
+        requestBody['projectAddress'] = projectAddress;
       }
       final response = await _client.post(
         Uri.parse('$baseUrl/api/quote-configurations'),
