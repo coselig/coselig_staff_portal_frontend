@@ -60,7 +60,6 @@ class Step1Widget extends StatelessWidget {
                     ],
                   )
                 : Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
                       const Text(
                         '已配置迴路',
@@ -69,6 +68,7 @@ class Step1Widget extends StatelessWidget {
                           fontWeight: FontWeight.bold,
                         ),
                       ),
+                      const SizedBox(width: 16),
                       ElevatedButton.icon(
                         onPressed: onAddLoop,
                         icon: const Icon(Icons.add),
