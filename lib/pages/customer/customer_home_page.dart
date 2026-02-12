@@ -489,78 +489,21 @@ class _CustomerHomePageState extends State<CustomerHomePage> {
                       );
               },
             ),
-            if (_filteredConfigurations.isNotEmpty)
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 8),
-                child: DropdownButton<String>(
-                  value: null,
-                  hint: Row(
-                    children: [
-                      Icon(
-                        Icons.delete_outline,
-                        size: 18,
-                        color: Theme.of(context).colorScheme.error,
-                      ),
-                      const SizedBox(width: 4),
-                      Text(
-                        '刪除配置',
-                        style: TextStyle(
-                          color: Theme.of(context).colorScheme.error,
-                        ),
-                      ),
-                    ],
-                  ),
-                  icon: Icon(
-                    Icons.arrow_drop_down,
-                    color: Theme.of(context).colorScheme.error,
-                  ),
-                  underline: const SizedBox(),
-                  dropdownColor: Theme.of(context).colorScheme.surface,
-                  items: _filteredConfigurations.map((config) {
-                    return DropdownMenuItem<String>(
-                      value: config.name,
-                      child: Container(
-                        constraints: const BoxConstraints(minWidth: 200),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              config.name,
-                              style: TextStyle(
-                                fontWeight: FontWeight.w500,
-                                color: Theme.of(context).colorScheme.onSurface,
-                              ),
-                            ),
-                            Text(
-                              config.updatedAt,
-                              style: TextStyle(
-                                fontSize: 12,
-                                color: Theme.of(
-                                  context,
-                                ).colorScheme.onSurfaceVariant,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                    );
-                  }).toList(),
-                  onChanged: (String? configName) {
-                    if (configName != null) {
-                      _showDeleteConfirmation(configName);
-                    }
-                  },
+            
+            //刪除配置按鈕
+            TextButton(
+              onPressed: _selectedConfigurationName != null
+                  ? () => _showDeleteConfirmation(_currentConfigurationName)
+                  : null,
+              child: Text(
+                _selectedConfigurationName != null ? '刪除當前配置' : '尚未載入配置',
+                style: TextStyle(
+                  color: _selectedConfigurationName != null
+                      ? Theme.of(context).colorScheme.error
+                      : Theme.of(context).colorScheme.outline,
                 ),
-              )
-            else
-              IconButton(
-                icon: Icon(
-                  Icons.delete_outline,
-                  color: Theme.of(context).colorScheme.outline,
-                ),
-                onPressed: null,
-                tooltip: '無配置可刪除',
               ),
+            ),
           ],
         ],
       ),
@@ -1747,6 +1690,14 @@ class _CustomerHomePageState extends State<CustomerHomePage> {
     setState(() => _isLoading = true);
     try {
       await _quoteService.deleteConfiguration(configName);
+      // 重置當前狀態
+      setState(() {
+        _currentConfigurationName = '新估價配置';
+        _selectedConfigurationName = null;
+        _loops.clear();
+        _modules.clear();
+        _currentStep = 0;
+      });
       // 重新載入配置列表
       _loadConfigurations();
       ScaffoldMessenger.of(
