@@ -225,17 +225,24 @@ class AddModuleDialog extends StatefulWidget {
 class _AddModuleDialogState extends State<AddModuleDialog> {
   final _formKey = GlobalKey<FormState>();
   final _modelController = TextEditingController();
-  final _brandController = TextEditingController();
+  String _selectedBrand = '';
   final _channelCountController = TextEditingController();
   final _maxAmperePerChannelController = TextEditingController();
   final _maxAmpereTotalController = TextEditingController();
   final _priceController = TextEditingController();
   bool _isDimmable = true;
 
+  static const List<String> _brandOptions = [
+    '',
+    '郭先生',
+    'sunwave',
+    'matter',
+    'zigbee',
+  ];
+
   @override
   void dispose() {
     _modelController.dispose();
-    _brandController.dispose();
     _channelCountController.dispose();
     _maxAmperePerChannelController.dispose();
     _maxAmpereTotalController.dispose();
@@ -264,6 +271,25 @@ class _AddModuleDialogState extends State<AddModuleDialog> {
                     return '請輸入模組型號';
                   }
                   return null;
+                },
+              ),
+              const SizedBox(height: 16),
+              DropdownButtonFormField<String>(
+                value: _selectedBrand,
+                decoration: const InputDecoration(
+                  labelText: '廠牌',
+                  border: OutlineInputBorder(),
+                ),
+                items: _brandOptions.map((brand) {
+                  return DropdownMenuItem<String>(
+                    value: brand,
+                    child: Text(brand.isEmpty ? '(未選擇)' : brand),
+                  );
+                }).toList(),
+                onChanged: (value) {
+                  setState(() {
+                    _selectedBrand = value ?? '';
+                  });
                 },
               ),
               const SizedBox(height: 16),
@@ -365,7 +391,7 @@ class _AddModuleDialogState extends State<AddModuleDialog> {
             if (_formKey.currentState?.validate() ?? false) {
               final option = ModuleOption(
                 model: _modelController.text.trim(),
-                brand: _brandController.text.trim(),
+                brand: _selectedBrand,
                 channelCount: int.parse(_channelCountController.text),
                 isDimmable: _isDimmable,
                 maxAmperePerChannel: double.parse(_maxAmperePerChannelController.text),
@@ -396,20 +422,29 @@ class EditModuleDialog extends StatefulWidget {
 class _EditModuleDialogState extends State<EditModuleDialog> {
   final _formKey = GlobalKey<FormState>();
   late final TextEditingController _modelController;
-  late final TextEditingController _brandController;
+  String _selectedBrand = '';
   late final TextEditingController _channelCountController;
   late final TextEditingController _maxAmperePerChannelController;
   late final TextEditingController _maxAmpereTotalController;
   late final TextEditingController _priceController;
   late bool _isDimmable;
 
+  static const List<String> _brandOptions = [
+    '',
+    '郭先生',
+    'sunwave',
+    'matter',
+    'zigbee',
+  ];
+
   @override
   void initState() {
     super.initState();
     _modelController = TextEditingController(text: widget.option['model']);
-    _brandController = TextEditingController(
-      text: widget.option['brand'] ?? '',
-    );
+    _selectedBrand = widget.option['brand'] ?? '';
+    if (!_brandOptions.contains(_selectedBrand)) {
+      _selectedBrand = '';
+    }
     _channelCountController = TextEditingController(text: widget.option['channelCount'].toString());
     _maxAmperePerChannelController = TextEditingController(text: widget.option['maxAmperePerChannel'].toString());
     _maxAmpereTotalController = TextEditingController(text: widget.option['maxAmpereTotal'].toString());
@@ -422,7 +457,6 @@ class _EditModuleDialogState extends State<EditModuleDialog> {
   @override
   void dispose() {
     _modelController.dispose();
-    _brandController.dispose();
     _channelCountController.dispose();
     _maxAmperePerChannelController.dispose();
     _maxAmpereTotalController.dispose();
@@ -454,12 +488,23 @@ class _EditModuleDialogState extends State<EditModuleDialog> {
                 },
               ),
               const SizedBox(height: 16),
-              TextFormField(
-                controller: _brandController,
+              DropdownButtonFormField<String>(
+                value: _selectedBrand,
                 decoration: const InputDecoration(
-                  labelText: '廠牌 (選填)',
-                  hintText: '例如: HDL, Lutron',
+                  labelText: '廠牌',
+                  border: OutlineInputBorder(),
                 ),
+                items: _brandOptions.map((brand) {
+                  return DropdownMenuItem<String>(
+                    value: brand,
+                    child: Text(brand.isEmpty ? '(未選擇)' : brand),
+                  );
+                }).toList(),
+                onChanged: (value) {
+                  setState(() {
+                    _selectedBrand = value ?? '';
+                  });
+                },
               ),
               const SizedBox(height: 16),
               TextFormField(
@@ -560,7 +605,7 @@ class _EditModuleDialogState extends State<EditModuleDialog> {
             if (_formKey.currentState?.validate() ?? false) {
               final updates = {
                 'model': _modelController.text.trim(),
-                'brand': _brandController.text.trim(),
+                'brand': _selectedBrand,
                 'channelCount': int.parse(_channelCountController.text),
                 'isDimmable': _isDimmable,
                 'maxAmperePerChannel': double.parse(_maxAmperePerChannelController.text),
