@@ -825,6 +825,7 @@ class _CustomerHomePageState extends State<CustomerHomePage> {
                     child: Step2Widget(
                       modules: _modules,
                       onAddModule: _showAddModuleDialog,
+                      onAutoAssign: _autoAssignModules,
                       onRemoveModule: _removeModule,
                       onAssignLoopToModule: _assignLoopToModule,
                       onRemoveLoopFromModule: _removeLoopFromModule,
@@ -1146,6 +1147,331 @@ class _CustomerHomePageState extends State<CustomerHomePage> {
           });
         },
       ),
+    );
+  }
+
+  // 自動分配模組
+  void _autoAssignModules() {
+    final quoteService = Provider.of<QuoteService>(context, listen: false);
+    final allModuleOptions = quoteService.moduleOptions;
+
+    if (allModuleOptions.isEmpty) {
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('沒有可用的模組選項，請先在管理頁面添加模組')));
+      return;
+    }
+
+    if (_loops.isEmpty) {
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('沒有迴路可分配，請先在第一步添加迴路')));
+      return;
+    }
+
+    // 收集可用的廠牌列表
+    final brands = <String>{};
+    for (final opt in allModuleOptions) {
+      brands.add(opt.brand.isEmpty ? '' : opt.brand);
+    }
+    final brandList = brands.toList()
+      ..sort((a, b) {
+        if (a.isEmpty) return -1;
+        if (b.isEmpty) return 1;
+        return a.compareTo(b);
+      });
+
+    // 顯示廠牌選擇對話框
+    showDialog(
+      context: context,
+      builder: (context) {
+        String? selectedBrand; // null 表示不限
+        return StatefulBuilder(
+          builder: (context, setDialogState) {
+            return AlertDialog(
+              title: const Text('選擇廠牌'),
+              content: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Text('選擇要使用的模組廠牌進行自動分配：'),
+                  const SizedBox(height: 16),
+                  DropdownButtonFormField<String?>(
+                    value: selectedBrand,
+                    decoration: const InputDecoration(
+                      labelText: '廠牌',
+                      border: OutlineInputBorder(),
+                    ),
+                    items: [
+                      const DropdownMenuItem<String?>(
+                        value: null,
+                        child: Text('不限（使用所有廠牌）'),
+                      ),
+                      ...brandList.map((brand) {
+                        return DropdownMenuItem<String?>(
+                          value: brand,
+                          child: Text(brand.isEmpty ? '(未設定廠牌)' : brand),
+                        );
+                      }),
+                    ],
+                    onChanged: (value) {
+                      setDialogState(() {
+                        selectedBrand = value;
+                      });
+                    },
+                  ),
+                ],
+              ),
+              actions: [
+                TextButton(
+                  onPressed: () => Navigator.of(context).pop(),
+                  child: const Text('取消'),
+                ),
+                ElevatedButton(
+                  onPressed: () {
+                    Navigator.of(context).pop();
+                    _runAutoAssign(selectedBrand);
+                  },
+                  child: const Text('開始分配'),
+                ),
+              ],
+            );
+          },
+        );
+      },
+    );
+  }
+
+  // 執行自動分配
+  void _runAutoAssign(String? brandFilter) {
+    final quoteService = Provider.of<QuoteService>(context, listen: false);
+    final allModuleOptions = quoteService.moduleOptions;
+
+    // 根據廠牌篩選模組選項
+    final moduleOptions = brandFilter == null
+        ? allModuleOptions
+        : allModuleOptions.where((o) => o.brand == brandFilter).toList();
+
+    if (moduleOptions.isEmpty) {
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('該廠牌沒有可用的模組選項')));
+      return;
+    }
+
+    // 輔助函數：取得迴路需要的通道數
+    int getChannelsPerLoop(String dimmingType) {
+      switch (dimmingType) {
+        case 'WRGB':
+          return 4;
+        case 'RGB':
+          return 3;
+        case '雙色溫':
+          return 2;
+        case '單色溫':
+        case '繼電器':
+          return 1;
+        default:
+          return 1;
+      }
+    }
+
+    // 輔助函數：計算迴路的安培數
+    double getLoopAmpere(Loop loop) {
+      final totalWatt = loop.fixtures.fold(0, (sum, f) => sum + f.totalWatt);
+      return loop.voltage > 0 ? totalWatt / loop.voltage : 0;
+    }
+
+    // 輔助函數：計算迴路每通道安培數
+    double getLoopAmperePerChannel(Loop loop) {
+      final channels = getChannelsPerLoop(loop.dimmingType);
+      return channels > 0 ? getLoopAmpere(loop) / channels : 0;
+    }
+
+    // 準備所有迴路，按需要通道數降序排列（大迴路優先分配）
+    final sortedLoops = List<Loop>.from(_loops);
+    sortedLoops.sort((a, b) {
+      final channelsA = getChannelsPerLoop(a.dimmingType);
+      final channelsB = getChannelsPerLoop(b.dimmingType);
+      if (channelsA != channelsB) return channelsB.compareTo(channelsA);
+      return getLoopAmpere(b).compareTo(getLoopAmpere(a));
+    });
+
+    // 判斷迴路是否為繼電器類型
+    bool isRelayLoop(Loop loop) => loop.dimmingType == '繼電器';
+
+    // 將模組選項按通道數排序（優先嘗試小的）
+    final sortedDimmableOptions =
+        moduleOptions.where((o) => o.isDimmable).toList()
+          ..sort((a, b) => a.channelCount.compareTo(b.channelCount));
+    final sortedRelayOptions =
+        moduleOptions.where((o) => !o.isDimmable).toList()
+          ..sort((a, b) => a.channelCount.compareTo(b.channelCount));
+
+    // 用臨時列表做分配
+    final newModules = <Module>[];
+    final unassigned = <Loop>[];
+
+    for (final loop in sortedLoops) {
+      final requiredChannels = getChannelsPerLoop(loop.dimmingType);
+      final loopAmpere = getLoopAmpere(loop);
+      final loopAmperePerCh = getLoopAmperePerChannel(loop);
+      final isRelay = isRelayLoop(loop);
+
+      // 嘗試放進已建立的模組（Best Fit：選剩餘通道最少但夠用的）
+      int bestModuleIndex = -1;
+      int bestAvailable = 999;
+
+      for (int i = 0; i < newModules.length; i++) {
+        final m = newModules[i];
+        // 類型必須匹配
+        if (isRelay && m.isDimmable) continue;
+        if (!isRelay && !m.isDimmable) continue;
+
+        if (m.availableChannels >= requiredChannels &&
+            loopAmperePerCh <= m.maxAmperePerChannel &&
+            m.totalMaxAmpere + loopAmpere <= m.maxAmpereTotal) {
+          if (m.availableChannels < bestAvailable) {
+            bestAvailable = m.availableChannels;
+            bestModuleIndex = i;
+          }
+        }
+      }
+
+      if (bestModuleIndex >= 0) {
+        // 放進現有模組
+        final m = newModules[bestModuleIndex];
+        final updatedAllocations = List<LoopAllocation>.from(m.loopAllocations)
+          ..add(LoopAllocation(loop: loop));
+        newModules[bestModuleIndex] = m.copyWith(
+          loopAllocations: updatedAllocations,
+        );
+      } else {
+        // 需要建立新模組，選擇最適合的模組選項
+        final options = isRelay ? sortedRelayOptions : sortedDimmableOptions;
+        // 如果沒有對應方式的選項，嘗試另一種
+        final fallbackOptions = options.isEmpty
+            ? (isRelay ? sortedDimmableOptions : sortedRelayOptions)
+            : options;
+
+        ModuleOption? chosen;
+        for (final opt in fallbackOptions) {
+          if (opt.channelCount >= requiredChannels &&
+              loopAmperePerCh <= opt.maxAmperePerChannel &&
+              loopAmpere <= opt.maxAmpereTotal) {
+            chosen = opt;
+            break;
+          }
+        }
+
+        if (chosen != null) {
+          final newModule = Module(
+            model: chosen.model,
+            brand: chosen.brand,
+            channelCount: chosen.channelCount,
+            isDimmable: chosen.isDimmable,
+            maxAmperePerChannel: chosen.maxAmperePerChannel,
+            maxAmpereTotal: chosen.maxAmpereTotal,
+            price: chosen.price,
+            loopAllocations: [LoopAllocation(loop: loop)],
+          );
+          newModules.add(newModule);
+        } else {
+          unassigned.add(loop);
+        }
+      }
+    }
+
+    // 顯示確認對話框
+    showDialog(
+      context: context,
+      builder: (context) {
+        return AlertDialog(
+          title: const Text('自動分配結果'),
+          content: SingleChildScrollView(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text('將建立 ${newModules.length} 個模組：'),
+                const SizedBox(height: 8),
+                ...newModules.asMap().entries.map((entry) {
+                  final m = entry.value;
+                  return Padding(
+                    padding: const EdgeInsets.only(bottom: 8),
+                    child: Card(
+                      child: Padding(
+                        padding: const EdgeInsets.all(8),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              '${m.brand.isNotEmpty ? "[${m.brand}] " : ""}${m.model}',
+                              style: const TextStyle(
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                            Text(
+                              '通道: ${m.usedChannels}/${m.channelCount}  '
+                              '安培: ${m.totalMaxAmpere.toStringAsFixed(2)}/${m.maxAmpereTotal}A',
+                              style: const TextStyle(fontSize: 12),
+                            ),
+                            ...m.loopAllocations.map(
+                              (a) => Text(
+                                '  • ${a.loop.name} (${a.loop.dimmingType}, ${a.loop.voltage}V)',
+                                style: const TextStyle(fontSize: 12),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  );
+                }),
+                if (unassigned.isNotEmpty) ...[
+                  const SizedBox(height: 8),
+                  Text(
+                    '⚠ 以下迴路無法自動分配（沒有適合的模組選項）：',
+                    style: TextStyle(
+                      color: Theme.of(context).colorScheme.error,
+                    ),
+                  ),
+                  ...unassigned.map((l) => Text('  • ${l.name}')),
+                ],
+                const SizedBox(height: 12),
+                const Text(
+                  '此操作將清除現有的模組配置，確定要套用嗎？',
+                  style: TextStyle(fontWeight: FontWeight.w500),
+                ),
+              ],
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(),
+              child: const Text('取消'),
+            ),
+            ElevatedButton(
+              onPressed: () {
+                setState(() {
+                  _modules.clear();
+                  _modules.addAll(newModules);
+                });
+                Navigator.of(context).pop();
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(
+                    content: Text(
+                      '已自動分配 ${_loops.length - unassigned.length} 個迴路到 ${newModules.length} 個模組'
+                      '${unassigned.isNotEmpty ? "，${unassigned.length} 個迴路未分配" : ""}',
+                    ),
+                  ),
+                );
+              },
+              child: const Text('套用'),
+            ),
+          ],
+        );
+      },
     );
   }
 

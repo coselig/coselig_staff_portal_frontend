@@ -5,6 +5,7 @@ import 'module_card_widget.dart';
 class Step2Widget extends StatelessWidget {
   final List<Module> modules;
   final VoidCallback onAddModule;
+  final VoidCallback onAutoAssign;
   final Function(int) onRemoveModule;
   final Function(int, Loop) onAssignLoopToModule;
   final Function(int, int) onRemoveLoopFromModule;
@@ -15,6 +16,7 @@ class Step2Widget extends StatelessWidget {
     super.key,
     required this.modules,
     required this.onAddModule,
+    required this.onAutoAssign,
     required this.onRemoveModule,
     required this.onAssignLoopToModule,
     required this.onRemoveLoopFromModule,
@@ -47,10 +49,21 @@ class Step2Widget extends StatelessWidget {
                         ),
                       ),
                       const SizedBox(height: 8),
-                      ElevatedButton.icon(
-                        onPressed: onAddModule,
-                        icon: const Icon(Icons.add),
-                        label: const Text('添加模組'),
+                      Wrap(
+                        spacing: 8,
+                        runSpacing: 8,
+                        children: [
+                          ElevatedButton.icon(
+                            onPressed: onAddModule,
+                            icon: const Icon(Icons.add),
+                            label: const Text('添加模組'),
+                          ),
+                          OutlinedButton.icon(
+                            onPressed: onAutoAssign,
+                            icon: const Icon(Icons.auto_fix_high),
+                            label: const Text('自動分配'),
+                          ),
+                        ],
                       ),
                     ],
                   )
@@ -64,10 +77,20 @@ class Step2Widget extends StatelessWidget {
                           fontWeight: FontWeight.bold,
                         ),
                       ),
-                      ElevatedButton.icon(
-                        onPressed: onAddModule,
-                        icon: const Icon(Icons.add),
-                        label: const Text('添加模組'),
+                      Row(
+                        children: [
+                          OutlinedButton.icon(
+                            onPressed: onAutoAssign,
+                            icon: const Icon(Icons.auto_fix_high),
+                            label: const Text('自動分配'),
+                          ),
+                          const SizedBox(width: 8),
+                          ElevatedButton.icon(
+                            onPressed: onAddModule,
+                            icon: const Icon(Icons.add),
+                            label: const Text('添加模組'),
+                          ),
+                        ],
                       ),
                     ],
                   );
