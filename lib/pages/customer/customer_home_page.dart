@@ -1300,23 +1300,34 @@ class _CustomerHomePageState extends State<CustomerHomePage> {
     // 判斷迴路是否為繼電器類型
     bool isRelayLoop(Loop loop) => loop.dimmingType == '繼電器';
 
-    // 將模組選項按通道數排序（優先嘗試小的）
+    // 將模組選項按通道數排序（優先嘗試大的，減少模組總數）
     final sortedDimmableOptions =
         moduleOptions.where((o) => o.isDimmable).toList()
-          ..sort((a, b) => a.channelCount.compareTo(b.channelCount));
+          ..sort((a, b) => b.channelCount.compareTo(a.channelCount));
     final sortedRelayOptions =
         moduleOptions.where((o) => !o.isDimmable).toList()
-          ..sort((a, b) => a.channelCount.compareTo(b.channelCount));
+          ..sort((a, b) => b.channelCount.compareTo(a.channelCount));
 
     // 用臨時列表做分配
     final newModules = <Module>[];
     final unassigned = <Loop>[];
 
+    // 預先計算每個迴路的資訊
+    final loopInfos = <_LoopInfo>[];
     for (final loop in sortedLoops) {
-      final requiredChannels = getChannelsPerLoop(loop.dimmingType);
-      final loopAmpere = getLoopAmpere(loop);
-      final loopAmperePerCh = getLoopAmperePerChannel(loop);
-      final isRelay = isRelayLoop(loop);
+      loopInfos.add(
+        _LoopInfo(
+          loop: loop,
+          channels: getChannelsPerLoop(loop.dimmingType),
+          ampere: getLoopAmpere(loop),
+          amperePerCh: getLoopAmperePerChannel(loop),
+          isRelay: isRelayLoop(loop),
+        ),
+      );
+    }
+
+    for (int li = 0; li < loopInfos.length; li++) {
+      final info = loopInfos[li];
 
       // 嘗試放進已建立的模組（Best Fit：選剩餘通道最少但夠用的）
       int bestModuleIndex = -1;
@@ -1325,12 +1336,12 @@ class _CustomerHomePageState extends State<CustomerHomePage> {
       for (int i = 0; i < newModules.length; i++) {
         final m = newModules[i];
         // 類型必須匹配
-        if (isRelay && m.isDimmable) continue;
-        if (!isRelay && !m.isDimmable) continue;
+        if (info.isRelay && m.isDimmable) continue;
+        if (!info.isRelay && !m.isDimmable) continue;
 
-        if (m.availableChannels >= requiredChannels &&
-            loopAmperePerCh <= m.maxAmperePerChannel &&
-            m.totalMaxAmpere + loopAmpere <= m.maxAmpereTotal) {
+        if (m.availableChannels >= info.channels &&
+            info.amperePerCh <= m.maxAmperePerChannel &&
+            m.totalMaxAmpere + info.ampere <= m.maxAmpereTotal) {
           if (m.availableChannels < bestAvailable) {
             bestAvailable = m.availableChannels;
             bestModuleIndex = i;
@@ -1342,25 +1353,60 @@ class _CustomerHomePageState extends State<CustomerHomePage> {
         // 放進現有模組
         final m = newModules[bestModuleIndex];
         final updatedAllocations = List<LoopAllocation>.from(m.loopAllocations)
-          ..add(LoopAllocation(loop: loop));
+          ..add(LoopAllocation(loop: info.loop));
         newModules[bestModuleIndex] = m.copyWith(
           loopAllocations: updatedAllocations,
         );
       } else {
-        // 需要建立新模組，選擇最適合的模組選項
-        final options = isRelay ? sortedRelayOptions : sortedDimmableOptions;
-        // 如果沒有對應方式的選項，嘗試另一種
+        // 需要建立新模組 - 計算剩餘同類型迴路所需的總通道數
+        int remainingChannels = info.channels;
+        for (int j = li + 1; j < loopInfos.length; j++) {
+          final other = loopInfos[j];
+          if (other.isRelay == info.isRelay) {
+            remainingChannels += other.channels;
+          }
+        }
+
+        final options = info.isRelay
+            ? sortedRelayOptions
+            : sortedDimmableOptions;
         final fallbackOptions = options.isEmpty
-            ? (isRelay ? sortedDimmableOptions : sortedRelayOptions)
+            ? (info.isRelay ? sortedDimmableOptions : sortedRelayOptions)
             : options;
 
+        // 選擇策略：選能容納最多剩餘迴路的最大模組
+        // 但如果剩餘通道數較少，則選剛好夠用的最小模組（避免浪費）
         ModuleOption? chosen;
+
+        // 先按通道數降序嘗試（優先大模組）
         for (final opt in fallbackOptions) {
-          if (opt.channelCount >= requiredChannels &&
-              loopAmperePerCh <= opt.maxAmperePerChannel &&
-              loopAmpere <= opt.maxAmpereTotal) {
-            chosen = opt;
-            break;
+          if (opt.channelCount >= info.channels &&
+              info.amperePerCh <= opt.maxAmperePerChannel &&
+              info.ampere <= opt.maxAmpereTotal) {
+            if (chosen == null) {
+              chosen = opt; // 先記住第一個可用的（最大的）
+            }
+            // 如果有剛好夠裝所有剩餘迴路的模組，優先選它
+            if (opt.channelCount >= remainingChannels) {
+              chosen = opt;
+            } else if (opt.channelCount < remainingChannels &&
+                opt.channelCount >= info.channels) {
+              // 不夠裝全部，但仍是可用的 → 選最大的
+              // chosen 已經是最大的了，不用替換
+            }
+          }
+        }
+
+        // 如果找到的模組通道數大於剩餘所需的2倍，嘗試找更小但仍夠用的
+        if (chosen != null && chosen.channelCount > remainingChannels * 2) {
+          // 從小到大找一個剛好夠的
+          for (final opt in fallbackOptions.reversed) {
+            if (opt.channelCount >= remainingChannels &&
+                info.amperePerCh <= opt.maxAmperePerChannel &&
+                info.ampere <= opt.maxAmpereTotal) {
+              chosen = opt;
+              break;
+            }
           }
         }
 
@@ -1373,11 +1419,11 @@ class _CustomerHomePageState extends State<CustomerHomePage> {
             maxAmperePerChannel: chosen.maxAmperePerChannel,
             maxAmpereTotal: chosen.maxAmpereTotal,
             price: chosen.price,
-            loopAllocations: [LoopAllocation(loop: loop)],
+            loopAllocations: [LoopAllocation(loop: info.loop)],
           );
           newModules.add(newModule);
         } else {
-          unassigned.add(loop);
+          unassigned.add(info.loop);
         }
       }
     }
@@ -1715,4 +1761,21 @@ class _CustomerHomePageState extends State<CustomerHomePage> {
       setState(() => _isLoading = false);
     }
   }
+}
+
+// 自動分配用的迴路資訊輔助類
+class _LoopInfo {
+  final Loop loop;
+  final int channels;
+  final double ampere;
+  final double amperePerCh;
+  final bool isRelay;
+
+  const _LoopInfo({
+    required this.loop,
+    required this.channels,
+    required this.ampere,
+    required this.amperePerCh,
+    required this.isRelay,
+  });
 }

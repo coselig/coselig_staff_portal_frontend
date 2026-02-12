@@ -210,6 +210,7 @@ class _FixtureTypeManagementPageState extends State<FixtureTypeManagementPage> {
                             fontWeight: FontWeight.w500,
                           ),
                         ),
+                        Text('預設每單位瓦數: ${option['defaultUnitWatt'] ?? 0} W'),
                               ],
                             ),
                             trailing: Row(
@@ -249,6 +250,7 @@ class _AddFixtureTypeDialogState extends State<_AddFixtureTypeDialog> {
   final _quantityLabelController = TextEditingController(text: '燈具數量');
   final _unitLabelController = TextEditingController(text: '每顆瓦數 (W)');
   final _priceController = TextEditingController(text: '0.0');
+  final _defaultUnitWattController = TextEditingController(text: '0');
   bool _isMeterBased = false;
 
   @override
@@ -257,6 +259,7 @@ class _AddFixtureTypeDialogState extends State<_AddFixtureTypeDialog> {
     _quantityLabelController.dispose();
     _unitLabelController.dispose();
     _priceController.dispose();
+    _defaultUnitWattController.dispose();
     super.dispose();
   }
 
@@ -348,6 +351,23 @@ class _AddFixtureTypeDialogState extends State<_AddFixtureTypeDialog> {
                   return null;
                 },
               ),
+              const SizedBox(height: 16),
+              TextFormField(
+                controller: _defaultUnitWattController,
+                decoration: const InputDecoration(
+                  labelText: '預設每單位瓦數 (W)',
+                  hintText: '例如：10',
+                ),
+                keyboardType: TextInputType.number,
+                validator: (value) {
+                  if (value != null && value.isNotEmpty) {
+                    if (int.tryParse(value) == null) {
+                      return '請輸入有效的整數';
+                    }
+                  }
+                  return null;
+                },
+              ),
             ],
           ),
         ),
@@ -366,6 +386,8 @@ class _AddFixtureTypeDialogState extends State<_AddFixtureTypeDialog> {
                 unitLabel: _unitLabelController.text.trim(),
                 isMeterBased: _isMeterBased,
                 price: double.tryParse(_priceController.text.trim()) ?? 0.0,
+                defaultUnitWatt:
+                    int.tryParse(_defaultUnitWattController.text.trim()) ?? 0,
               );
               Navigator.of(context).pop(option);
             }
@@ -392,6 +414,7 @@ class _EditFixtureTypeDialogState extends State<_EditFixtureTypeDialog> {
   late final TextEditingController _quantityLabelController;
   late final TextEditingController _unitLabelController;
   late final TextEditingController _priceController;
+  late final TextEditingController _defaultUnitWattController;
   late bool _isMeterBased;
 
   @override
@@ -407,6 +430,9 @@ class _EditFixtureTypeDialogState extends State<_EditFixtureTypeDialog> {
     _priceController = TextEditingController(
       text: (widget.option['price'] ?? 0.0).toString(),
     );
+    _defaultUnitWattController = TextEditingController(
+      text: (widget.option['defaultUnitWatt'] ?? 0).toString(),
+    );
     _isMeterBased = widget.option['isMeterBased'] ?? false;
   }
 
@@ -416,6 +442,7 @@ class _EditFixtureTypeDialogState extends State<_EditFixtureTypeDialog> {
     _quantityLabelController.dispose();
     _unitLabelController.dispose();
     _priceController.dispose();
+    _defaultUnitWattController.dispose();
     super.dispose();
   }
 
@@ -500,6 +527,23 @@ class _EditFixtureTypeDialogState extends State<_EditFixtureTypeDialog> {
                   return null;
                 },
               ),
+              const SizedBox(height: 16),
+              TextFormField(
+                controller: _defaultUnitWattController,
+                decoration: const InputDecoration(
+                  labelText: '預設每單位瓦數 (W)',
+                  hintText: '例如：10',
+                ),
+                keyboardType: TextInputType.number,
+                validator: (value) {
+                  if (value != null && value.isNotEmpty) {
+                    if (int.tryParse(value) == null) {
+                      return '請輸入有效的整數';
+                    }
+                  }
+                  return null;
+                },
+              ),
             ],
           ),
         ),
@@ -518,6 +562,8 @@ class _EditFixtureTypeDialogState extends State<_EditFixtureTypeDialog> {
                 'unitLabel': _unitLabelController.text.trim(),
                 'isMeterBased': _isMeterBased,
                 'price': double.tryParse(_priceController.text.trim()) ?? 0.0,
+                'defaultUnitWatt':
+                    int.tryParse(_defaultUnitWattController.text.trim()) ?? 0,
               };
               Navigator.of(context).pop(updates);
             }

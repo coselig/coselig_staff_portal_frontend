@@ -429,6 +429,7 @@ class QuoteService extends ChangeNotifier {
                   unitLabel: json['unitLabel'] ?? '每顆瓦數 (W)',
                   isMeterBased: json['isMeterBased'] ?? false,
                   price: (json['price'] ?? 0.0).toDouble(),
+                  defaultUnitWatt: json['defaultUnitWatt'] ?? 0,
                 ),
               )
               .toList(),
@@ -475,6 +476,7 @@ class QuoteService extends ChangeNotifier {
           'unitLabel': option.unitLabel,
           'isMeterBased': option.isMeterBased,
           'price': option.price,
+          'defaultUnitWatt': option.defaultUnitWatt,
         }),
       );
 
