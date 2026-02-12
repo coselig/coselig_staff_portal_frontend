@@ -26,9 +26,12 @@ class _AddFixtureDialogState extends State<AddFixtureDialog> {
   }
 
   int _calculateTotalWatt() {
-    final quantity = int.tryParse(quantityController.text) ?? 0;
-    final unitWatt = int.tryParse(unitWattController.text) ?? 0;
-    return quantity * unitWatt;
+    final isMeterBased = fixtureTypeData[selectedType]!.isMeterBased;
+    final quantity = isMeterBased
+        ? (double.tryParse(quantityController.text) ?? 0)
+        : (int.tryParse(quantityController.text) ?? 0).toDouble();
+    final unitWatt = (int.tryParse(unitWattController.text) ?? 0).toDouble();
+    return (quantity * unitWatt).round();
   }
 
   @override
@@ -82,10 +85,20 @@ class _AddFixtureDialogState extends State<AddFixtureDialog> {
                     decoration: InputDecoration(
                       labelText: fixtureTypeData[selectedType]!.quantityLabel,
                       border: const OutlineInputBorder(),
-                      hintText: fixtureTypeData[selectedType]!.isMeterBased ? '例如：5' : '例如：3',
+                      hintText: fixtureTypeData[selectedType]!.isMeterBased
+                          ? '例如：5.5'
+                          : '例如：3',
                     ),
-                    keyboardType: TextInputType.number,
-                    inputFormatters: [FilteringTextInputFormatter.digitsOnly],
+                    keyboardType: fixtureTypeData[selectedType]!.isMeterBased
+                        ? const TextInputType.numberWithOptions(decimal: true)
+                        : TextInputType.number,
+                    inputFormatters: fixtureTypeData[selectedType]!.isMeterBased
+                        ? [
+                            FilteringTextInputFormatter.allow(
+                              RegExp(r'^\d*\.?\d*'),
+                            ),
+                          ]
+                        : [FilteringTextInputFormatter.digitsOnly],
                     onChanged: (value) => setState(() {}),
                   ),
                 ),
@@ -143,7 +156,10 @@ class _AddFixtureDialogState extends State<AddFixtureDialog> {
           ElevatedButton(
             onPressed: () {
               final name = nameController.text.trim();
-              final quantity = int.tryParse(quantityController.text) ?? 0;
+              final isMeterBased = fixtureTypeData[selectedType]!.isMeterBased;
+              final quantity = isMeterBased
+                  ? (double.tryParse(quantityController.text) ?? 0)
+                  : (int.tryParse(quantityController.text) ?? 0).toDouble();
               final unitWatt = int.tryParse(unitWattController.text) ?? 0;
               final totalWatt = _calculateTotalWatt();
 
