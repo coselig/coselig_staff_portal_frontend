@@ -101,29 +101,58 @@ class LoopCardWidget extends StatelessWidget {
             ),
             const SizedBox(height: 16),
 
-            // 總瓦數顯示
+            // 總瓦數和價格顯示
             Container(
               padding: const EdgeInsets.all(12),
               decoration: BoxDecoration(
                 color: Theme.of(context).colorScheme.primaryContainer,
                 borderRadius: BorderRadius.circular(8),
               ),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              child: Column(
                 children: [
-                  const Text(
-                    '總瓦數:',
-                    style: TextStyle(
-                      fontSize: 16, fontWeight: FontWeight.w500),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      const Text(
+                        '總瓦數:',
+                        style: TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
+                      Text(
+                        '${loop.totalWatt} W',
+                        style: TextStyle(
+                          fontSize: 18,
+                          fontWeight: FontWeight.bold,
+                          color: Theme.of(context).colorScheme.primary,
+                        ),
+                      ),
+                    ],
                   ),
-                  Text(
-                    '${loop.totalWatt} W',
-                    style: TextStyle(
-                      fontSize: 18,
-                      fontWeight: FontWeight.bold,
-                      color: Theme.of(context).colorScheme.primary,
+                  if (loop.totalFixturePrice > 0) ...[
+                    const SizedBox(height: 8),
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        const Text(
+                          '燈具總價:',
+                          style: TextStyle(
+                            fontSize: 16,
+                            fontWeight: FontWeight.w500,
+                          ),
+                        ),
+                        Text(
+                          '\$${loop.totalFixturePrice.toStringAsFixed(1)}',
+                          style: TextStyle(
+                            fontSize: 18,
+                            fontWeight: FontWeight.bold,
+                            color: Theme.of(context).colorScheme.secondary,
+                          ),
+                        ),
+                      ],
                     ),
-                  ),
+                  ],
                 ],
               ),
             ),
@@ -192,6 +221,16 @@ class LoopCardWidget extends StatelessWidget {
                                   ).colorScheme.onSurfaceVariant,
                                 ),
                               ),
+                              if (fixture.price > 0)
+                                Text(
+                                  '價格: \$${fixture.price.toStringAsFixed(1)}',
+                                  style: TextStyle(
+                                    color: Theme.of(
+                                      context,
+                                    ).colorScheme.secondary,
+                                    fontSize: 12,
+                                  ),
+                                ),
                             ],
                           ),
                         ),

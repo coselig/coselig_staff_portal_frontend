@@ -426,6 +426,7 @@ class QuoteService extends ChangeNotifier {
                   quantityLabel: json['quantityLabel'] ?? '燈具數量',
                   unitLabel: json['unitLabel'] ?? '每顆瓦數 (W)',
                   isMeterBased: json['isMeterBased'] ?? false,
+                  price: (json['price'] ?? 0.0).toDouble(),
                 ),
               )
               .toList(),
@@ -471,6 +472,7 @@ class QuoteService extends ChangeNotifier {
           'quantityLabel': option.quantityLabel,
           'unitLabel': option.unitLabel,
           'isMeterBased': option.isMeterBased,
+          'price': option.price,
         }),
       );
 

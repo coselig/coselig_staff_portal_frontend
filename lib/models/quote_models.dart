@@ -451,6 +451,7 @@ class FixtureTypeData {
   final String quantityLabel;
   final String unitLabel;
   final bool isMeterBased;
+  final double price;
 
   const FixtureTypeData({
     this.id,
@@ -458,6 +459,7 @@ class FixtureTypeData {
     required this.quantityLabel,
     required this.unitLabel,
     this.isMeterBased = false,
+    this.price = 0.0,
   });
 }
 
@@ -493,18 +495,21 @@ const Map<String, FixtureTypeData> defaultFixtureTypeData = {
 class LoopFixture {
   String name;
   int totalWatt;
+  double price;
 
   LoopFixture({
     required this.name,
-    required this.totalWatt});
+    required this.totalWatt, this.price = 0.0});
 
   LoopFixture copyWith({
     String? name,
     int? totalWatt,
+    double? price,
   }) {
     return LoopFixture(
       name: name ?? this.name,
       totalWatt: totalWatt ?? this.totalWatt,
+      price: price ?? this.price,
     );
   }
 
@@ -512,6 +517,7 @@ class LoopFixture {
     return {
       'name': name,
       'totalWatt': totalWatt,
+      'price': price,
     };
   }
 
@@ -519,6 +525,7 @@ class LoopFixture {
     return LoopFixture(
       name: json['name'] ?? '',
       totalWatt: json['totalWatt'] ?? 0,
+      price: (json['price'] ?? 0.0).toDouble(),
     );
   }
 }
@@ -553,6 +560,10 @@ class Loop {
   // 獲取總瓦數
   int get totalWatt =>
       fixtures.fold(0, (sum, fixture) => sum + fixture.totalWatt);
+
+  // 獲取總燈具價格
+  double get totalFixturePrice =>
+      fixtures.fold(0.0, (sum, fixture) => sum + fixture.price);
 
   Map<String, dynamic> toJson() {
     return {

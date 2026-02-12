@@ -62,7 +62,7 @@ class QuoteResultDialog extends StatelessWidget {
                         (fixture) => Padding(
                           padding: const EdgeInsets.only(left: 16),
                           child: Text(
-                            '- ${fixture.name}: ${fixture.totalWatt}W',
+                            '- ${fixture.name}: ${fixture.totalWatt}W${fixture.price > 0 ? ' (價格: \$${fixture.price.toStringAsFixed(1)})' : ''}',
                           ),
                         ),
                       ),
