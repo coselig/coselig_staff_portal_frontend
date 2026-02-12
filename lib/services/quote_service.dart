@@ -281,6 +281,7 @@ class QuoteService extends ChangeNotifier {
                   maxAmperePerChannel:
                       json['maxAmperePerChannel']?.toDouble() ?? 0.0,
                   maxAmpereTotal: json['maxAmpereTotal']?.toDouble() ?? 0.0,
+                  price: json['price']?.toDouble() ?? 0.0,
                 ),
               )
               .toList(),
@@ -333,6 +334,7 @@ class QuoteService extends ChangeNotifier {
           'isDimmable': option.isDimmable,
           'maxAmperePerChannel': option.maxAmperePerChannel,
           'maxAmpereTotal': option.maxAmpereTotal,
+          'price': option.price,
         }),
       );
 

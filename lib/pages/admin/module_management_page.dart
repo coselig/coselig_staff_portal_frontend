@@ -186,6 +186,7 @@ class _ModuleManagementPageState extends State<ModuleManagementPage> {
                                 Text(option['isDimmable'] ? '可調光' : '不可調光'),
                                 Text('每通道最大安培: ${option['maxAmperePerChannel']}A'),
                                 Text('模組最大安培: ${option['maxAmpereTotal']}A'),
+                        Text('價格: \$${option['price'] ?? 0}'),
                               ],
                             ),
                             trailing: Row(
@@ -225,6 +226,7 @@ class _AddModuleDialogState extends State<AddModuleDialog> {
   final _channelCountController = TextEditingController();
   final _maxAmperePerChannelController = TextEditingController();
   final _maxAmpereTotalController = TextEditingController();
+  final _priceController = TextEditingController();
   bool _isDimmable = true;
 
   @override
@@ -233,6 +235,7 @@ class _AddModuleDialogState extends State<AddModuleDialog> {
     _channelCountController.dispose();
     _maxAmperePerChannelController.dispose();
     _maxAmpereTotalController.dispose();
+    _priceController.dispose();
     super.dispose();
   }
 
@@ -317,6 +320,24 @@ class _AddModuleDialogState extends State<AddModuleDialog> {
                 },
               ),
               const SizedBox(height: 16),
+              TextFormField(
+                controller: _priceController,
+                decoration: const InputDecoration(
+                  labelText: '價格',
+                  hintText: '例如: 1500',
+                ),
+                keyboardType: TextInputType.number,
+                validator: (value) {
+                  if (value != null && value.isNotEmpty) {
+                    final price = double.tryParse(value);
+                    if (price == null || price < 0) {
+                      return '請輸入有效的數字';
+                    }
+                  }
+                  return null;
+                },
+              ),
+              const SizedBox(height: 16),
               CheckboxListTile(
                 title: const Text('可調光'),
                 value: _isDimmable,
@@ -344,6 +365,9 @@ class _AddModuleDialogState extends State<AddModuleDialog> {
                 isDimmable: _isDimmable,
                 maxAmperePerChannel: double.parse(_maxAmperePerChannelController.text),
                 maxAmpereTotal: double.parse(_maxAmpereTotalController.text),
+                price: _priceController.text.isNotEmpty
+                    ? double.parse(_priceController.text)
+                    : 0.0,
               );
               Navigator.of(context).pop(option);
             }
@@ -370,6 +394,7 @@ class _EditModuleDialogState extends State<EditModuleDialog> {
   late final TextEditingController _channelCountController;
   late final TextEditingController _maxAmperePerChannelController;
   late final TextEditingController _maxAmpereTotalController;
+  late final TextEditingController _priceController;
   late bool _isDimmable;
 
   @override
@@ -379,6 +404,9 @@ class _EditModuleDialogState extends State<EditModuleDialog> {
     _channelCountController = TextEditingController(text: widget.option['channelCount'].toString());
     _maxAmperePerChannelController = TextEditingController(text: widget.option['maxAmperePerChannel'].toString());
     _maxAmpereTotalController = TextEditingController(text: widget.option['maxAmpereTotal'].toString());
+    _priceController = TextEditingController(
+      text: (widget.option['price'] ?? 0).toString(),
+    );
     _isDimmable = widget.option['isDimmable'];
   }
 
@@ -388,6 +416,7 @@ class _EditModuleDialogState extends State<EditModuleDialog> {
     _channelCountController.dispose();
     _maxAmperePerChannelController.dispose();
     _maxAmpereTotalController.dispose();
+    _priceController.dispose();
     super.dispose();
   }
 
@@ -472,6 +501,24 @@ class _EditModuleDialogState extends State<EditModuleDialog> {
                 },
               ),
               const SizedBox(height: 16),
+              TextFormField(
+                controller: _priceController,
+                decoration: const InputDecoration(
+                  labelText: '價格',
+                  hintText: '例如: 1500',
+                ),
+                keyboardType: TextInputType.number,
+                validator: (value) {
+                  if (value != null && value.isNotEmpty) {
+                    final price = double.tryParse(value);
+                    if (price == null || price < 0) {
+                      return '請輸入有效的數字';
+                    }
+                  }
+                  return null;
+                },
+              ),
+              const SizedBox(height: 16),
               CheckboxListTile(
                 title: const Text('可調光'),
                 value: _isDimmable,
@@ -499,6 +546,9 @@ class _EditModuleDialogState extends State<EditModuleDialog> {
                 'isDimmable': _isDimmable,
                 'maxAmperePerChannel': double.parse(_maxAmperePerChannelController.text),
                 'maxAmpereTotal': double.parse(_maxAmpereTotalController.text),
+                'price': _priceController.text.isNotEmpty
+                    ? double.parse(_priceController.text)
+                    : 0.0,
               };
               Navigator.of(context).pop(updates);
             }

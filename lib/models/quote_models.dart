@@ -214,6 +214,7 @@ class ModuleOption {
   final bool isDimmable;
   final double maxAmperePerChannel;
   final double maxAmpereTotal;
+  final double price;
 
   const ModuleOption({
     required this.model,
@@ -221,6 +222,7 @@ class ModuleOption {
     required this.isDimmable,
     required this.maxAmperePerChannel,
     required this.maxAmpereTotal,
+    this.price = 0.0,
   });
 }
 
@@ -230,6 +232,7 @@ class Module {
   bool isDimmable;
   double maxAmperePerChannel;
   double maxAmpereTotal;
+  double price;
   List<FixtureAllocation> allocations;
   List<LoopAllocation> loopAllocations;
 
@@ -239,6 +242,7 @@ class Module {
     required this.isDimmable,
     required this.maxAmperePerChannel,
     required this.maxAmpereTotal,
+    this.price = 0.0,
     this.allocations = const [],
     this.loopAllocations = const [],
   });
@@ -249,6 +253,7 @@ class Module {
     bool? isDimmable,
     double? maxAmperePerChannel,
     double? maxAmpereTotal,
+    double? price,
     List<FixtureAllocation>? allocations,
     List<LoopAllocation>? loopAllocations,
   }) {
@@ -258,6 +263,7 @@ class Module {
       isDimmable: isDimmable ?? this.isDimmable,
       maxAmperePerChannel: maxAmperePerChannel ?? this.maxAmperePerChannel,
       maxAmpereTotal: maxAmpereTotal ?? this.maxAmpereTotal,
+      price: price ?? this.price,
       allocations: allocations ?? this.allocations,
       loopAllocations: loopAllocations ?? this.loopAllocations,
     );
@@ -410,6 +416,7 @@ class Module {
       'isDimmable': isDimmable,
       'maxAmperePerChannel': maxAmperePerChannel,
       'maxAmpereTotal': maxAmpereTotal,
+      'price': price,
       'allocations': allocations.map((a) => a.toJson()).toList(),
       'loopAllocations': loopAllocations.map((l) => l.toJson()).toList(),
     };
@@ -422,6 +429,7 @@ class Module {
       isDimmable: json['isDimmable'] ?? true,
       maxAmperePerChannel: json['maxAmperePerChannel']?.toDouble() ?? 0.0,
       maxAmpereTotal: json['maxAmpereTotal']?.toDouble() ?? 0.0,
+      price: json['price']?.toDouble() ?? 0.0,
       allocations: (json['allocations'] as List?)?.map((a) => FixtureAllocation.fromJson(a)).toList() ?? [],
       loopAllocations: (json['loopAllocations'] as List?)?.map((l) => LoopAllocation.fromJson(l)).toList() ?? [],
     );

@@ -35,7 +35,7 @@ class _AddModuleDialogState extends State<AddModuleDialog> {
                 return DropdownMenuItem<ModuleOption>(
                   value: option,
                   child: Text(
-                    '${option.model} - ${option.channelCount}通道 ${option.isDimmable ? '(可調光)' : '(繼電器)'}',
+                    '${option.model} - ${option.channelCount}通道 ${option.isDimmable ? '(可調光)' : '(繼電器)'}${option.price > 0 ? ' - \$${option.price.toStringAsFixed(0)}' : ''}',
                   ),
                 );
               }).toList(),
@@ -63,6 +63,7 @@ class _AddModuleDialogState extends State<AddModuleDialog> {
                         maxAmperePerChannel:
                             selectedOption!.maxAmperePerChannel,
                         maxAmpereTotal: selectedOption!.maxAmpereTotal,
+                        price: selectedOption!.price,
                       ),
                     );
                     Navigator.of(context).pop();
