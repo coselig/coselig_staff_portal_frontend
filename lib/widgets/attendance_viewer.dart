@@ -251,22 +251,48 @@ class _AttendanceViewerState extends State<AttendanceViewer> {
                     );
                     return;
                   }
-                  // 準備 periodsData，顯示所有動態時段
+                  // 準備 periodsData：從 record 的 key 中提取實際的時段
                   final Map<String, Map<String, String?>> periodsData = {};
-                  final Map<String, String> periodKeys = {};
-                  final attendance = context.read<AttendanceService>();
-                  for (int i = 0; i < attendance.dynamicPeriods.length; i++) {
-                    final displayName = attendance.dynamicPeriods[i];
-                    final periodKey = 'period${i + 1}';
-                    periodsData[displayName] = {
-                      'check_in': record is Map<String, dynamic>
-                          ? record['${displayName}_check_in_time']
-                          : null,
-                      'check_out': record is Map<String, dynamic>
-                          ? record['${displayName}_check_out_time']
-                          : null,
+                  if (record is Map<String, dynamic>) {
+                    final Set<String> periods = {};
+                    record.forEach((key, value) {
+                      if (value != null &&
+                          (key.endsWith('_check_in_time') ||
+                              key.endsWith('_check_out_time'))) {
+                        String periodName;
+                        try {
+                          if (key.endsWith('_check_in_time')) {
+                            periodName = key.substring(
+                              0,
+                              key.length - '_check_in_time'.length,
+                            );
+                          } else {
+                            periodName = key.substring(
+                              0,
+                              key.length - '_check_out_time'.length,
+                            );
+                          }
+                          if (periodName.isNotEmpty) {
+                            periods.add(periodName);
+                          }
+                        } catch (e) {
+                          // skip
+                        }
+                      }
+                    });
+                    for (final period in periods) {
+                      periodsData[period] = {
+                        'check_in': record['${period}_check_in_time'],
+                        'check_out': record['${period}_check_out_time'],
+                      };
+                    }
+                  }
+                  // 如果沒有任何 period，添加 period1
+                  if (periodsData.isEmpty) {
+                    periodsData['period1'] = {
+                      'check_in': null,
+                      'check_out': null,
                     };
-                    periodKeys[displayName] = periodKey;
                   }
                   // 總是顯示補打卡對話框
                   await showDialog(
@@ -275,7 +301,6 @@ class _AttendanceViewerState extends State<AttendanceViewer> {
                       employeeName: '我',
                       date: date,
                       periodsData: periodsData,
-                      periodKeys: periodKeys,
                       onSubmit: (periods) async {
                         try {
                           final attendance = context.read<AttendanceService>();

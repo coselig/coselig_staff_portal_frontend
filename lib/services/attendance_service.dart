@@ -11,7 +11,7 @@ class AttendanceService extends ChangeNotifier {
 
   Map<String, dynamic>? todayAttendance;
   String? errorMessage;
-  
+
   // 月度打卡記錄快取
   Map<int, dynamic> currentMonthRecords = {};
   DateTime? currentMonthDate;
@@ -213,36 +213,76 @@ class AttendanceService extends ChangeNotifier {
     }
   }
 
-  /// 員工補打卡（只能補打未打卡的時段）
+  /// 員工補打卡（只能補打未打卡的欄位）
   Future<void> employeeManualPunch(
     String userId,
     DateTime date,
     Map<String, Map<String, String?>> periods,
   ) async {
-    // 檢查是否嘗試修改已有的打卡時間
+    // 檢查是否嘗試修改已有的打卡時間（只檢查個別欄位，不整個 period 擋下）
     final existingRecords = await getMonthAttendance(
       userId,
       date.year,
       date.month,
     );
     final dayRecord = existingRecords[date.day];
-    if (dayRecord != null) {
-      for (final period in periods.keys) {
-        final checkInKey = '${period}_check_in_time';
-        final checkOutKey = '${period}_check_out_time';
-        if (dayRecord.containsKey(checkInKey) &&
-            dayRecord[checkInKey] != null) {
-          throw Exception('不能修改已有的打卡時間：$period');
-        }
-        if (dayRecord.containsKey(checkOutKey) &&
-            dayRecord[checkOutKey] != null) {
-          throw Exception('不能修改已有的打卡時間：$period');
-        }
+
+    // 過濾掉已有資料的欄位，只保留需要補打的部分
+    final Map<String, Map<String, String?>> filteredPeriods = {};
+    for (final entry in periods.entries) {
+      final period = entry.key;
+      final times = entry.value;
+      final checkInKey = '${period}_check_in_time';
+      final checkOutKey = '${period}_check_out_time';
+
+      final existingCheckIn =
+          dayRecord != null &&
+          dayRecord.containsKey(checkInKey) &&
+          dayRecord[checkInKey] != null;
+      final existingCheckOut =
+          dayRecord != null &&
+          dayRecord.containsKey(checkOutKey) &&
+          dayRecord[checkOutKey] != null;
+
+      // 只傳送沒有既有資料的欄位，或是新的時段
+      String? checkIn = times['check_in'];
+      String? checkOut = times['check_out'];
+
+      if (existingCheckIn) {
+        checkIn = null; // 已有上班紀錄，不允許修改
+      }
+      if (existingCheckOut) {
+        checkOut = null; // 已有下班紀錄，不允許修改
+      }
+
+      // 如果這個 period 還有需要補打的資料，加進去
+      if (checkIn != null || checkOut != null) {
+        filteredPeriods[period] = {'check_in': checkIn, 'check_out': checkOut};
       }
     }
 
-    // 如果檢查通過，調用 manualPunch
-    await manualPunch(userId, date, periods);
+    if (filteredPeriods.isEmpty) {
+      throw Exception('該日期所有時段都已有完整打卡紀錄，無法補打');
+    }
+
+    // 調用員工補打卡 API
+    final url = '$baseUrl/api/employee-manual-punch';
+    final body = {
+      'user_id': userId,
+      'date':
+          '${date.year}-${date.month.toString().padLeft(2, '0')}-${date.day.toString().padLeft(2, '0')}',
+      'periods': filteredPeriods,
+    };
+    final res = await _client.post(
+      Uri.parse(url),
+      headers: {'Content-Type': 'application/json'},
+      body: jsonEncode(body),
+    );
+    if (res.statusCode == 200) {
+      // 成功
+    } else {
+      throw Exception('補打卡失敗: ${res.body}');
+    }
   }
 
   /// 更新時段名稱
