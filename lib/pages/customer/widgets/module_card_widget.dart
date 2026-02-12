@@ -90,13 +90,22 @@ class ModuleCardWidget extends StatelessWidget {
                 children: module.channelMaxAmperes.asMap().entries.map((entry) {
                   final channelIndex = entry.key;
                   final ampere = entry.value;
+                  final ratio = module.maxAmperePerChannel > 0
+                      ? ampere / module.maxAmperePerChannel
+                      : 0.0;
+                  final isWarning = ratio > 0.8 && ratio <= 1.0;
+                  final isOver = ratio > 1.0;
                   return Container(
                     padding: const EdgeInsets.symmetric(
                       horizontal: 8,
                       vertical: 4,
                     ),
                     decoration: BoxDecoration(
-                      color: ampere > 0
+                      color: isOver
+                          ? Theme.of(context).colorScheme.errorContainer
+                          : isWarning
+                          ? Colors.orange.shade100
+                          : ampere > 0
                           ? Theme.of(context).colorScheme.primaryContainer
                           : Theme.of(
                               context,
@@ -104,10 +113,14 @@ class ModuleCardWidget extends StatelessWidget {
                       borderRadius: BorderRadius.circular(4),
                     ),
                     child: Text(
-                      'CH${channelIndex + 1}: ${ampere.toStringAsFixed(2)}A',
+                      'CH${channelIndex + 1}: ${ampere.toStringAsFixed(2)}/${module.maxAmperePerChannel.toStringAsFixed(1)}A',
                       style: TextStyle(
                         fontSize: 12,
-                        color: ampere > 0
+                        color: isOver
+                            ? Theme.of(context).colorScheme.onErrorContainer
+                            : isWarning
+                            ? Colors.orange.shade800
+                            : ampere > 0
                             ? Theme.of(context).colorScheme.onPrimaryContainer
                             : Theme.of(context).colorScheme.onSurfaceVariant,
                         fontWeight: FontWeight.w500,
