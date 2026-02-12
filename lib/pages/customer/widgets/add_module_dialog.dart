@@ -35,7 +35,7 @@ class _AddModuleDialogState extends State<AddModuleDialog> {
                 return DropdownMenuItem<ModuleOption>(
                   value: option,
                   child: Text(
-                    '${option.model} - ${option.channelCount}通道 ${option.isDimmable ? '(可調光)' : '(繼電器)'}${option.price > 0 ? ' - \$${option.price.toStringAsFixed(0)}' : ''}',
+                    '${option.brand.isNotEmpty ? '[${option.brand}] ' : ''}${option.model} - ${option.channelCount}通道 ${option.isDimmable ? '(可調光)' : '(繼電器)'}${option.price > 0 ? ' - \$${option.price.toStringAsFixed(0)}' : ''}',
                   ),
                 );
               }).toList(),
@@ -58,6 +58,7 @@ class _AddModuleDialogState extends State<AddModuleDialog> {
                     widget.onAddModule(
                       Module(
                         model: selectedOption!.model,
+                        brand: selectedOption!.brand,
                         channelCount: selectedOption!.channelCount,
                         isDimmable: selectedOption!.isDimmable,
                         maxAmperePerChannel:

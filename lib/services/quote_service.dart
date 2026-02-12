@@ -287,6 +287,7 @@ class QuoteService extends ChangeNotifier {
               .map(
                 (json) => ModuleOption(
                   model: json['model'],
+                  brand: json['brand'] ?? '',
                   channelCount: json['channelCount'],
                   isDimmable: json['isDimmable'],
                   maxAmperePerChannel:
@@ -341,6 +342,7 @@ class QuoteService extends ChangeNotifier {
         headers: {'Content-Type': 'application/json'},
         body: jsonEncode({
           'model': option.model,
+          'brand': option.brand,
           'channelCount': option.channelCount,
           'isDimmable': option.isDimmable,
           'maxAmperePerChannel': option.maxAmperePerChannel,

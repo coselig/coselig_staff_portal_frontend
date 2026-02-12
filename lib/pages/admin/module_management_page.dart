@@ -182,6 +182,8 @@ class _ModuleManagementPageState extends State<ModuleManagementPage> {
                             subtitle: Column(
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
+                        if ((option['brand'] ?? '').toString().isNotEmpty)
+                          Text('廠牌: ${option['brand']}'),
                                 Text('${option['channelCount']} 通道'),
                                 Text(option['isDimmable'] ? '可調光' : '不可調光'),
                                 Text('每通道最大安培: ${option['maxAmperePerChannel']}A'),
@@ -223,6 +225,7 @@ class AddModuleDialog extends StatefulWidget {
 class _AddModuleDialogState extends State<AddModuleDialog> {
   final _formKey = GlobalKey<FormState>();
   final _modelController = TextEditingController();
+  final _brandController = TextEditingController();
   final _channelCountController = TextEditingController();
   final _maxAmperePerChannelController = TextEditingController();
   final _maxAmpereTotalController = TextEditingController();
@@ -232,6 +235,7 @@ class _AddModuleDialogState extends State<AddModuleDialog> {
   @override
   void dispose() {
     _modelController.dispose();
+    _brandController.dispose();
     _channelCountController.dispose();
     _maxAmperePerChannelController.dispose();
     _maxAmpereTotalController.dispose();
@@ -361,6 +365,7 @@ class _AddModuleDialogState extends State<AddModuleDialog> {
             if (_formKey.currentState?.validate() ?? false) {
               final option = ModuleOption(
                 model: _modelController.text.trim(),
+                brand: _brandController.text.trim(),
                 channelCount: int.parse(_channelCountController.text),
                 isDimmable: _isDimmable,
                 maxAmperePerChannel: double.parse(_maxAmperePerChannelController.text),
@@ -391,6 +396,7 @@ class EditModuleDialog extends StatefulWidget {
 class _EditModuleDialogState extends State<EditModuleDialog> {
   final _formKey = GlobalKey<FormState>();
   late final TextEditingController _modelController;
+  late final TextEditingController _brandController;
   late final TextEditingController _channelCountController;
   late final TextEditingController _maxAmperePerChannelController;
   late final TextEditingController _maxAmpereTotalController;
@@ -401,6 +407,9 @@ class _EditModuleDialogState extends State<EditModuleDialog> {
   void initState() {
     super.initState();
     _modelController = TextEditingController(text: widget.option['model']);
+    _brandController = TextEditingController(
+      text: widget.option['brand'] ?? '',
+    );
     _channelCountController = TextEditingController(text: widget.option['channelCount'].toString());
     _maxAmperePerChannelController = TextEditingController(text: widget.option['maxAmperePerChannel'].toString());
     _maxAmpereTotalController = TextEditingController(text: widget.option['maxAmpereTotal'].toString());
@@ -413,6 +422,7 @@ class _EditModuleDialogState extends State<EditModuleDialog> {
   @override
   void dispose() {
     _modelController.dispose();
+    _brandController.dispose();
     _channelCountController.dispose();
     _maxAmperePerChannelController.dispose();
     _maxAmpereTotalController.dispose();
@@ -442,6 +452,14 @@ class _EditModuleDialogState extends State<EditModuleDialog> {
                   }
                   return null;
                 },
+              ),
+              const SizedBox(height: 16),
+              TextFormField(
+                controller: _brandController,
+                decoration: const InputDecoration(
+                  labelText: '廠牌 (選填)',
+                  hintText: '例如: HDL, Lutron',
+                ),
               ),
               const SizedBox(height: 16),
               TextFormField(
@@ -542,6 +560,7 @@ class _EditModuleDialogState extends State<EditModuleDialog> {
             if (_formKey.currentState?.validate() ?? false) {
               final updates = {
                 'model': _modelController.text.trim(),
+                'brand': _brandController.text.trim(),
                 'channelCount': int.parse(_channelCountController.text),
                 'isDimmable': _isDimmable,
                 'maxAmperePerChannel': double.parse(_maxAmperePerChannelController.text),

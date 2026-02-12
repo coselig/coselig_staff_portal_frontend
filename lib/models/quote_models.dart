@@ -210,6 +210,7 @@ class LoopAllocation {
 
 class ModuleOption {
   final String model;
+  final String brand;
   final int channelCount;
   final bool isDimmable;
   final double maxAmperePerChannel;
@@ -218,6 +219,7 @@ class ModuleOption {
 
   const ModuleOption({
     required this.model,
+    this.brand = '',
     required this.channelCount,
     required this.isDimmable,
     required this.maxAmperePerChannel,
@@ -228,6 +230,7 @@ class ModuleOption {
 
 class Module {
   String model;
+  String brand;
   int channelCount;
   bool isDimmable;
   double maxAmperePerChannel;
@@ -238,6 +241,7 @@ class Module {
 
   Module({
     required this.model,
+    this.brand = '',
     required this.channelCount,
     required this.isDimmable,
     required this.maxAmperePerChannel,
@@ -249,6 +253,7 @@ class Module {
 
   Module copyWith({
     String? model,
+    String? brand,
     int? channelCount,
     bool? isDimmable,
     double? maxAmperePerChannel,
@@ -259,6 +264,7 @@ class Module {
   }) {
     return Module(
       model: model ?? this.model,
+      brand: brand ?? this.brand,
       channelCount: channelCount ?? this.channelCount,
       isDimmable: isDimmable ?? this.isDimmable,
       maxAmperePerChannel: maxAmperePerChannel ?? this.maxAmperePerChannel,
@@ -412,6 +418,7 @@ class Module {
   Map<String, dynamic> toJson() {
     return {
       'model': model,
+      'brand': brand,
       'channelCount': channelCount,
       'isDimmable': isDimmable,
       'maxAmperePerChannel': maxAmperePerChannel,
@@ -425,6 +432,7 @@ class Module {
   factory Module.fromJson(Map<String, dynamic> json) {
     return Module(
       model: json['model'] ?? '',
+      brand: json['brand'] ?? '',
       channelCount: json['channelCount'] ?? 0,
       isDimmable: json['isDimmable'] ?? true,
       maxAmperePerChannel: json['maxAmperePerChannel']?.toDouble() ?? 0.0,
