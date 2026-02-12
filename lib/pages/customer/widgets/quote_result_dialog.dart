@@ -23,6 +23,17 @@ class QuoteResultDialog extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    // 計算各項總價
+    final totalFixturePrice = loops.fold(
+      0.0,
+      (sum, loop) => sum + loop.totalFixturePrice,
+    );
+    final totalModulePrice = modules.fold(
+      0.0,
+      (sum, module) => sum + module.price,
+    );
+    final grandTotal = totalFixturePrice + totalModulePrice;
+
     return AlertDialog(
       title: const Text('估價摘要'),
       content: SingleChildScrollView(
@@ -30,6 +41,60 @@ class QuoteResultDialog extends StatelessWidget {
           crossAxisAlignment: CrossAxisAlignment.start,
           mainAxisSize: MainAxisSize.min,
           children: [
+            // 總價摘要卡片
+            if (grandTotal > 0)
+              Container(
+                width: double.infinity,
+                padding: const EdgeInsets.all(16),
+                margin: const EdgeInsets.only(bottom: 16),
+                decoration: BoxDecoration(
+                  color: Theme.of(context).colorScheme.primaryContainer,
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      '價格總覽',
+                      style: TextStyle(
+                        fontWeight: FontWeight.bold,
+                        fontSize: 16,
+                        color: Theme.of(context).colorScheme.onPrimaryContainer,
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    if (totalFixturePrice > 0)
+                      _buildPriceRow(
+                        context,
+                        '燈具總價',
+                        totalFixturePrice,
+                        Theme.of(context).colorScheme.secondary,
+                      ),
+                    if (totalModulePrice > 0)
+                      _buildPriceRow(
+                        context,
+                        '模組總價',
+                        totalModulePrice,
+                        Theme.of(context).colorScheme.tertiary,
+                      ),
+                    if (totalFixturePrice > 0 && totalModulePrice > 0) ...[
+                      Divider(
+                        color: Theme.of(
+                          context,
+                        ).colorScheme.onPrimaryContainer.withValues(alpha: 0.3),
+                      ),
+                      _buildPriceRow(
+                        context,
+                        '合計',
+                        grandTotal,
+                        Theme.of(context).colorScheme.primary,
+                        isBold: true,
+                      ),
+                    ],
+                  ],
+                ),
+              ),
+
             const Text(
               '設備配置：',
               style: TextStyle(fontWeight: FontWeight.bold),
@@ -54,7 +119,7 @@ class QuoteResultDialog extends StatelessWidget {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      '• ${loop.name} (${loop.voltage}V, ${loop.dimmingType}, 總瓦數: ${loop.totalWatt}W)',
+                      '• ${loop.name} (${loop.voltage}V, ${loop.dimmingType}, 總瓦數: ${loop.totalWatt}W${loop.totalFixturePrice > 0 ? ', 燈具價: \$${loop.totalFixturePrice.toStringAsFixed(1)}' : ''})',
                     ),
                     if (loop.fixtures.isNotEmpty) ...[
                       const SizedBox(height: 4),
@@ -86,7 +151,7 @@ class QuoteResultDialog extends StatelessWidget {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      '• ${module.model} (${module.channelCount}通道, ${module.isDimmable ? '可調光' : '繼電器控制'})',
+                      '• ${module.model} (${module.channelCount}通道, ${module.isDimmable ? '可調光' : '繼電器控制'}${module.price > 0 ? ', \$${module.price.toStringAsFixed(1)}' : ''})',
                     ),
                     if (module.allocations.isNotEmpty) ...[
                       const SizedBox(height: 4),
@@ -119,6 +184,38 @@ class QuoteResultDialog extends StatelessWidget {
           child: const Text('確定'),
         ),
       ],
+    );
+  }
+
+  Widget _buildPriceRow(
+    BuildContext context,
+    String label,
+    double price,
+    Color color, {
+    bool isBold = false,
+  }) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 2),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          Text(
+            label,
+            style: TextStyle(
+              fontWeight: isBold ? FontWeight.bold : FontWeight.w500,
+              fontSize: isBold ? 16 : 14,
+            ),
+          ),
+          Text(
+            '\$${price.toStringAsFixed(1)}',
+            style: TextStyle(
+              fontWeight: FontWeight.bold,
+              fontSize: isBold ? 18 : 15,
+              color: color,
+            ),
+          ),
+        ],
+      ),
     );
   }
 }

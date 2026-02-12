@@ -8,6 +8,7 @@ class LoopCardWidget extends StatelessWidget {
   final Function(int) onRemoveLoop;
   final Function(int) onAddFixture;
   final Function(int, int) onRemoveFixture;
+  final Function(int, int) onEditFixture;
 
   const LoopCardWidget({
     super.key,
@@ -17,6 +18,7 @@ class LoopCardWidget extends StatelessWidget {
     required this.onRemoveLoop,
     required this.onAddFixture,
     required this.onRemoveFixture,
+    required this.onEditFixture,
   });
 
   @override
@@ -196,6 +198,9 @@ class LoopCardWidget extends StatelessWidget {
               ...loop.fixtures.asMap().entries.map((entry) {
                 final fixtureIndex = entry.key;
                 final fixture = entry.value;
+                final ampere = loop.voltage > 0
+                    ? (fixture.totalWatt / loop.voltage)
+                    : 0.0;
                 return Card(
                   color: Theme.of(context).colorScheme.surfaceContainerHighest,
                   child: Padding(
@@ -210,39 +215,119 @@ class LoopCardWidget extends StatelessWidget {
                               Text(
                                 fixture.name,
                                 style: const TextStyle(
-                                  fontWeight: FontWeight.w500,
+                                  fontWeight: FontWeight.w600,
+                                  fontSize: 15,
                                 ),
                               ),
-                              Text(
-                                '${fixture.totalWatt} W',
-                                style: TextStyle(
-                                  color: Theme.of(
-                                    context,
-                                  ).colorScheme.onSurfaceVariant,
-                                ),
-                              ),
-                              if (fixture.price > 0)
-                                Text(
-                                  '價格: \$${fixture.price.toStringAsFixed(1)}',
-                                  style: TextStyle(
-                                    color: Theme.of(
-                                      context,
-                                    ).colorScheme.secondary,
-                                    fontSize: 12,
+                              const SizedBox(height: 4),
+                              Wrap(
+                                spacing: 12,
+                                runSpacing: 4,
+                                children: [
+                                  Row(
+                                    mainAxisSize: MainAxisSize.min,
+                                    children: [
+                                      Icon(
+                                        Icons.bolt,
+                                        size: 14,
+                                        color: Theme.of(
+                                          context,
+                                        ).colorScheme.primary,
+                                      ),
+                                      const SizedBox(width: 2),
+                                      Text(
+                                        '${fixture.totalWatt} W',
+                                        style: TextStyle(
+                                          color: Theme.of(
+                                            context,
+                                          ).colorScheme.primary,
+                                          fontWeight: FontWeight.w500,
+                                          fontSize: 13,
+                                        ),
+                                      ),
+                                    ],
                                   ),
-                                ),
+                                  Row(
+                                    mainAxisSize: MainAxisSize.min,
+                                    children: [
+                                      Icon(
+                                        Icons.electrical_services,
+                                        size: 14,
+                                        color: Theme.of(
+                                          context,
+                                        ).colorScheme.tertiary,
+                                      ),
+                                      const SizedBox(width: 2),
+                                      Text(
+                                        '${ampere.toStringAsFixed(2)} A',
+                                        style: TextStyle(
+                                          color: Theme.of(
+                                            context,
+                                          ).colorScheme.tertiary,
+                                          fontWeight: FontWeight.w500,
+                                          fontSize: 13,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                  if (fixture.price > 0)
+                                    Row(
+                                      mainAxisSize: MainAxisSize.min,
+                                      children: [
+                                        Icon(
+                                          Icons.attach_money,
+                                          size: 14,
+                                          color: Theme.of(
+                                            context,
+                                          ).colorScheme.secondary,
+                                        ),
+                                        const SizedBox(width: 2),
+                                        Text(
+                                          '\$${fixture.price.toStringAsFixed(1)}',
+                                          style: TextStyle(
+                                            color: Theme.of(
+                                              context,
+                                            ).colorScheme.secondary,
+                                            fontWeight: FontWeight.w500,
+                                            fontSize: 13,
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                ],
+                              ),
                             ],
                           ),
                         ),
-                        IconButton(
-                          onPressed: () =>
-                              onRemoveFixture(index, fixtureIndex),
-                          icon: Icon(
-                            Icons.remove_circle,
-                            color: Theme.of(context).colorScheme.error,
-                          ),
-                          iconSize: 20,
-                          tooltip: '移除燈具',
+                        Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            IconButton(
+                              onPressed: () =>
+                                  onEditFixture(index, fixtureIndex),
+                              icon: const Icon(Icons.edit, size: 20),
+                              color: Theme.of(context).colorScheme.primary,
+                              tooltip: '修改燈具',
+                              constraints: const BoxConstraints(
+                                minWidth: 36,
+                                minHeight: 36,
+                              ),
+                              padding: EdgeInsets.zero,
+                            ),
+                            IconButton(
+                              onPressed: () =>
+                                  onRemoveFixture(index, fixtureIndex),
+                              icon: const Icon(Icons.remove_circle,
+                                size: 22),
+                              color: Theme.of(context).colorScheme.error,
+                              tooltip: '移除燈具',
+                              constraints: const BoxConstraints(
+                                minWidth: 36,
+                                minHeight: 36,
+                              ),
+                              padding: EdgeInsets.zero,
+                            ),
+                          ],
                         ),
                       ],
                     ),

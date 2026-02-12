@@ -14,6 +14,7 @@ import 'widgets/add_module_dialog.dart';
 import 'widgets/add_fixture_dialog.dart';
 import 'widgets/quote_result_dialog.dart';
 import 'widgets/edit_loop_dialog.dart';
+import 'widgets/edit_fixture_dialog.dart';
 
 class CustomerHomePage extends StatefulWidget {
   const CustomerHomePage({super.key});
@@ -743,6 +744,7 @@ class _CustomerHomePageState extends State<CustomerHomePage> {
                       onUpdateLoop: _updateLoop,
                       onAddFixtureToLoop: _showAddFixtureDialog,
                       onRemoveFixtureFromLoop: _removeFixtureFromLoop,
+                      onEditFixtureInLoop: _showEditFixtureDialog,
                     ),
                   ),
                   isActive: _currentStep >= 0,
@@ -972,6 +974,25 @@ class _CustomerHomePageState extends State<CustomerHomePage> {
             final loop = _loops[loopIndex];
             final updatedFixtures = List<LoopFixture>.from(loop.fixtures)
               ..add(LoopFixture(name: name, totalWatt: totalWatt, price: price));
+            _loops[loopIndex] = loop.copyWith(fixtures: updatedFixtures);
+          });
+        },
+      ),
+    );
+  }
+
+  // 修改迴路中的燈具
+  void _showEditFixtureDialog(int loopIndex, int fixtureIndex) {
+    final fixture = _loops[loopIndex].fixtures[fixtureIndex];
+    showDialog(
+      context: context,
+      builder: (context) => EditFixtureDialog(
+        fixture: fixture,
+        onUpdateFixture: (updatedFixture) {
+          setState(() {
+            final loop = _loops[loopIndex];
+            final updatedFixtures = List<LoopFixture>.from(loop.fixtures);
+            updatedFixtures[fixtureIndex] = updatedFixture;
             _loops[loopIndex] = loop.copyWith(fixtures: updatedFixtures);
           });
         },

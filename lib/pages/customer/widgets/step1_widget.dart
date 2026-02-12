@@ -12,6 +12,7 @@ class Step1Widget extends StatelessWidget {
   final Function(int, Loop) onUpdateLoop;
   final Function(int) onAddFixtureToLoop;
   final Function(int, int) onRemoveFixtureFromLoop;
+  final Function(int, int) onEditFixtureInLoop;
 
   const Step1Widget({
     super.key,
@@ -23,6 +24,7 @@ class Step1Widget extends StatelessWidget {
     required this.onUpdateLoop,
     required this.onAddFixtureToLoop,
     required this.onRemoveFixtureFromLoop,
+    required this.onEditFixtureInLoop,
   });
 
   @override
@@ -107,6 +109,7 @@ class Step1Widget extends StatelessWidget {
               onRemoveLoop: onRemoveLoop,
               onAddFixture: onAddFixtureToLoop,
               onRemoveFixture: onRemoveFixtureFromLoop,
+              onEditFixture: onEditFixtureInLoop,
             );
           }),
 
