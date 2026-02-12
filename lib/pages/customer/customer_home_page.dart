@@ -48,6 +48,18 @@ class _CustomerHomePageState extends State<CustomerHomePage> {
   List<QuoteConfiguration> _configurations = [];
   Customer? _selectedCustomer; // 選中的客戶
 
+  List<QuoteConfiguration> get _filteredConfigurations {
+    final authService = Provider.of<AuthService>(context, listen: false);
+    if (authService.isCustomer) return _configurations;
+    return _configurations
+        .where(
+          (c) => _selectedCustomer == null
+              ? c.customerUserId == null
+              : c.customerUserId == _selectedCustomer!.userId,
+        )
+        .toList();
+  }
+
   @override
   void initState() {
     super.initState();
@@ -303,6 +315,7 @@ class _CustomerHomePageState extends State<CustomerHomePage> {
               onChanged: (Customer? customer) {
                 setState(() {
                   _selectedCustomer = customer;
+                    _selectedConfigurationName = null;
                 });
               },
             ),
@@ -327,7 +340,16 @@ class _CustomerHomePageState extends State<CustomerHomePage> {
             ),
             Consumer<QuoteService>(
               builder: (context, quoteService, child) {
-                final configurations = quoteService.configurations;
+                final allConfigurations = quoteService.configurations;
+                final configurations = authService.isCustomer
+                    ? allConfigurations
+                    : allConfigurations
+                          .where(
+                            (c) => _selectedCustomer == null
+                                ? c.customerUserId == null
+                                : c.customerUserId == _selectedCustomer!.userId,
+                          )
+                          .toList();
                 return configurations.isNotEmpty
                     ? Container(
                         padding: const EdgeInsets.symmetric(horizontal: 8),
@@ -467,7 +489,7 @@ class _CustomerHomePageState extends State<CustomerHomePage> {
                       );
               },
             ),
-            if (_configurations.isNotEmpty)
+            if (_filteredConfigurations.isNotEmpty)
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 8),
                 child: DropdownButton<String>(
@@ -494,7 +516,7 @@ class _CustomerHomePageState extends State<CustomerHomePage> {
                   ),
                   underline: const SizedBox(),
                   dropdownColor: Theme.of(context).colorScheme.surface,
-                  items: _configurations.map((config) {
+                  items: _filteredConfigurations.map((config) {
                     return DropdownMenuItem<String>(
                       value: config.name,
                       child: Container(
@@ -1225,10 +1247,18 @@ class _CustomerHomePageState extends State<CustomerHomePage> {
                     wiring: _wiringController.text,
                   );
 
+                  final authService = Provider.of<AuthService>(
+                    context,
+                    listen: false,
+                  );
+                  final effectiveCustomerId = authService.isCustomer
+                      ? int.tryParse(authService.userId ?? '')
+                      : _selectedCustomer?.userId;
+
                   await _quoteService.saveConfiguration(
                     nameController.text.trim(),
                     quoteData,
-                    customerId: _selectedCustomer?.id,
+                    customerUserId: effectiveCustomerId,
                     projectName: projectNameController.text.trim().isNotEmpty
                         ? projectNameController.text.trim()
                         : null,

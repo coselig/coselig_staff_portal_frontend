@@ -12,7 +12,7 @@ class QuoteConfiguration {
   final String userName;
   final String createdAt;
   final String updatedAt;
-  final int? customerId;
+  final int? customerUserId;
   final String? customerName;
   final String? customerCompany;
   final String? projectName;
@@ -27,7 +27,7 @@ class QuoteConfiguration {
     required this.userName,
     required this.createdAt,
     required this.updatedAt,
-    this.customerId,
+    this.customerUserId,
     this.customerName,
     this.customerCompany,
     this.projectName,
@@ -44,7 +44,7 @@ class QuoteConfiguration {
       userName: json['user_name'] ?? '',
       createdAt: json['created_at'] ?? '',
       updatedAt: json['updated_at'] ?? '',
-      customerId: json['customer_id'],
+      customerUserId: json['customer_user_id'],
       customerName: json['customer_name'],
       customerCompany: json['customer_company'],
       projectName: json['project_name'],
@@ -159,7 +159,7 @@ class QuoteService extends ChangeNotifier {
   Future<void> saveConfiguration(
     String name,
     QuoteData quoteData, {
-    int? customerId,
+    int? customerUserId,
     String? projectName,
     String? projectAddress,
   }) async {
@@ -169,8 +169,8 @@ class QuoteService extends ChangeNotifier {
 
     try {
       final requestBody = {'name': name, 'quoteData': quoteData.toJson()};
-      if (customerId != null) {
-        requestBody['customerId'] = customerId;
+      if (customerUserId != null) {
+        requestBody['customerUserId'] = customerUserId;
       }
       if (projectName != null && projectName.isNotEmpty) {
         requestBody['projectName'] = projectName;
