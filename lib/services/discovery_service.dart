@@ -92,8 +92,8 @@ class Device {
       name: json['name'],
       tcp: json['tcp'] ?? '',
       brightMinimum: parsedBright,
-      colortempMinimum: type == 'dual' ? (parsedCtMin ?? 154) : parsedCtMin,
-      colortempMaximum: type == 'dual' ? (parsedCtMax ?? 370) : parsedCtMax,
+      colortempMinimum: type == 'dual' ? (parsedCtMin ?? 2200) : parsedCtMin,
+      colortempMaximum: type == 'dual' ? (parsedCtMax ?? 5700) : parsedCtMax,
     );
   }
 
@@ -349,10 +349,10 @@ class DiscoveryService extends ChangeNotifier {
       tcp: device.tcp,
       brightMinimum: device.brightMinimum ?? 2,
       colortempMinimum: device.type == 'dual'
-          ? (device.colortempMinimum ?? 154)
+          ? (device.colortempMinimum ?? 2200)
           : device.colortempMinimum,
       colortempMaximum: device.type == 'dual'
-          ? (device.colortempMaximum ?? 370)
+          ? (device.colortempMaximum ?? 5700)
           : device.colortempMaximum,
     );
     _devices.add(newDevice);
@@ -419,8 +419,12 @@ class DiscoveryService extends ChangeNotifier {
       ];
 
       if (device.type == 'dual') {
-        parts.add('colortemp_minimum: ${device.colortempMinimum ?? 154}');
-        parts.add('colortemp_maximum: ${device.colortempMaximum ?? 370}');
+        int minTemp = device.colortempMinimum ?? 2200;
+        int maxTemp = device.colortempMaximum ?? 5700;
+        int convertedMin = (1000000 / maxTemp).round();
+        int convertedMax = (1000000 / minTemp).round();
+        parts.add('colortemp_minimum: $convertedMin');
+        parts.add('colortemp_maximum: $convertedMax');
       }
 
       buffer.write('    { ${parts.join(', ')} }');

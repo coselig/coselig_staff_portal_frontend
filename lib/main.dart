@@ -19,7 +19,6 @@ import 'package:coselig_staff_portal/services/quote_service.dart';
 import 'package:coselig_staff_portal/services/theme_provider.dart';
 import 'package:coselig_staff_portal/services/ui_settings_provider.dart';
 import 'package:coselig_staff_portal/services/customer_service.dart';
-import 'package:coselig_staff_portal/widgets/register_frame.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:url_strategy/url_strategy.dart';

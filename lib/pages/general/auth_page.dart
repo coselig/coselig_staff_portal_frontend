@@ -1,6 +1,5 @@
 import 'package:universal_html/html.dart' as html;
 import 'package:coselig_staff_portal/widgets/login_frame.dart';
-import 'package:coselig_staff_portal/widgets/register_frame.dart';
 import 'package:coselig_staff_portal/widgets/theme_toggle_switch.dart';
 import 'package:flutter/material.dart';
 
