@@ -51,6 +51,15 @@ class AppDrawer extends StatelessWidget {
                 navigatorKey.currentState!.pushNamed('/module_management');
               },
             ),
+            ListTile(
+              leading: Icon(Icons.lightbulb_outline),
+              title: Text('燈具類型管理'),
+              onTap: () {
+                navigatorKey.currentState!.pushNamed(
+                  '/fixture_type_management',
+                );
+              },
+            ),
           ] else if (authService.isManager) ...[
             ListTile(
               leading: Icon(Icons.people),

@@ -105,11 +105,22 @@ class QuoteService extends ChangeNotifier {
   final BrowserClient _client = BrowserClient()..withCredentials = true;
   final List<QuoteConfiguration> _configurations = [];
   final List<ModuleOption> _moduleOptions = [];
+  final List<FixtureTypeData> _fixtureTypeOptions = [];
   bool _isLoading = false;
   String? _error;
 
   List<QuoteConfiguration> get configurations => List.unmodifiable(_configurations);
   List<ModuleOption> get moduleOptions => List.unmodifiable(_moduleOptions);
+  List<FixtureTypeData> get fixtureTypeOptions => _fixtureTypeOptions.isNotEmpty
+      ? List.unmodifiable(_fixtureTypeOptions)
+      : defaultFixtureTypeData.values.toList();
+  List<String> get fixtureTypes => _fixtureTypeOptions.isNotEmpty
+      ? _fixtureTypeOptions.map((e) => e.type).toList()
+      : defaultFixtureTypes;
+  Map<String, FixtureTypeData> get fixtureTypeDataMap =>
+      _fixtureTypeOptions.isNotEmpty
+      ? {for (var e in _fixtureTypeOptions) e.type: e}
+      : defaultFixtureTypeData;
   bool get isLoading => _isLoading;
   String? get error => _error;
 
@@ -388,6 +399,138 @@ class QuoteService extends ChangeNotifier {
       } else {
         final error = jsonDecode(response.body);
         throw Exception(error['error'] ?? 'Failed to delete module option');
+      }
+    } catch (e) {
+      throw Exception('Network error: $e');
+    }
+  }
+
+  // ===== 燈具類型選項 =====
+
+  Future<void> fetchFixtureTypeOptions() async {
+    try {
+      final response = await _client.get(
+        Uri.parse('$baseUrl/api/fixture-type-options'),
+      );
+
+      if (response.statusCode == 200) {
+        final data = jsonDecode(response.body);
+        final options = data['fixtureTypeOptions'] as List;
+        _fixtureTypeOptions.clear();
+        _fixtureTypeOptions.addAll(
+          options
+              .map(
+                (json) => FixtureTypeData(
+                  id: json['id'],
+                  type: json['type'],
+                  quantityLabel: json['quantityLabel'] ?? '燈具數量',
+                  unitLabel: json['unitLabel'] ?? '每顆瓦數 (W)',
+                  isMeterBased: json['isMeterBased'] ?? false,
+                ),
+              )
+              .toList(),
+        );
+        notifyListeners();
+      }
+    } catch (e) {
+      // 靜默失敗，使用預設值
+      print('載入燈具類型失敗: $e');
+    }
+  }
+
+  Future<List<Map<String, dynamic>>> fetchAllFixtureTypeOptions() async {
+    try {
+      final response = await _client.get(
+        Uri.parse('$baseUrl/api/fixture-type-options'),
+      );
+
+      if (response.statusCode == 200) {
+        final data = jsonDecode(response.body);
+        return List<Map<String, dynamic>>.from(data['fixtureTypeOptions']);
+      } else if (response.statusCode == 401) {
+        navigatorKey.currentState?.pushReplacementNamed('/login');
+        throw Exception('Unauthorized');
+      } else {
+        final error = jsonDecode(response.body);
+        throw Exception(
+          error['error'] ?? 'Failed to fetch fixture type options',
+        );
+      }
+    } catch (e) {
+      throw Exception('Network error: $e');
+    }
+  }
+
+  Future<void> addFixtureTypeOption(FixtureTypeData option) async {
+    try {
+      final response = await _client.post(
+        Uri.parse('$baseUrl/api/fixture-type-options'),
+        headers: {'Content-Type': 'application/json'},
+        body: jsonEncode({
+          'type': option.type,
+          'quantityLabel': option.quantityLabel,
+          'unitLabel': option.unitLabel,
+          'isMeterBased': option.isMeterBased,
+        }),
+      );
+
+      if (response.statusCode == 201) {
+        await fetchFixtureTypeOptions();
+      } else if (response.statusCode == 401) {
+        navigatorKey.currentState?.pushReplacementNamed('/login');
+        throw Exception('Unauthorized');
+      } else {
+        final error = jsonDecode(response.body);
+        throw Exception(error['error'] ?? 'Failed to add fixture type option');
+      }
+    } catch (e) {
+      throw Exception('Network error: $e');
+    }
+  }
+
+  Future<void> updateFixtureTypeOption(
+    int id,
+    Map<String, dynamic> updates,
+  ) async {
+    try {
+      final response = await _client.put(
+        Uri.parse('$baseUrl/api/fixture-type-options?id=$id'),
+        headers: {'Content-Type': 'application/json'},
+        body: jsonEncode(updates),
+      );
+
+      if (response.statusCode == 200) {
+        await fetchFixtureTypeOptions();
+      } else if (response.statusCode == 401) {
+        navigatorKey.currentState?.pushReplacementNamed('/login');
+        throw Exception('Unauthorized');
+      } else {
+        final error = jsonDecode(response.body);
+        throw Exception(
+          error['error'] ?? 'Failed to update fixture type option',
+        );
+      }
+    } catch (e) {
+      throw Exception('Network error: $e');
+    }
+  }
+
+  Future<void> deleteFixtureTypeOption(int id) async {
+    try {
+      final response = await _client.delete(
+        Uri.parse('$baseUrl/api/fixture-type-options?id=$id'),
+      );
+
+      if (response.statusCode == 200) {
+        await fetchFixtureTypeOptions();
+      } else if (response.statusCode == 401) {
+        navigatorKey.currentState?.pushReplacementNamed('/login');
+        throw Exception('Unauthorized');
+      } else {
+        final error = jsonDecode(response.body);
+        throw Exception(
+          error['error'] ?? 'Failed to delete fixture type option',
+        );
       }
     } catch (e) {
       throw Exception('Network error: $e');

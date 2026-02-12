@@ -4,6 +4,7 @@ import 'package:coselig_staff_portal/constants/app_constants.dart';
 import 'package:coselig_staff_portal/pages/admin/attendance_view_page.dart';
 import 'package:coselig_staff_portal/pages/admin/user_data_view_page.dart';
 import 'package:coselig_staff_portal/pages/admin/module_management_page.dart';
+import 'package:coselig_staff_portal/pages/admin/fixture_type_management_page.dart';
 import 'package:coselig_staff_portal/pages/general/auth_page.dart';
 import 'package:coselig_staff_portal/pages/general/ble_page.dart';
 import 'package:coselig_staff_portal/pages/general/privacy_policy_page.dart';
@@ -159,6 +160,8 @@ class MainApp extends StatelessWidget {
                 '/admin_user_preview': (context) =>
                     const UserDataViewPage(),
                 '/module_management': (context) => const ModuleManagementPage(),
+                '/fixture_type_management': (context) =>
+                    const FixtureTypeManagementPage(),
                 '/privacy': (context) => const PrivacyPolicyPage(),
               },
             );

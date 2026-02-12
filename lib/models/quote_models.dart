@@ -436,8 +436,8 @@ class Module {
   }
 }
 
-// 燈具類型選項
-const List<String> fixtureTypes = [
+// 燈具類型選項（靜態預設值，作為後備）
+const List<String> defaultFixtureTypes = [
   '軌道燈',
   '燈帶',
   '崁燈',
@@ -446,12 +446,14 @@ const List<String> fixtureTypes = [
 ];
 
 class FixtureTypeData {
+  final int? id;
   final String type;
   final String quantityLabel;
   final String unitLabel;
   final bool isMeterBased;
 
   const FixtureTypeData({
+    this.id,
     required this.type,
     required this.quantityLabel,
     required this.unitLabel,
@@ -459,7 +461,7 @@ class FixtureTypeData {
   });
 }
 
-const Map<String, FixtureTypeData> fixtureTypeData = {
+const Map<String, FixtureTypeData> defaultFixtureTypeData = {
   '軌道燈': FixtureTypeData(
     type: '軌道燈',
     quantityLabel: '燈具數量',

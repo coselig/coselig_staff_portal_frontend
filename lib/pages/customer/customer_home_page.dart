@@ -1242,6 +1242,7 @@ class _CustomerHomePageState extends State<CustomerHomePage> {
     try {
       await _quoteService.fetchConfigurations();
       await _quoteService.fetchModuleOptions();
+      await _quoteService.fetchFixtureTypeOptions();
       setState(() {
         _configurations = _quoteService.configurations;
       });

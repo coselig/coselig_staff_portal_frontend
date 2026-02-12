@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:provider/provider.dart';
 import 'package:coselig_staff_portal/models/quote_models.dart';
+import 'package:coselig_staff_portal/services/quote_service.dart';
 
 class AddFixtureDialog extends StatefulWidget {
   final Function(String, int) onAddFixture;
@@ -12,10 +14,22 @@ class AddFixtureDialog extends StatefulWidget {
 }
 
 class _AddFixtureDialogState extends State<AddFixtureDialog> {
-  String selectedType = fixtureTypes[0];
+  String? selectedType;
   final TextEditingController nameController = TextEditingController();
   final TextEditingController quantityController = TextEditingController();
   final TextEditingController unitWattController = TextEditingController();
+
+  late QuoteService _quoteService;
+
+  @override
+  void initState() {
+    super.initState();
+    _quoteService = Provider.of<QuoteService>(context, listen: false);
+    final types = _quoteService.fixtureTypes;
+    if (types.isNotEmpty) {
+      selectedType = types[0];
+    }
+  }
 
   @override
   void dispose() {
@@ -25,8 +39,15 @@ class _AddFixtureDialogState extends State<AddFixtureDialog> {
     super.dispose();
   }
 
+  FixtureTypeData? get _currentTypeData {
+    if (selectedType == null) return null;
+    return _quoteService.fixtureTypeDataMap[selectedType];
+  }
+
   int _calculateTotalWatt() {
-    final isMeterBased = fixtureTypeData[selectedType]!.isMeterBased;
+    final typeData = _currentTypeData;
+    if (typeData == null) return 0;
+    final isMeterBased = typeData.isMeterBased;
     final quantity = isMeterBased
         ? (double.tryParse(quantityController.text) ?? 0)
         : (int.tryParse(quantityController.text) ?? 0).toDouble();
@@ -36,6 +57,9 @@ class _AddFixtureDialogState extends State<AddFixtureDialog> {
 
   @override
   Widget build(BuildContext context) {
+    final types = _quoteService.fixtureTypes;
+    final typeData = _currentTypeData;
+
     return StatefulBuilder(
       builder: (context, setState) => AlertDialog(
         title: const Text('添加燈具'),
@@ -49,7 +73,7 @@ class _AddFixtureDialogState extends State<AddFixtureDialog> {
                 labelText: '燈具類型',
                 border: OutlineInputBorder(),
               ),
-              items: fixtureTypes.map((type) {
+              items: types.map((type) {
                 return DropdownMenuItem<String>(
                   value: type,
                   child: Text(type),
@@ -71,53 +95,52 @@ class _AddFixtureDialogState extends State<AddFixtureDialog> {
               decoration: InputDecoration(
                 labelText: '燈具名稱',
                 border: const OutlineInputBorder(),
-                hintText: '例如：${selectedType}A區、${selectedType}B區',
+                hintText: '例如：${selectedType ?? ''}A區、${selectedType ?? ''}B區',
               ),
             ),
             const SizedBox(height: 16),
 
             // 動態輸入欄位基於選擇的類型
-            Row(
-              children: [
-                Expanded(
-                  child: TextField(
-                    controller: quantityController,
-                    decoration: InputDecoration(
-                      labelText: fixtureTypeData[selectedType]!.quantityLabel,
-                      border: const OutlineInputBorder(),
-                      hintText: fixtureTypeData[selectedType]!.isMeterBased
-                          ? '例如：5.5'
-                          : '例如：3',
+            if (typeData != null)
+              Row(
+                children: [
+                  Expanded(
+                    child: TextField(
+                      controller: quantityController,
+                      decoration: InputDecoration(
+                        labelText: typeData.quantityLabel,
+                        border: const OutlineInputBorder(),
+                        hintText: typeData.isMeterBased ? '例如：5.5' : '例如：3',
+                      ),
+                      keyboardType: typeData.isMeterBased
+                          ? const TextInputType.numberWithOptions(decimal: true)
+                          : TextInputType.number,
+                      inputFormatters: typeData.isMeterBased
+                          ? [
+                              FilteringTextInputFormatter.allow(
+                                RegExp(r'^\d*\.?\d*'),
+                              ),
+                            ]
+                          : [FilteringTextInputFormatter.digitsOnly],
+                      onChanged: (value) => setState(() {}),
                     ),
-                    keyboardType: fixtureTypeData[selectedType]!.isMeterBased
-                        ? const TextInputType.numberWithOptions(decimal: true)
-                        : TextInputType.number,
-                    inputFormatters: fixtureTypeData[selectedType]!.isMeterBased
-                        ? [
-                            FilteringTextInputFormatter.allow(
-                              RegExp(r'^\d*\.?\d*'),
-                            ),
-                          ]
-                        : [FilteringTextInputFormatter.digitsOnly],
-                    onChanged: (value) => setState(() {}),
                   ),
-                ),
-                const SizedBox(width: 16),
-                Expanded(
-                  child: TextField(
-                    controller: unitWattController,
-                    decoration: InputDecoration(
-                      labelText: fixtureTypeData[selectedType]!.unitLabel,
-                      border: const OutlineInputBorder(),
-                      hintText: '例如：10',
+                  const SizedBox(width: 16),
+                  Expanded(
+                    child: TextField(
+                      controller: unitWattController,
+                      decoration: InputDecoration(
+                        labelText: typeData.unitLabel,
+                        border: const OutlineInputBorder(),
+                        hintText: '例如：10',
+                      ),
+                      keyboardType: TextInputType.number,
+                      inputFormatters: [FilteringTextInputFormatter.digitsOnly],
+                      onChanged: (value) => setState(() {}),
                     ),
-                    keyboardType: TextInputType.number,
-                    inputFormatters: [FilteringTextInputFormatter.digitsOnly],
-                    onChanged: (value) => setState(() {}),
                   ),
-                ),
-              ],
-            ),
+                ],
+              ),
 
             // 總瓦數顯示
             if (quantityController.text.isNotEmpty && unitWattController.text.isNotEmpty)
@@ -156,7 +179,7 @@ class _AddFixtureDialogState extends State<AddFixtureDialog> {
           ElevatedButton(
             onPressed: () {
               final name = nameController.text.trim();
-              final isMeterBased = fixtureTypeData[selectedType]!.isMeterBased;
+              final isMeterBased = typeData?.isMeterBased ?? false;
               final quantity = isMeterBased
                   ? (double.tryParse(quantityController.text) ?? 0)
                   : (int.tryParse(quantityController.text) ?? 0).toDouble();
