@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:js' as js;
 import 'package:coselig_staff_portal/main.dart';
+import 'package:coselig_staff_portal/services/attendance_service.dart';
 import 'package:coselig_staff_portal/services/auth_service.dart';
 import 'package:coselig_staff_portal/services/ui_settings_provider.dart';
 import 'package:flutter/material.dart';
@@ -109,6 +110,9 @@ class _LoginFrameState extends State<LoginFrame> {
                       );
                       if (success) {
                         if (mounted) {
+                          context
+                              .read<AttendanceService>()
+                              .fetchAndCacheWorkingStaff();
                           navigatorKey.currentState!.pushReplacementNamed(
                             '/home',
                           );
@@ -206,6 +210,9 @@ class _LoginFrameState extends State<LoginFrame> {
                     );
                     if (success) {
                       if (mounted) {
+                        context
+                            .read<AttendanceService>()
+                            .fetchAndCacheWorkingStaff();
                         navigatorKey.currentState!.pushReplacementNamed(
                           '/home',
                         );
