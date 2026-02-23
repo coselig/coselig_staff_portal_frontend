@@ -603,31 +603,43 @@ class Loop {
 class SwitchModel {
   int? id;
   String name;
-  int count;
   double price;
-  String location;
+  int count;
+  String fireType;
+  bool networkable;
+  String protocol;
+  String color;
 
   SwitchModel({
     this.id,
     required this.name,
+    required this.price,
     required this.count,
-    this.price = 0.0,
-    this.location = '',
+    this.fireType = '',
+    this.networkable = false,
+    this.protocol = '',
+    this.color = '',
   });
 
   SwitchModel copyWith({
     int? id,
     String? name,
-    int? count,
     double? price,
-    String? location,
+    int? count,
+    String? fireType,
+    bool? networkable,
+    String? protocol,
+    String? color,
   }) {
     return SwitchModel(
       id: id ?? this.id,
       name: name ?? this.name,
-      count: count ?? this.count,
       price: price ?? this.price,
-      location: location ?? this.location,
+      count: count ?? this.count,
+      fireType: fireType ?? this.fireType,
+      networkable: networkable ?? this.networkable,
+      protocol: protocol ?? this.protocol,
+      color: color ?? this.color,
     );
   }
 
@@ -635,9 +647,12 @@ class SwitchModel {
     return {
       if (id != null) 'id': id,
       'name': name,
-      'count': count,
       'price': price,
-      'location': location,
+      'count': count,
+      'fireType': fireType,
+      'networkable': networkable,
+      'protocol': protocol,
+      'color': color,
     };
   }
 
@@ -645,9 +660,15 @@ class SwitchModel {
     return SwitchModel(
       id: json['id'],
       name: json['name'] ?? '',
-      count: json['count'] ?? 1,
       price: json['price']?.toDouble() ?? 0.0,
-      location: json['location'] ?? '',
+      count: json['count'] ?? 1,
+      fireType: json['fireType'] ?? '',
+      networkable:
+          json['networkable'] == true ||
+          json['networkable'] == 1 ||
+          json['networkable'] == '是',
+      protocol: json['protocol'] ?? '',
+      color: json['color'] ?? '',
     );
   }
 }

@@ -8,18 +8,39 @@ final switchConfig = {
   'table': 'switch_options',
   'columns': [
     {'name': 'name', 'label': '名稱', 'type': 'text'},
-    {'name': 'count', 'label': '數量', 'type': 'number'},
     {'name': 'price', 'label': '價格', 'type': 'number'},
-    {'name': 'location', 'label': '位置', 'type': 'text'},
+    {'name': 'count', 'label': '切數(開關數量)', 'type': 'number'},
+    {
+      'name': 'fireType',
+      'label': '單火/零火',
+      'type': 'dropdown',
+      'options': ['單火', '零火'],
+    },
+    {
+      'name': 'networkable',
+      'label': '是否可以聯網',
+      'type': 'dropdown',
+      'options': ['是', '否'],
+    },
+    {
+      'name': 'protocol',
+      'label': '協定類型',
+      'type': 'dropdown',
+      'options': ['MQTT', 'zigbee', '藍芽', 'matter'],
+    },
+    {'name': 'color', 'label': '顏色', 'type': 'text'},
   ],
   'fetch': (QuoteService service) => service.fetchSwitchOptions(),
   'add': (QuoteService service, Map<String, dynamic> data) =>
       service.addSwitchOption(
         SwitchModel(
           name: data['name'],
-          count: data['count'].toInt(),
           price: data['price'],
-          location: data['location'],
+          count: data['count'].toInt(),
+          fireType: data['fireType'] ?? '',
+          networkable: data['networkable'] == '是',
+          protocol: data['protocol'] ?? '',
+          color: data['color'] ?? '',
         ),
       ),
   'update': (QuoteService service, int id, Map<String, dynamic> data) =>
@@ -28,9 +49,12 @@ final switchConfig = {
         SwitchModel(
           id: id,
           name: data['name'],
-          count: data['count'].toInt(),
           price: data['price'],
-          location: data['location'],
+          count: data['count'].toInt(),
+          fireType: data['fireType'] ?? '',
+          networkable: data['networkable'] == '是',
+          protocol: data['protocol'] ?? '',
+          color: data['color'] ?? '',
         ),
       ),
   'delete': (QuoteService service, int id) => service.deleteSwitchOption(id),
