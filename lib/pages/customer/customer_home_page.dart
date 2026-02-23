@@ -38,17 +38,37 @@ class _CustomerHomePageState extends State<CustomerHomePage> {
   final TextEditingController _switchCountController = TextEditingController();
   final TextEditingController _otherDevicesController = TextEditingController();
   // 開關管理方法
-  void _showAddSwitchDialog() {
-    showDialog(
-      context: context,
-      builder: (context) => AddSwitchDialog(
-        onAddSwitch: (switchModel) {
-          setState(() {
-            _switches.add(switchModel);
-          });
-        },
-      ),
-    );
+  void _showAddSwitchDialog() async {
+    try {
+      setState(() => _isLoading = true);
+      final switchOptions = await _quoteService
+          .fetchSwitchOptions(); // 從資料庫撈取開關資料
+
+      if (switchOptions.isEmpty) {
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(const SnackBar(content: Text('沒有可用的開關選項，請聯繫管理員新增')));
+        return;
+      }
+
+      showDialog(
+        context: context,
+        builder: (context) => AddSwitchDialog(
+          switchOptions: switchOptions, // 傳遞開關選項到對話框
+          onSelectSwitch: (selectedSwitch) {
+            setState(() {
+              _switches.add(selectedSwitch);
+            });
+          },
+        ),
+      );
+    } catch (e) {
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('載入開關選項失敗: $e')));
+    } finally {
+      setState(() => _isLoading = false);
+    }
   }
 
   void _updateSwitch(int index, SwitchModel updatedSwitch) {
@@ -1686,7 +1706,7 @@ class _CustomerHomePageState extends State<CustomerHomePage> {
                   Navigator.of(context).pop();
                   ScaffoldMessenger.of(
                     context,
-                  ).showSnackBar(const SnackBar(content: Text('配置已儲存')));
+                  ).showSnackBar(SnackBar(content: Text('配置已儲存')));
                 } catch (e) {
                   ScaffoldMessenger.of(
                     context,
@@ -1711,7 +1731,7 @@ class _CustomerHomePageState extends State<CustomerHomePage> {
       setState(() {
       });
     } catch (e) {
-      // 靜默處理錯誤，用戶可以稍後重試
+      // 静默处理错误，用户可以稍後重试
       print('載入配置列表失敗: $e');
     }
   }
