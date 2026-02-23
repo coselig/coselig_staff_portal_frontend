@@ -134,6 +134,14 @@ class StepLoopSwitchWidget extends StatelessWidget {
               icon: const Icon(Icons.add),
               label: const Text('新增開關'),
             ),
+            const SizedBox(width: 16),
+            Text(
+              '配置開關數 / 迴路數量: ${switches.fold<int>(0, (sum, s) => sum + s.count)} / ${loops.length}',
+              style: TextStyle(
+                fontSize: 14,
+                color: Theme.of(context).colorScheme.primary,
+              ),
+            ),
           ],
         ),
         const SizedBox(height: 8),

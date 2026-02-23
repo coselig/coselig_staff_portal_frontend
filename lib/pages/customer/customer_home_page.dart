@@ -105,7 +105,6 @@ class _CustomerHomePageState extends State<CustomerHomePage> {
   bool _isLoading = false;
   Customer? _selectedCustomer; // 選中的客戶
 
-
   @override
   void initState() {
     super.initState();
@@ -167,9 +166,7 @@ class _CustomerHomePageState extends State<CustomerHomePage> {
                 '客戶: ${_selectedCustomer!.name}${_selectedCustomer!.company != null ? ' (${_selectedCustomer!.company})' : ''}',
                 style: TextStyle(
                   fontSize: 12,
-                  color: Theme.of(
-                    context,
-                  ).colorScheme.onSurface.withAlpha(179),
+                  color: Theme.of(context).colorScheme.onSurface.withAlpha(179),
                 ),
               ),
             // 新增顯示迴路數量
@@ -232,105 +229,105 @@ class _CustomerHomePageState extends State<CustomerHomePage> {
                 ),
               ),
               DropdownButton<Customer?>(
-              value: _selectedCustomer,
-              hint: Row(
-                children: [
-                  Icon(
-                    Icons.person,
-                    size: 18,
-                    color: Theme.of(context).colorScheme.primary,
-                  ),
-                  const SizedBox(width: 4),
-                  Text(
-                    '選擇客戶',
-                    style: TextStyle(
+                value: _selectedCustomer,
+                hint: Row(
+                  children: [
+                    Icon(
+                      Icons.person,
+                      size: 18,
                       color: Theme.of(context).colorScheme.primary,
                     ),
-                  ),
-                ],
-              ),
-              selectedItemBuilder: (BuildContext context) {
-                return _customerService.customers.map((customer) {
-                  return Row(
-                    children: [
-                      Icon(
-                        Icons.person,
-                        size: 18,
+                    const SizedBox(width: 4),
+                    Text(
+                      '選擇客戶',
+                      style: TextStyle(
                         color: Theme.of(context).colorScheme.primary,
                       ),
-                      const SizedBox(width: 4),
-                      Expanded(
-                        child: Text(
-                          customer.name,
-                          style: TextStyle(
-                            color: Theme.of(context).colorScheme.primary,
-                            fontWeight: FontWeight.w500,
-                          ),
-                          overflow: TextOverflow.ellipsis,
-                        ),
-                      ),
-                    ],
-                  );
-                }).toList()..insert(
-                  0,
-                  Row(
-                    children: [
-                      Icon(
-                        Icons.person_off,
-                        size: 18,
-                        color: Theme.of(context).colorScheme.primary,
-                      ),
-                      const SizedBox(width: 4),
-                      Text(
-                        '未選擇客戶',
-                        style: TextStyle(
+                    ),
+                  ],
+                ),
+                selectedItemBuilder: (BuildContext context) {
+                  return _customerService.customers.map((customer) {
+                    return Row(
+                      children: [
+                        Icon(
+                          Icons.person,
+                          size: 18,
                           color: Theme.of(context).colorScheme.primary,
                         ),
-                      ),
-                    ],
-                  ),
-                );
-              },
-              icon: Icon(
-                Icons.arrow_drop_down,
-                color: Theme.of(context).colorScheme.primary,
-              ),
-              underline: const SizedBox(),
-              dropdownColor: Theme.of(context).colorScheme.surface,
-              items: [
-                DropdownMenuItem<Customer?>(
-                  value: null,
-                  child: Row(
-                    children: [
-                      Icon(
-                        Icons.person_off,
-                        color: Theme.of(context).colorScheme.onSurface,
-                      ),
-                      const SizedBox(width: 8),
-                      Text(
-                        '未選擇客戶',
-                        style: TextStyle(
-                          color: Theme.of(context).colorScheme.onSurface,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-                ..._customerService.customers.map((customer) {
-                  return DropdownMenuItem<Customer?>(
-                    value: customer,
-                    child: Container(
-                        constraints: const BoxConstraints(minWidth: 400),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
+                        const SizedBox(width: 4),
+                        Expanded(
+                          child: Text(
                             customer.name,
                             style: TextStyle(
+                              color: Theme.of(context).colorScheme.primary,
                               fontWeight: FontWeight.w500,
-                              color: Theme.of(context).colorScheme.onSurface,
                             ),
+                            overflow: TextOverflow.ellipsis,
                           ),
+                        ),
+                      ],
+                    );
+                  }).toList()..insert(
+                    0,
+                    Row(
+                      children: [
+                        Icon(
+                          Icons.person_off,
+                          size: 18,
+                          color: Theme.of(context).colorScheme.primary,
+                        ),
+                        const SizedBox(width: 4),
+                        Text(
+                          '未選擇客戶',
+                          style: TextStyle(
+                            color: Theme.of(context).colorScheme.primary,
+                          ),
+                        ),
+                      ],
+                    ),
+                  );
+                },
+                icon: Icon(
+                  Icons.arrow_drop_down,
+                  color: Theme.of(context).colorScheme.primary,
+                ),
+                underline: const SizedBox(),
+                dropdownColor: Theme.of(context).colorScheme.surface,
+                items: [
+                  DropdownMenuItem<Customer?>(
+                    value: null,
+                    child: Row(
+                      children: [
+                        Icon(
+                          Icons.person_off,
+                          color: Theme.of(context).colorScheme.onSurface,
+                        ),
+                        const SizedBox(width: 8),
+                        Text(
+                          '未選擇客戶',
+                          style: TextStyle(
+                            color: Theme.of(context).colorScheme.onSurface,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  ..._customerService.customers.map((customer) {
+                    return DropdownMenuItem<Customer?>(
+                      value: customer,
+                      child: Container(
+                        constraints: const BoxConstraints(minWidth: 400),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              customer.name,
+                              style: TextStyle(
+                                fontWeight: FontWeight.w500,
+                                color: Theme.of(context).colorScheme.onSurface,
+                              ),
+                            ),
                             if (customer.chineseName != null &&
                                 customer.chineseName!.isNotEmpty)
                               Text(
@@ -342,17 +339,17 @@ class _CustomerHomePageState extends State<CustomerHomePage> {
                                   ).colorScheme.onSurfaceVariant,
                                 ),
                               ),
-                          if (customer.company != null &&
-                              customer.company!.isNotEmpty)
-                            Text(
-                              customer.company!,
-                              style: TextStyle(
-                                fontSize: 12,
-                                color: Theme.of(
-                                  context,
-                                ).colorScheme.onSurfaceVariant,
+                            if (customer.company != null &&
+                                customer.company!.isNotEmpty)
+                              Text(
+                                customer.company!,
+                                style: TextStyle(
+                                  fontSize: 12,
+                                  color: Theme.of(
+                                    context,
+                                  ).colorScheme.onSurfaceVariant,
+                                ),
                               ),
-                            ),
                             if (customer.email != null &&
                                 customer.email!.isNotEmpty)
                               Text(
@@ -375,19 +372,19 @@ class _CustomerHomePageState extends State<CustomerHomePage> {
                                   ).colorScheme.onSurfaceVariant,
                                 ),
                               ),
-                        ],
+                          ],
+                        ),
                       ),
-                    ),
-                  );
+                    );
                   }),
-              ],
-              onChanged: (Customer? customer) {
-                setState(() {
-                  _selectedCustomer = customer;
+                ],
+                onChanged: (Customer? customer) {
+                  setState(() {
+                    _selectedCustomer = customer;
                     _selectedConfigurationName = null;
-                });
-              },
-            ),
+                  });
+                },
+              ),
             ],
             IconButton(
               icon: Icon(
@@ -558,7 +555,7 @@ class _CustomerHomePageState extends State<CustomerHomePage> {
                       );
               },
             ),
-            
+
             //刪除配置按鈕
             TextButton(
               onPressed: _selectedConfigurationName != null
@@ -1095,8 +1092,9 @@ class _CustomerHomePageState extends State<CustomerHomePage> {
         onAddFixture: (name, totalWatt, price) {
           setState(() {
             final loop = _loops[loopIndex];
-            final updatedFixtures = List<LoopFixture>.from(loop.fixtures)
-              ..add(LoopFixture(name: name, totalWatt: totalWatt, price: price));
+            final updatedFixtures = List<LoopFixture>.from(
+              loop.fixtures,
+            )..add(LoopFixture(name: name, totalWatt: totalWatt, price: price));
             _loops[loopIndex] = loop.copyWith(fixtures: updatedFixtures);
           });
         },
@@ -1241,9 +1239,13 @@ class _CustomerHomePageState extends State<CustomerHomePage> {
         onUpdateLoop: (updatedLoop) {
           setState(() {
             final updatedAllocation = allocation.copyWith(loop: updatedLoop);
-            final updatedLoopAllocations = List<LoopAllocation>.from(module.loopAllocations);
+            final updatedLoopAllocations = List<LoopAllocation>.from(
+              module.loopAllocations,
+            );
             updatedLoopAllocations[allocationIndex] = updatedAllocation;
-            _modules[moduleIndex] = module.copyWith(loopAllocations: updatedLoopAllocations);
+            _modules[moduleIndex] = module.copyWith(
+              loopAllocations: updatedLoopAllocations,
+            );
           });
         },
       ),
@@ -1662,6 +1664,7 @@ class _CustomerHomePageState extends State<CustomerHomePage> {
   }
 
   void _saveConfiguration() async {
+    _saveSwitchConfigurations();
     final TextEditingController nameController = TextEditingController(
       text: _currentConfigurationName,
     );
@@ -1772,8 +1775,7 @@ class _CustomerHomePageState extends State<CustomerHomePage> {
       await _quoteService.fetchConfigurations();
       await _quoteService.fetchModuleOptions();
       await _quoteService.fetchFixtureTypeOptions();
-      setState(() {
-      });
+      setState(() {});
     } catch (e) {
       // 静默处理错误，用户可以稍後重试
       print('載入配置列表失敗: $e');
@@ -1876,8 +1878,7 @@ class _CustomerHomePageState extends State<CustomerHomePage> {
     } catch (e) {
       ScaffoldMessenger.of(
         context,
-      ).showSnackBar(SnackBar(content: Text('刪除失敗: $e')),
-      );
+      ).showSnackBar(SnackBar(content: Text('刪除失敗: $e')));
     } finally {
       setState(() => _isLoading = false);
     }
