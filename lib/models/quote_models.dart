@@ -598,3 +598,56 @@ class Loop {
     );
   }
 }
+
+/// 開關資料結構
+class SwitchModel {
+  int? id;
+  String name;
+  int count;
+  double price;
+  String location;
+
+  SwitchModel({
+    this.id,
+    required this.name,
+    required this.count,
+    this.price = 0.0,
+    this.location = '',
+  });
+
+  SwitchModel copyWith({
+    int? id,
+    String? name,
+    int? count,
+    double? price,
+    String? location,
+  }) {
+    return SwitchModel(
+      id: id ?? this.id,
+      name: name ?? this.name,
+      count: count ?? this.count,
+      price: price ?? this.price,
+      location: location ?? this.location,
+    );
+  }
+
+  Map<String, dynamic> toJson() {
+    return {
+      if (id != null) 'id': id,
+      'name': name,
+      'count': count,
+      'price': price,
+      'location': location,
+    };
+  }
+
+  factory SwitchModel.fromJson(Map<String, dynamic> json) {
+    return SwitchModel(
+      id: json['id'],
+      name: json['name'] ?? '',
+      count: json['count'] ?? 1,
+      price: json['price']?.toDouble() ?? 0.0,
+      location: json['location'] ?? '',
+    );
+  }
+}

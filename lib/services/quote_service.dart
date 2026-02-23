@@ -556,4 +556,73 @@ class QuoteService extends ChangeNotifier {
       throw Exception('Network error: $e');
     }
   }
+
+  // ===== 開關選項 CRUD =====
+
+  Future<List<SwitchModel>> fetchSwitchOptions() async {
+    try {
+      final response = await _client.get(
+        Uri.parse('$baseUrl/api/switch-options'),
+      );
+      if (response.statusCode == 200) {
+        final data = jsonDecode(response.body);
+        final options = data['switchOptions'] as List;
+        return options.map((json) => SwitchModel.fromJson(json)).toList();
+      } else if (response.statusCode == 401) {
+        navigatorKey.currentState?.pushReplacementNamed('/login');
+        throw Exception('Unauthorized');
+      } else {
+        final error = jsonDecode(response.body);
+        throw Exception(error['error'] ?? 'Failed to fetch switch options');
+      }
+    } catch (e) {
+      throw Exception('Network error: $e');
+    }
+  }
+
+  Future<void> addSwitchOption(SwitchModel model) async {
+    try {
+      final response = await _client.post(
+        Uri.parse('$baseUrl/api/switch-options'),
+        headers: {'Content-Type': 'application/json'},
+        body: jsonEncode(model.toJson()),
+      );
+      if (response.statusCode != 200) {
+        final error = jsonDecode(response.body);
+        throw Exception(error['error'] ?? 'Failed to add switch option');
+      }
+    } catch (e) {
+      throw Exception('Network error: $e');
+    }
+  }
+
+  Future<void> updateSwitchOption(int id, SwitchModel model) async {
+    try {
+      final response = await _client.put(
+        Uri.parse('$baseUrl/api/switch-options'),
+        headers: {'Content-Type': 'application/json'},
+        body: jsonEncode({'id': id, ...model.toJson()}),
+      );
+      if (response.statusCode != 200) {
+        final error = jsonDecode(response.body);
+        throw Exception(error['error'] ?? 'Failed to update switch option');
+      }
+    } catch (e) {
+      throw Exception('Network error: $e');
+    }
+  }
+
+  Future<void> deleteSwitchOption(int id) async {
+    try {
+      final response = await _client.delete(
+        Uri.parse('$baseUrl/api/switch-options?id=$id'),
+      );
+      if (response.statusCode != 200) {
+        final error = jsonDecode(response.body);
+        throw Exception(error['error'] ?? 'Failed to delete switch option');
+      }
+    } catch (e) {
+      throw Exception('Network error: $e');
+    }
+  }
 }

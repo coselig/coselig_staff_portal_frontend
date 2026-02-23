@@ -10,6 +10,7 @@ import 'widgets/step1_widget.dart';
 import 'widgets/step2_widget.dart';
 import 'widgets/step3_widget.dart';
 import 'widgets/add_loop_dialog.dart';
+import 'widgets/add_switch_dialog.dart';
 import 'widgets/add_module_dialog.dart';
 import 'widgets/add_fixture_dialog.dart';
 import 'widgets/quote_result_dialog.dart';
@@ -33,8 +34,34 @@ class _CustomerHomePageState extends State<CustomerHomePage> {
 
   // 第一步：迴路+設備配置
   final List<Loop> _loops = [];
+  final List<SwitchModel> _switches = [];
   final TextEditingController _switchCountController = TextEditingController();
   final TextEditingController _otherDevicesController = TextEditingController();
+  // 開關管理方法
+  void _showAddSwitchDialog() {
+    showDialog(
+      context: context,
+      builder: (context) => AddSwitchDialog(
+        onAddSwitch: (switchModel) {
+          setState(() {
+            _switches.add(switchModel);
+          });
+        },
+      ),
+    );
+  }
+
+  void _updateSwitch(int index, SwitchModel updatedSwitch) {
+    setState(() {
+      _switches[index] = updatedSwitch;
+    });
+  }
+
+  void _removeSwitch(int index) {
+    setState(() {
+      _switches.removeAt(index);
+    });
+  }
 
   // 第二步：模組配置
   final List<Module> _modules = [];
@@ -763,14 +790,18 @@ class _CustomerHomePageState extends State<CustomerHomePage> {
                     ),
                     child: Step1Widget(
                       loops: _loops,
+                      switches: _switches,
                       switchCountController: _switchCountController,
                       otherDevicesController: _otherDevicesController,
                       onAddLoop: _showAddLoopDialog,
+                      onAddSwitch: _showAddSwitchDialog,
                       onRemoveLoop: _removeLoop,
                       onUpdateLoop: _updateLoop,
                       onAddFixtureToLoop: _showAddFixtureDialog,
                       onRemoveFixtureFromLoop: _removeFixtureFromLoop,
                       onEditFixtureInLoop: _showEditFixtureDialog,
+                      onUpdateSwitch: _updateSwitch,
+                      onRemoveSwitch: _removeSwitch,
                     ),
                   ),
                   isActive: _currentStep >= 1,

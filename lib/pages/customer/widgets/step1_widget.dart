@@ -1,30 +1,38 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:coselig_staff_portal/models/quote_models.dart';
 import 'loop_card_widget.dart';
+import 'switch_card_widget.dart';
 
 class Step1Widget extends StatelessWidget {
   final List<Loop> loops;
+  final List<SwitchModel> switches;
   final TextEditingController switchCountController;
   final TextEditingController otherDevicesController;
   final VoidCallback onAddLoop;
+  final VoidCallback onAddSwitch;
   final Function(int) onRemoveLoop;
   final Function(int, Loop) onUpdateLoop;
   final Function(int) onAddFixtureToLoop;
   final Function(int, int) onRemoveFixtureFromLoop;
   final Function(int, int) onEditFixtureInLoop;
+  final Function(int, SwitchModel) onUpdateSwitch;
+  final Function(int) onRemoveSwitch;
 
   const Step1Widget({
     super.key,
     required this.loops,
+    required this.switches,
     required this.switchCountController,
     required this.otherDevicesController,
     required this.onAddLoop,
+    required this.onAddSwitch,
     required this.onRemoveLoop,
     required this.onUpdateLoop,
     required this.onAddFixtureToLoop,
     required this.onRemoveFixtureFromLoop,
     required this.onEditFixtureInLoop,
+    required this.onUpdateSwitch,
+    required this.onRemoveSwitch,
   });
 
   @override
@@ -119,15 +127,34 @@ class Step1Widget extends StatelessWidget {
           style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
         ),
         const SizedBox(height: 16),
-        TextField(
-          controller: switchCountController,
-          decoration: const InputDecoration(
-            labelText: '開關數量',
-            border: OutlineInputBorder(),
-          ),
-          keyboardType: TextInputType.number,
-          inputFormatters: [FilteringTextInputFormatter.digitsOnly],
+        Row(
+          children: [
+            ElevatedButton.icon(
+              onPressed: onAddSwitch,
+              icon: const Icon(Icons.add),
+              label: const Text('新增開關'),
+            ),
+          ],
         ),
+        const SizedBox(height: 8),
+        if (switches.isEmpty)
+          Text(
+            '尚未添加任何開關',
+            style: TextStyle(
+              color: Theme.of(context).colorScheme.onSurface.withOpacity(0.6),
+            ),
+          )
+        else
+          ...switches.asMap().entries.map((entry) {
+            final index = entry.key;
+            final switchModel = entry.value;
+            return SwitchCardWidget(
+              index: index,
+              switchModel: switchModel,
+              onUpdateSwitch: onUpdateSwitch,
+              onRemoveSwitch: onRemoveSwitch,
+            );
+          }),
         const SizedBox(height: 24),
         const Text(
           '其他設備',

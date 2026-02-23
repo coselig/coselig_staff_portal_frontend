@@ -60,6 +60,13 @@ class AppDrawer extends StatelessWidget {
                 );
               },
             ),
+            ListTile(
+              leading: Icon(Icons.toggle_on),
+              title: Text('開關管理'),
+              onTap: () {
+                navigatorKey.currentState!.pushNamed('/switch_management');
+              },
+            ),
           ] else if (authService.isManager) ...[
             ListTile(
               leading: Icon(Icons.people),
