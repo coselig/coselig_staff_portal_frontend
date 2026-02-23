@@ -45,20 +45,8 @@ class _CustomerHomePageState extends State<CustomerHomePage> {
   String _currentConfigurationName = '新估價配置';
   String? _selectedConfigurationName; // 追蹤下拉選單中選中的配置
   bool _isLoading = false;
-  List<QuoteConfiguration> _configurations = [];
   Customer? _selectedCustomer; // 選中的客戶
 
-  List<QuoteConfiguration> get _filteredConfigurations {
-    final authService = Provider.of<AuthService>(context, listen: false);
-    if (authService.isCustomer) return _configurations;
-    return _configurations
-        .where(
-          (c) => _selectedCustomer == null
-              ? c.customerUserId == null
-              : c.customerUserId == _selectedCustomer!.userId,
-        )
-        .toList();
-  }
 
   @override
   void initState() {
@@ -1140,7 +1128,7 @@ class _CustomerHomePageState extends State<CustomerHomePage> {
                   const Text('選擇要使用的模組廠牌進行自動分配：'),
                   const SizedBox(height: 16),
                   DropdownButtonFormField<String?>(
-                    value: selectedBrand,
+                    initialValue: selectedBrand,
                     decoration: const InputDecoration(
                       labelText: '廠牌',
                       border: OutlineInputBorder(),
@@ -1326,9 +1314,7 @@ class _CustomerHomePageState extends State<CustomerHomePage> {
           if (opt.channelCount >= info.channels &&
               info.amperePerCh <= opt.maxAmperePerChannel &&
               info.ampere <= opt.maxAmpereTotal) {
-            if (chosen == null) {
-              chosen = opt; // 先記住第一個可用的（最大的）
-            }
+            chosen ??= opt;
             // 如果有剛好夠裝所有剩餘迴路的模組，優先選它
             if (opt.channelCount >= remainingChannels) {
               chosen = opt;
@@ -1610,7 +1596,6 @@ class _CustomerHomePageState extends State<CustomerHomePage> {
       await _quoteService.fetchModuleOptions();
       await _quoteService.fetchFixtureTypeOptions();
       setState(() {
-        _configurations = _quoteService.configurations;
       });
     } catch (e) {
       // 靜默處理錯誤，用戶可以稍後重試

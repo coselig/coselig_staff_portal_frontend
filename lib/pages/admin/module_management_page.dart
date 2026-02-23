@@ -275,7 +275,7 @@ class _AddModuleDialogState extends State<AddModuleDialog> {
               ),
               const SizedBox(height: 16),
               DropdownButtonFormField<String>(
-                value: _selectedBrand,
+                initialValue: _selectedBrand,
                 decoration: const InputDecoration(
                   labelText: '廠牌',
                   border: OutlineInputBorder(),
@@ -489,7 +489,7 @@ class _EditModuleDialogState extends State<EditModuleDialog> {
               ),
               const SizedBox(height: 16),
               DropdownButtonFormField<String>(
-                value: _selectedBrand,
+                initialValue: _selectedBrand,
                 decoration: const InputDecoration(
                   labelText: '廠牌',
                   border: OutlineInputBorder(),
