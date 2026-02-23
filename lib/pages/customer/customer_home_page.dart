@@ -51,14 +51,18 @@ class _CustomerHomePageState extends State<CustomerHomePage> {
         return;
       }
 
+      final loopCount = _loops.length; // 傳遞當前迴路數量
+
       showDialog(
         context: context,
         builder: (context) => AddSwitchDialog(
           switchOptions: switchOptions, // 傳遞開關選項到對話框
+          loopCount: loopCount,
           onSelectSwitch: (selectedSwitch) {
             setState(() {
               _switches.add(selectedSwitch);
             });
+            _saveSwitchConfigurations();
           },
         ),
       );
@@ -75,12 +79,14 @@ class _CustomerHomePageState extends State<CustomerHomePage> {
     setState(() {
       _switches[index] = updatedSwitch;
     });
+    _saveSwitchConfigurations();
   }
 
   void _removeSwitch(int index) {
     setState(() {
       _switches.removeAt(index);
     });
+    _saveSwitchConfigurations();
   }
 
   // 第二步：模組配置
@@ -123,9 +129,47 @@ class _CustomerHomePageState extends State<CustomerHomePage> {
     super.dispose();
   }
 
+  void _savePatternSelection() async {
+    final patternData = {
+      'ceilingHasLn': _ceilingHasLn,
+      'ceilingHasMaintenanceHole': _ceilingHasMaintenanceHole,
+      'switchHasLn': _switchHasLn,
+    };
+
+    try {
+      await _quoteService.savePatternSelection(patternData);
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('樣態選擇已保存')));
+    } catch (e) {
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('保存樣態選擇失敗: $e')));
+    }
+  }
+
+  void _saveSwitchConfigurations() async {
+    try {
+      await _quoteService.saveSwitchConfigurations(_switches);
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('開關配置已保存')));
+    } catch (e) {
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('保存開關配置失敗: $e')));
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final authService = Provider.of<AuthService>(context);
+    final loopCount = _loops.length; // 獲取當前迴路數量
+    final switchCount = _switches.fold<int>(
+      0,
+      (sum, s) => sum + s.count,
+    ); // 計算配置開關數量
+
     return Scaffold(
       appBar: AppBar(
         title: Column(
@@ -148,9 +192,17 @@ class _CustomerHomePageState extends State<CustomerHomePage> {
                   fontSize: 12,
                   color: Theme.of(
                     context,
-                  ).colorScheme.onSurface.withValues(alpha: 0.7),
+                  ).colorScheme.onSurface.withAlpha(179),
                 ),
               ),
+            // 新增顯示迴路數量
+            Text(
+              '當前迴路數量: $loopCount',
+              style: TextStyle(
+                fontSize: 12,
+                color: Theme.of(context).colorScheme.onSurface.withAlpha(179),
+              ),
+            ),
           ],
         ),
         backgroundColor: Theme.of(context).colorScheme.surface,
@@ -993,6 +1045,36 @@ class _CustomerHomePageState extends State<CustomerHomePage> {
                 ),
               ),
             ),
+          Positioned(
+            bottom: 16,
+            right: 16,
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.end,
+              children: [
+                Text(
+                  '配置開關數 / 迴路數量: $switchCount / $loopCount',
+                  style: TextStyle(
+                    fontSize: 14,
+                    color: Theme.of(context).colorScheme.primary,
+                  ),
+                ),
+                const SizedBox(height: 8),
+                FloatingActionButton(
+                  onPressed: _showAddSwitchDialog,
+                  child: const Icon(Icons.add),
+                  tooltip: '新增開關',
+                ),
+              ],
+            ),
+          ),
+          Positioned(
+            bottom: 16,
+            left: 16,
+            child: ElevatedButton(
+              onPressed: _savePatternSelection,
+              child: const Text('保存樣態選擇'),
+            ),
+          ),
         ],
       ),
     );
@@ -1669,6 +1751,7 @@ class _CustomerHomePageState extends State<CustomerHomePage> {
                 setState(() => _isLoading = true);
                 try {
                   final quoteData = QuoteData(
+                    switches: _switches,
                     loops: _loops,
                     modules: _modules,
                     switchCount: _switchCountController.text,

@@ -64,6 +64,7 @@ class QuoteData {
   final String powerSupply;
   final String boardMaterials;
   final String wiring;
+  final List<SwitchModel> switches; // 新增開關配置欄位
 
   // 樣態選項
   final bool ceilingHasLn;
@@ -78,6 +79,7 @@ class QuoteData {
     required this.powerSupply,
     required this.boardMaterials,
     required this.wiring,
+    required this.switches, // 初始化開關配置欄位
     required this.ceilingHasLn,
     required this.ceilingHasMaintenanceHole,
     required this.switchHasLn,
@@ -92,6 +94,11 @@ class QuoteData {
       powerSupply: json['powerSupply'] ?? '',
       boardMaterials: json['boardMaterials'] ?? '',
       wiring: json['wiring'] ?? '',
+      switches:
+          (json['switches'] as List?)
+              ?.map((s) => SwitchModel.fromJson(s))
+              .toList() ??
+          [], // 反序列化開關配置
       ceilingHasLn: json['ceilingHasLn'] ?? false,
       ceilingHasMaintenanceHole: json['ceilingHasMaintenanceHole'] ?? false,
       switchHasLn: json['switchHasLn'] ?? false,
@@ -107,6 +114,7 @@ class QuoteData {
       'powerSupply': powerSupply,
       'boardMaterials': boardMaterials,
       'wiring': wiring,
+      'switches': switches.map((s) => s.toJson()).toList(), // 序列化開關配置
       'ceilingHasLn': ceilingHasLn,
       'ceilingHasMaintenanceHole': ceilingHasMaintenanceHole,
       'switchHasLn': switchHasLn,
@@ -623,6 +631,72 @@ class QuoteService extends ChangeNotifier {
       }
     } catch (e) {
       throw Exception('Network error: $e');
+    }
+  }
+
+  Future<void> savePatternSelection(Map<String, dynamic> patternData) async {
+    _isLoading = true;
+    _error = null;
+    notifyListeners();
+
+    try {
+      final response = await _client.post(
+        Uri.parse('$baseUrl/api/pattern-selection'),
+        headers: {'Content-Type': 'application/json'},
+        body: jsonEncode(patternData),
+      );
+
+      if (response.statusCode == 200) {
+        // 成功保存樣態選擇
+        notifyListeners();
+      } else if (response.statusCode == 401) {
+        _error = 'Unauthorized';
+        navigatorKey.currentState?.pushReplacementNamed('/login');
+      } else {
+        final error = jsonDecode(response.body);
+        _error = error['error'] ?? 'Failed to save pattern selection';
+        notifyListeners();
+      }
+    } catch (e) {
+      _error = 'Network error: $e';
+      notifyListeners();
+    } finally {
+      _isLoading = false;
+      notifyListeners();
+    }
+  }
+
+  Future<void> saveSwitchConfigurations(List<SwitchModel> switches) async {
+    _isLoading = true;
+    _error = null;
+    notifyListeners();
+
+    try {
+      final response = await _client.post(
+        Uri.parse('$baseUrl/api/switch-configurations'),
+        headers: {'Content-Type': 'application/json'},
+        body: jsonEncode({
+          'switches': switches.map((s) => s.toJson()).toList(),
+        }),
+      );
+
+      if (response.statusCode == 200) {
+        // 成功保存開關配置
+        notifyListeners();
+      } else if (response.statusCode == 401) {
+        _error = 'Unauthorized';
+        navigatorKey.currentState?.pushReplacementNamed('/login');
+      } else {
+        final error = jsonDecode(response.body);
+        _error = error['error'] ?? 'Failed to save switch configurations';
+        notifyListeners();
+      }
+    } catch (e) {
+      _error = 'Network error: $e';
+      notifyListeners();
+    } finally {
+      _isLoading = false;
+      notifyListeners();
     }
   }
 }
