@@ -10,6 +10,11 @@ class QuoteResultDialog extends StatelessWidget {
   final String boardMaterials;
   final String wiring;
 
+  // 樣態選項
+  final bool ceilingHasLn;
+  final bool ceilingHasMaintenanceHole;
+  final bool switchHasLn;
+
   const QuoteResultDialog({
     super.key,
     required this.loops,
@@ -19,6 +24,9 @@ class QuoteResultDialog extends StatelessWidget {
     required this.powerSupply,
     required this.boardMaterials,
     required this.wiring,
+    required this.ceilingHasLn,
+    required this.ceilingHasMaintenanceHole,
+    required this.switchHasLn,
   });
 
   @override
@@ -95,6 +103,12 @@ class QuoteResultDialog extends StatelessWidget {
                 ),
               ),
 
+            // 樣態選項摘要
+            const Text('樣態選擇：', style: TextStyle(fontWeight: FontWeight.bold)),
+            Text('天花版有LN：${ceilingHasLn ? '是' : '否'}'),
+            Text('天花版有維修孔：${ceilingHasMaintenanceHole ? '是' : '否'}'),
+            Text('開關有LN：${switchHasLn ? '是' : '否'}'),
+            const SizedBox(height: 16),
             const Text(
               '設備配置：',
               style: TextStyle(fontWeight: FontWeight.bold),

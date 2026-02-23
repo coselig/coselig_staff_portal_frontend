@@ -26,6 +26,11 @@ class CustomerHomePage extends StatefulWidget {
 class _CustomerHomePageState extends State<CustomerHomePage> {
   int _currentStep = 0;
 
+  // 樣態選擇
+  bool _ceilingHasLn = false;
+  bool _ceilingHasMaintenanceHole = false;
+  bool _switchHasLn = false;
+
   // 第一步：迴路+設備配置
   final List<Loop> _loops = [];
   final TextEditingController _switchCountController = TextEditingController();
@@ -512,7 +517,8 @@ class _CustomerHomePageState extends State<CustomerHomePage> {
             child: Stepper(
               currentStep: _currentStep,
               onStepContinue: () {
-                if (_currentStep < 2) {
+                // we now have four steps (0..3) so the last index is 3
+                if (_currentStep < 3) {
                   setState(() {
                     _currentStep += 1;
                   });
@@ -527,6 +533,9 @@ class _CustomerHomePageState extends State<CustomerHomePage> {
                       powerSupply: _powerSupplyController.text,
                       boardMaterials: _boardMaterialsController.text,
                       wiring: _wiringController.text,
+                      ceilingHasLn: _ceilingHasLn,
+                      ceilingHasMaintenanceHole: _ceilingHasMaintenanceHole,
+                      switchHasLn: _switchHasLn,
                     ),
                   );
                 }
@@ -568,15 +577,15 @@ class _CustomerHomePageState extends State<CustomerHomePage> {
                                       ),
                                     ),
                                   ),
-                                if (_currentStep > 0 && _currentStep < 2)
+                                if (_currentStep > 0 && _currentStep < 3)
                                   const SizedBox(height: 16),
                                 ElevatedButton.icon(
                                   onPressed: details.onStepContinue,
-                                  icon: _currentStep < 2
+                                  icon: _currentStep < 3
                                       ? const Icon(Icons.arrow_forward)
                                       : const Icon(Icons.calculate),
                                   label: Text(
-                                    _currentStep < 2 ? '下一步' : '生成報價',
+                                    _currentStep < 3 ? '下一步' : '生成報價',
                                   ),
                                   style: ElevatedButton.styleFrom(
                                     padding: const EdgeInsets.symmetric(
@@ -611,7 +620,7 @@ class _CustomerHomePageState extends State<CustomerHomePage> {
                                       ),
                                     ),
                                   ),
-                                if (_currentStep > 0 && _currentStep < 2)
+                                if (_currentStep > 0 && _currentStep < 3)
                                   const SizedBox(width: 16),
                                 Expanded(
                                   child: ElevatedButton.icon(
@@ -640,6 +649,7 @@ class _CustomerHomePageState extends State<CustomerHomePage> {
                 );
               },
               steps: [
+                // 第一個步驟：樣態選擇
                 Step(
                   title: Row(
                     children: [
@@ -657,6 +667,69 @@ class _CustomerHomePageState extends State<CustomerHomePage> {
                             '1',
                             style: TextStyle(
                               color: _currentStep >= 0
+                                  ? Theme.of(context).colorScheme.onPrimary
+                                  : Theme.of(
+                                      context,
+                                    ).colorScheme.onSurfaceVariant,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      const Text(
+                        '樣態選擇',
+                        style: TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
+                    ],
+                  ),
+                  content: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      CheckboxListTile(
+                        title: const Text('天花版是否有LN'),
+                        value: _ceilingHasLn,
+                        onChanged: (v) => setState(() => _ceilingHasLn = v!),
+                      ),
+                      CheckboxListTile(
+                        title: const Text('天花版是否有維修孔'),
+                        value: _ceilingHasMaintenanceHole,
+                        onChanged: (v) =>
+                            setState(() => _ceilingHasMaintenanceHole = v!),
+                      ),
+                      CheckboxListTile(
+                        title: const Text('開關是否有LN'),
+                        value: _switchHasLn,
+                        onChanged: (v) => setState(() => _switchHasLn = v!),
+                      ),
+                    ],
+                  ),
+                  isActive: _currentStep >= 0,
+                  state: _currentStep > 0
+                      ? StepState.complete
+                      : StepState.indexed,
+                ),
+                // 原來的迴路+設備步驟現在編號為2
+                Step(
+                  title: Row(
+                    children: [
+                      Container(
+                        width: 32,
+                        height: 32,
+                        decoration: BoxDecoration(
+                          color: _currentStep >= 1
+                              ? Theme.of(context).colorScheme.primary
+                              : Theme.of(context).colorScheme.outline,
+                          shape: BoxShape.circle,
+                        ),
+                        child: Center(
+                          child: Text(
+                            '2',
+                            style: TextStyle(
+                              color: _currentStep >= 1
                                   ? Theme.of(context).colorScheme.onPrimary
                                   : Theme.of(
                                       context,
@@ -700,10 +773,12 @@ class _CustomerHomePageState extends State<CustomerHomePage> {
                       onEditFixtureInLoop: _showEditFixtureDialog,
                     ),
                   ),
-                  isActive: _currentStep >= 0,
-                  state: _currentStep > 0
+                  isActive: _currentStep >= 1,
+                  state: _currentStep > 1
                       ? StepState.complete
-                      : StepState.indexed,
+                      : (_currentStep == 1
+                            ? StepState.editing
+                            : StepState.indexed),
                 ),
                 Step(
                   title: Row(
@@ -712,16 +787,16 @@ class _CustomerHomePageState extends State<CustomerHomePage> {
                         width: 32,
                         height: 32,
                         decoration: BoxDecoration(
-                          color: _currentStep >= 1
+                          color: _currentStep >= 2
                               ? Theme.of(context).colorScheme.primary
                               : Theme.of(context).colorScheme.outline,
                           shape: BoxShape.circle,
                         ),
                         child: Center(
                           child: Text(
-                            '2',
+                            '3',
                             style: TextStyle(
-                              color: _currentStep >= 1
+                              color: _currentStep >= 2
                                   ? Theme.of(context).colorScheme.onPrimary
                                   : Theme.of(
                                       context,
@@ -764,10 +839,10 @@ class _CustomerHomePageState extends State<CustomerHomePage> {
                       unassignedLoops: _getUnassignedLoops(),
                     ),
                   ),
-                  isActive: _currentStep >= 1,
-                  state: _currentStep > 1
+                  isActive: _currentStep >= 2,
+                  state: _currentStep > 2
                       ? StepState.complete
-                      : (_currentStep == 1
+                      : (_currentStep == 2
                             ? StepState.editing
                             : StepState.indexed),
                 ),
@@ -778,16 +853,16 @@ class _CustomerHomePageState extends State<CustomerHomePage> {
                         width: 32,
                         height: 32,
                         decoration: BoxDecoration(
-                          color: _currentStep >= 2
+                          color: _currentStep >= 3
                               ? Theme.of(context).colorScheme.primary
                               : Theme.of(context).colorScheme.outline,
                           shape: BoxShape.circle,
                         ),
                         child: Center(
                           child: Text(
-                            '3',
+                            '4',
                             style: TextStyle(
-                              color: _currentStep >= 2
+                              color: _currentStep >= 3
                                   ? Theme.of(context).colorScheme.onPrimary
                                   : Theme.of(
                                       context,
@@ -825,8 +900,8 @@ class _CustomerHomePageState extends State<CustomerHomePage> {
                       wiringController: _wiringController,
                     ),
                   ),
-                  isActive: _currentStep >= 2,
-                  state: _currentStep == 2
+                  isActive: _currentStep >= 3,
+                  state: _currentStep == 3
                       ? StepState.editing
                       : StepState.indexed,
                 ),
@@ -1472,6 +1547,10 @@ class _CustomerHomePageState extends State<CustomerHomePage> {
                 _powerSupplyController.clear();
                 _boardMaterialsController.clear();
                 _wiringController.clear();
+                // reset style options
+                _ceilingHasLn = false;
+                _ceilingHasMaintenanceHole = false;
+                _switchHasLn = false;
                 _currentConfigurationName = '新估價配置';
                 _selectedConfigurationName = null; // 重置下拉選單選擇狀態
                 _currentStep = 0; // 返回第一步
@@ -1546,6 +1625,9 @@ class _CustomerHomePageState extends State<CustomerHomePage> {
                     powerSupply: _powerSupplyController.text,
                     boardMaterials: _boardMaterialsController.text,
                     wiring: _wiringController.text,
+                    ceilingHasLn: _ceilingHasLn,
+                    ceilingHasMaintenanceHole: _ceilingHasMaintenanceHole,
+                    switchHasLn: _switchHasLn,
                   );
 
                   final authService = Provider.of<AuthService>(
@@ -1627,7 +1709,12 @@ class _CustomerHomePageState extends State<CustomerHomePage> {
           _powerSupplyController.text = quoteData.powerSupply;
           _boardMaterialsController.text = quoteData.boardMaterials;
           _wiringController.text = quoteData.wiring;
+          // restore new style options
+          _ceilingHasLn = quoteData.ceilingHasLn;
+          _ceilingHasMaintenanceHole = quoteData.ceilingHasMaintenanceHole;
+          _switchHasLn = quoteData.switchHasLn;
           _currentConfigurationName = configName;
+          _currentStep = 0; // 回到起始步驟
         });
         ScaffoldMessenger.of(
           context,
@@ -1681,6 +1768,9 @@ class _CustomerHomePageState extends State<CustomerHomePage> {
         _selectedConfigurationName = null;
         _loops.clear();
         _modules.clear();
+        _ceilingHasLn = false;
+        _ceilingHasMaintenanceHole = false;
+        _switchHasLn = false;
         _currentStep = 0;
       });
       // 重新載入配置列表

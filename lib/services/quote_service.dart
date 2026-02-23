@@ -65,6 +65,11 @@ class QuoteData {
   final String boardMaterials;
   final String wiring;
 
+  // 樣態選項
+  final bool ceilingHasLn;
+  final bool ceilingHasMaintenanceHole;
+  final bool switchHasLn;
+
   QuoteData({
     required this.loops,
     required this.modules,
@@ -73,6 +78,9 @@ class QuoteData {
     required this.powerSupply,
     required this.boardMaterials,
     required this.wiring,
+    required this.ceilingHasLn,
+    required this.ceilingHasMaintenanceHole,
+    required this.switchHasLn,
   });
 
   factory QuoteData.fromJson(Map<String, dynamic> json) {
@@ -84,6 +92,9 @@ class QuoteData {
       powerSupply: json['powerSupply'] ?? '',
       boardMaterials: json['boardMaterials'] ?? '',
       wiring: json['wiring'] ?? '',
+      ceilingHasLn: json['ceilingHasLn'] ?? false,
+      ceilingHasMaintenanceHole: json['ceilingHasMaintenanceHole'] ?? false,
+      switchHasLn: json['switchHasLn'] ?? false,
     );
   }
 
@@ -96,6 +107,9 @@ class QuoteData {
       'powerSupply': powerSupply,
       'boardMaterials': boardMaterials,
       'wiring': wiring,
+      'ceilingHasLn': ceilingHasLn,
+      'ceilingHasMaintenanceHole': ceilingHasMaintenanceHole,
+      'switchHasLn': switchHasLn,
     };
   }
 }
