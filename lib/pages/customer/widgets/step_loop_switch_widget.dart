@@ -3,7 +3,7 @@ import 'package:coselig_staff_portal/models/quote_models.dart';
 import 'loop_card_widget.dart';
 import 'switch_card_widget.dart';
 
-class Step1Widget extends StatelessWidget {
+class StepLoopSwitchWidget extends StatelessWidget {
   final List<Loop> loops;
   final List<SwitchModel> switches;
   final TextEditingController switchCountController;
@@ -18,7 +18,7 @@ class Step1Widget extends StatelessWidget {
   final Function(int, SwitchModel) onUpdateSwitch;
   final Function(int) onRemoveSwitch;
 
-  const Step1Widget({
+  const StepLoopSwitchWidget({
     super.key,
     required this.loops,
     required this.switches,

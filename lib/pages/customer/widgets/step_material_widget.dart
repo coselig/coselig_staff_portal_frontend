@@ -1,11 +1,11 @@
 import 'package:flutter/material.dart';
 
-class Step3Widget extends StatelessWidget {
+class StepMaterialWidget extends StatelessWidget {
   final TextEditingController powerSupplyController;
   final TextEditingController boardMaterialsController;
   final TextEditingController wiringController;
 
-  const Step3Widget({
+  const StepMaterialWidget({
     super.key,
     required this.powerSupplyController,
     required this.boardMaterialsController,

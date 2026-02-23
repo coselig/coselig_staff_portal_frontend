@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:coselig_staff_portal/models/quote_models.dart';
 import 'module_card_widget.dart';
 
-class Step2Widget extends StatelessWidget {
+class StepModuleWidget extends StatelessWidget {
   final List<Module> modules;
   final VoidCallback onAddModule;
   final VoidCallback onAutoAssign;
@@ -12,7 +12,7 @@ class Step2Widget extends StatelessWidget {
   final Function(int, int) onEditLoopInModule;
   final List<Loop> unassignedLoops;
 
-  const Step2Widget({
+  const StepModuleWidget({
     super.key,
     required this.modules,
     required this.onAddModule,

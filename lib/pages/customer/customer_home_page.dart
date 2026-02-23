@@ -6,9 +6,9 @@ import 'package:coselig_staff_portal/services/customer_service.dart';
 import 'package:coselig_staff_portal/services/auth_service.dart';
 import 'package:coselig_staff_portal/models/quote_models.dart';
 import 'package:provider/provider.dart';
-import 'widgets/step1_widget.dart';
-import 'widgets/step2_widget.dart';
-import 'widgets/step3_widget.dart';
+import 'widgets/step_loop_switch_widget.dart';
+import 'widgets/step_module_widget.dart';
+import 'widgets/step_material_widget.dart';
 import 'widgets/add_loop_dialog.dart';
 import 'widgets/add_switch_dialog.dart';
 import 'widgets/add_module_dialog.dart';
@@ -129,25 +129,6 @@ class _CustomerHomePageState extends State<CustomerHomePage> {
     super.dispose();
   }
 
-  void _savePatternSelection() async {
-    final patternData = {
-      'ceilingHasLn': _ceilingHasLn,
-      'ceilingHasMaintenanceHole': _ceilingHasMaintenanceHole,
-      'switchHasLn': _switchHasLn,
-    };
-
-    try {
-      await _quoteService.savePatternSelection(patternData);
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(const SnackBar(content: Text('樣態選擇已保存')));
-    } catch (e) {
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: Text('保存樣態選擇失敗: $e')));
-    }
-  }
-
   void _saveSwitchConfigurations() async {
     try {
       await _quoteService.saveSwitchConfigurations(_switches);
@@ -165,10 +146,6 @@ class _CustomerHomePageState extends State<CustomerHomePage> {
   Widget build(BuildContext context) {
     final authService = Provider.of<AuthService>(context);
     final loopCount = _loops.length; // 獲取當前迴路數量
-    final switchCount = _switches.fold<int>(
-      0,
-      (sum, s) => sum + s.count,
-    ); // 計算配置開關數量
 
     return Scaffold(
       appBar: AppBar(
@@ -872,7 +849,7 @@ class _CustomerHomePageState extends State<CustomerHomePage> {
                           ),
                         ),
                         const SizedBox(height: 16),
-                        Step1Widget(
+                        StepLoopSwitchWidget(
                           loops: _loops,
                           switches: _switches,
                           switchCountController: _switchCountController,
@@ -945,7 +922,7 @@ class _CustomerHomePageState extends State<CustomerHomePage> {
                         ).colorScheme.outline.withValues(alpha: 0.2),
                       ),
                     ),
-                    child: Step2Widget(
+                    child: StepModuleWidget(
                       modules: _modules,
                       onAddModule: _showAddModuleDialog,
                       onAutoAssign: _autoAssignModules,
@@ -1011,7 +988,7 @@ class _CustomerHomePageState extends State<CustomerHomePage> {
                         ).colorScheme.outline.withValues(alpha: 0.2),
                       ),
                     ),
-                    child: Step3Widget(
+                    child: StepMaterialWidget(
                       powerSupplyController: _powerSupplyController,
                       boardMaterialsController: _boardMaterialsController,
                       wiringController: _wiringController,
