@@ -235,15 +235,48 @@ class _GenericEditDialogState extends State<_GenericEditDialog> {
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: widget.columns.map<Widget>((col) {
-              return Padding(
-                padding: const EdgeInsets.symmetric(vertical: 8),
-                child: TextFormField(
-                  controller: _controllers[col['name']],
-                  decoration: InputDecoration(labelText: col['label']),
-                  keyboardType: col['type'] == 'number' ? TextInputType.number : TextInputType.text,
-                  validator: (v) => (col['required'] ?? true) && (v == null || v.isEmpty) ? '必填' : null,
-                ),
-              );
+              if (col['type'] == 'dropdown') {
+                final List<String> options = List<String>.from(
+                  col['options'] ?? [],
+                );
+                return Padding(
+                  padding: const EdgeInsets.symmetric(vertical: 8),
+                  child: DropdownButtonFormField<String>(
+                    value: _controllers[col['name']]!.text.isNotEmpty
+                        ? _controllers[col['name']]!.text
+                        : (options.isNotEmpty ? options[0] : null),
+                    decoration: InputDecoration(labelText: col['label']),
+                    items: options
+                        .map(
+                          (opt) =>
+                              DropdownMenuItem(value: opt, child: Text(opt)),
+                        )
+                        .toList(),
+                    onChanged: (val) => setState(
+                      () => _controllers[col['name']]!.text = val ?? '',
+                    ),
+                    validator: (v) =>
+                        (col['required'] ?? true) && (v == null || v.isEmpty)
+                        ? '必填'
+                        : null,
+                  ),
+                );
+              } else {
+                return Padding(
+                  padding: const EdgeInsets.symmetric(vertical: 8),
+                  child: TextFormField(
+                    controller: _controllers[col['name']],
+                    decoration: InputDecoration(labelText: col['label']),
+                    keyboardType: col['type'] == 'number'
+                        ? TextInputType.number
+                        : TextInputType.text,
+                    validator: (v) =>
+                        (col['required'] ?? true) && (v == null || v.isEmpty)
+                        ? '必填'
+                        : null,
+                  ),
+                );
+              }
             }).toList(),
           ),
         ),
