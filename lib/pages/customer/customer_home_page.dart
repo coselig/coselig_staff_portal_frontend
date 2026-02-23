@@ -860,20 +860,34 @@ class _CustomerHomePageState extends State<CustomerHomePage> {
                         ).colorScheme.outline.withValues(alpha: 0.2),
                       ),
                     ),
-                    child: Step1Widget(
-                      loops: _loops,
-                      switches: _switches,
-                      switchCountController: _switchCountController,
-                      otherDevicesController: _otherDevicesController,
-                      onAddLoop: _showAddLoopDialog,
-                      onAddSwitch: _showAddSwitchDialog,
-                      onRemoveLoop: _removeLoop,
-                      onUpdateLoop: _updateLoop,
-                      onAddFixtureToLoop: _showAddFixtureDialog,
-                      onRemoveFixtureFromLoop: _removeFixtureFromLoop,
-                      onEditFixtureInLoop: _showEditFixtureDialog,
-                      onUpdateSwitch: _updateSwitch,
-                      onRemoveSwitch: _removeSwitch,
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        // 顯示配置開關數 / 迴路數量
+                        Text(
+                          '配置開關數 / 迴路數量: ${_switches.fold<int>(0, (sum, s) => sum + s.count)} / ${_loops.length}',
+                          style: TextStyle(
+                            fontSize: 14,
+                            color: Theme.of(context).colorScheme.primary,
+                          ),
+                        ),
+                        const SizedBox(height: 16),
+                        Step1Widget(
+                          loops: _loops,
+                          switches: _switches,
+                          switchCountController: _switchCountController,
+                          otherDevicesController: _otherDevicesController,
+                          onAddLoop: _showAddLoopDialog,
+                          onAddSwitch: _showAddSwitchDialog,
+                          onRemoveLoop: _removeLoop,
+                          onUpdateLoop: _updateLoop,
+                          onAddFixtureToLoop: _showAddFixtureDialog,
+                          onRemoveFixtureFromLoop: _removeFixtureFromLoop,
+                          onEditFixtureInLoop: _showEditFixtureDialog,
+                          onUpdateSwitch: _updateSwitch,
+                          onRemoveSwitch: _removeSwitch,
+                        ),
+                      ],
                     ),
                   ),
                   isActive: _currentStep >= 1,
@@ -1045,36 +1059,6 @@ class _CustomerHomePageState extends State<CustomerHomePage> {
                 ),
               ),
             ),
-          Positioned(
-            bottom: 16,
-            right: 16,
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.end,
-              children: [
-                Text(
-                  '配置開關數 / 迴路數量: $switchCount / $loopCount',
-                  style: TextStyle(
-                    fontSize: 14,
-                    color: Theme.of(context).colorScheme.primary,
-                  ),
-                ),
-                const SizedBox(height: 8),
-                FloatingActionButton(
-                  onPressed: _showAddSwitchDialog,
-                  child: const Icon(Icons.add),
-                  tooltip: '新增開關',
-                ),
-              ],
-            ),
-          ),
-          Positioned(
-            bottom: 16,
-            left: 16,
-            child: ElevatedButton(
-              onPressed: _savePatternSelection,
-              child: const Text('保存樣態選擇'),
-            ),
-          ),
         ],
       ),
     );
