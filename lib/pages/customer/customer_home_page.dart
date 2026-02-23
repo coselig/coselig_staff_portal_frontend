@@ -1812,6 +1812,10 @@ class _CustomerHomePageState extends State<CustomerHomePage> {
           _switchHasLn = quoteData.switchHasLn;
           _currentConfigurationName = configName;
           _currentStep = 0; // 回到起始步驟
+
+          // 載入開關資料
+          _switches.clear();
+          _switches.addAll(quoteData.switches);
         });
         ScaffoldMessenger.of(
           context,
