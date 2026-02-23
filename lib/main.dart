@@ -23,7 +23,6 @@ import 'package:coselig_staff_portal/services/ui_settings_provider.dart';
 import 'package:coselig_staff_portal/services/customer_service.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import 'package:url_strategy/url_strategy.dart';
 import 'package:web/web.dart';
 
 final GlobalKey<NavigatorState> navigatorKey = GlobalKey<NavigatorState>();
@@ -36,7 +35,7 @@ void main() async {
 
   // 初始化 AppConstants（讀取版本信息）
   await AppConstants.init();
-  
+
   // 顯示版本信息
   final currentTime = DateTime.now().toIso8601String();
 
@@ -45,8 +44,7 @@ void main() async {
   console.log('構建: ${AppConstants.buildNumber}'.toJS);
   console.log('時間: $currentTime'.toJS);
   console.log('======================='.toJS);
-  
-  setPathUrlStrategy();
+
   runApp(
     MultiProvider(
       providers: [
