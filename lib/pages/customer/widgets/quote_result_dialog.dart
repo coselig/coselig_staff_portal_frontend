@@ -41,7 +41,19 @@ class QuoteResultDialog extends StatelessWidget {
       0.0,
       (sum, module) => sum + module.price,
     );
-    final grandTotal = totalFixturePrice + totalModulePrice;
+    final totalPowerSupplyPrice = powerSupplies.fold(
+      0.0,
+      (sum, ps) => sum + ps.price,
+    );
+    final totalOtherDevicePrice = otherDevices.fold(
+      0.0,
+      (sum, d) => sum + d.price,
+    );
+    final grandTotal =
+        totalFixturePrice +
+        totalModulePrice +
+        totalPowerSupplyPrice +
+        totalOtherDevicePrice;
 
     return AlertDialog(
       title: const Text('估價摘要'),
@@ -86,20 +98,32 @@ class QuoteResultDialog extends StatelessWidget {
                         totalModulePrice,
                         Theme.of(context).colorScheme.tertiary,
                       ),
-                    if (totalFixturePrice > 0 && totalModulePrice > 0) ...[
-                      Divider(
-                        color: Theme.of(
-                          context,
-                        ).colorScheme.onPrimaryContainer.withValues(alpha: 0.3),
-                      ),
+                    if (totalPowerSupplyPrice > 0)
                       _buildPriceRow(
                         context,
-                        '合計',
-                        grandTotal,
+                        '電源總價',
+                        totalPowerSupplyPrice,
                         Theme.of(context).colorScheme.primary,
-                        isBold: true,
                       ),
-                    ],
+                    if (totalOtherDevicePrice > 0)
+                      _buildPriceRow(
+                        context,
+                        '其他設備總價',
+                        totalOtherDevicePrice,
+                        Theme.of(context).colorScheme.primary,
+                      ),
+                    Divider(
+                      color: Theme.of(
+                        context,
+                      ).colorScheme.onPrimaryContainer.withValues(alpha: 0.3),
+                    ),
+                    _buildPriceRow(
+                      context,
+                      '合計',
+                      grandTotal,
+                      Theme.of(context).colorScheme.primary,
+                      isBold: true,
+                    ),
                   ],
                 ),
               ),
