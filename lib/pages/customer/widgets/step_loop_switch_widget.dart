@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:coselig_staff_portal/models/quote_models.dart';
+import 'package:coselig_staff_portal/models/quote/quote_models.dart';
 import 'loop_card_widget.dart';
 import 'switch_card_widget.dart';
 

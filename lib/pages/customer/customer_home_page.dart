@@ -5,7 +5,7 @@ import 'package:coselig_staff_portal/widgets/app_drawer.dart';
 import 'package:universal_html/html.dart' as html;
 import 'package:coselig_staff_portal/services/customer_service.dart';
 import 'package:coselig_staff_portal/services/auth_service.dart';
-import 'package:coselig_staff_portal/models/quote_models.dart';
+import 'package:coselig_staff_portal/models/quote/quote_models.dart';
 import 'package:provider/provider.dart';
 import 'widgets/step_loop_switch_widget.dart';
 import 'widgets/step_module_widget.dart';
@@ -17,7 +17,7 @@ import 'widgets/add_fixture_dialog.dart';
 import 'widgets/quote_result_dialog.dart';
 import 'widgets/edit_loop_dialog.dart';
 
-import 'package:coselig_staff_portal/models/loop_info.dart';
+import 'package:coselig_staff_portal/models/quote/loop_info.dart';
 
 class CustomerHomePage extends StatefulWidget {
   const CustomerHomePage({super.key});

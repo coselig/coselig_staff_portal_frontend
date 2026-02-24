@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:coselig_staff_portal/models/quote_models.dart';
+import 'package:coselig_staff_portal/models/quote/quote_models.dart';
 
 class SwitchCardWidget extends StatelessWidget {
   final int index;
@@ -96,7 +96,7 @@ class SwitchCardWidget extends StatelessWidget {
                   keyboardType: TextInputType.number,
                 ),
                 DropdownButtonFormField<String>(
-                  value: fireType,
+                  initialValue: fireType,
                   decoration: const InputDecoration(labelText: '單火/零火'),
                   items: ['單火', '零火']
                       .map((v) => DropdownMenuItem(value: v, child: Text(v)))
@@ -104,7 +104,7 @@ class SwitchCardWidget extends StatelessWidget {
                   onChanged: (v) => setState(() => fireType = v ?? '單火'),
                 ),
                 DropdownButtonFormField<String>(
-                  value: networkable,
+                  initialValue: networkable,
                   decoration: const InputDecoration(labelText: '是否可以聯網'),
                   items: ['是', '否']
                       .map((v) => DropdownMenuItem(value: v, child: Text(v)))
@@ -112,7 +112,7 @@ class SwitchCardWidget extends StatelessWidget {
                   onChanged: (v) => setState(() => networkable = v ?? '否'),
                 ),
                 DropdownButtonFormField<String>(
-                  value: protocol,
+                  initialValue: protocol,
                   decoration: const InputDecoration(labelText: '協定類型'),
                   items: ['MQTT', 'zigbee', '藍芽', 'matter']
                       .map((v) => DropdownMenuItem(value: v, child: Text(v)))

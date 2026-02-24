@@ -1,4 +1,4 @@
-import '../models/quote_models.dart';
+import 'quote_models.dart';
 
 class LoopInfo {
   final Loop loop;

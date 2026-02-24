@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:http/browser_client.dart';
 import 'dart:convert';
 import 'package:coselig_staff_portal/main.dart';
-import 'package:coselig_staff_portal/models/quote_models.dart';
+import 'package:coselig_staff_portal/models/quote/quote_models.dart';
 
 class QuoteConfiguration {
   final int id;

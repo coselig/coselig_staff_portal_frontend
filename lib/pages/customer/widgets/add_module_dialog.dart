@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import 'package:coselig_staff_portal/models/quote_models.dart';
+import 'package:coselig_staff_portal/models/quote/quote_models.dart';
 import 'package:coselig_staff_portal/services/quote_service.dart';
 
 class AddModuleDialog extends StatefulWidget {

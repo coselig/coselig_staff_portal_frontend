@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:coselig_staff_portal/models/quote_models.dart';
+import 'package:coselig_staff_portal/models/quote/quote_models.dart';
 
 class LoopCardWidget extends StatelessWidget {
   final int index;
