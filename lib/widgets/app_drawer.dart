@@ -151,26 +151,7 @@ class AppDrawer extends StatelessWidget {
                 navigatorKey.currentState!.pushNamed('/customer_profile');
               },
             ),
-            ListTile(
-              leading: Icon(Icons.store),
-              title: Text('商店'),
-              onTap: () {
-                // TODO: 添加商店頁面
-                ScaffoldMessenger.of(
-                  context,
-                ).showSnackBar(const SnackBar(content: Text('商店功能即將推出')));
-              },
-            ),
-            ListTile(
-              leading: Icon(Icons.history),
-              title: Text('訂單記錄'),
-              onTap: () {
-                // TODO: 添加訂單記錄頁面
-                ScaffoldMessenger.of(
-                  context,
-                ).showSnackBar(const SnackBar(content: Text('訂單記錄功能即將推出')));
-              },
-            ),
+            // 已移除：商店、訂單記錄（未實作）
           ],
           ListTile(
             leading: Icon(Icons.text_fields),

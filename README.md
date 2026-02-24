@@ -80,6 +80,44 @@ flutter build web --release
 - 自動化部署（範例）：`deploy.ps1` 會讀取 `pubspec.yaml` 版本、建置前端、產生 `assets.json`、上傳 KV、部署 Workers、並更新版本號。
 - 注意：部署腳本依賴本機 Node、wrangler、KV namespace id 與專案路徑設定，使用前請確認環境。
 
+建議（免全域安裝）
+
+為避免在每台機器上安裝全域 `wrangler`，建議採用下列任一做法：
+
+- 使用 `npm exec`（在 `deploy.ps1` 已示範）：
+
+```
+npm exec --package=wrangler@4.68.0 -- wrangler deploy
+npm exec --package=wrangler@4.68.0 -- wrangler kv bulk put assets.json --namespace-id <id>
+```
+
+- 或把 `wrangler` 加為專案 `devDependency`，並在 `package.json` 加入 scripts（推薦團隊/CI）：
+
+安裝：
+
+```
+npm install --save-dev wrangler
+```
+
+範例 `package.json` scripts：
+
+```
+"scripts": {
+ "wrangler": "wrangler",
+ "deploy": "wrangler deploy",
+ "kv:bulk": "wrangler kv bulk put assets.json --namespace-id <id>"
+}
+```
+
+使用：
+
+```
+npm run deploy
+npm run kv:bulk
+```
+
+說明：`npm exec` 與 `npm run` 都能避免或限制全域安裝，`npm run`（搭配 `devDependencies`）能鎖定版本並且在 CI 中有更好可重現性；`npm exec` 可臨時指定版本（例如 `--package=wrangler@4.68.0`）。
+
 部署腳本範例（`deploy.ps1`）
 
 下面是後端專案中用來自動建置與部署前端的 PowerShell 腳本 `deploy.ps1`，可作為參考：
@@ -137,7 +175,13 @@ Write-Host ""
 Write-Host "[3/4] Uploading static files to KV..."
 $assetsPath = 'D:\workspace\coselig_staff_portal_backend\assets.json'
 Write-Host "assetsPath: $assetsPath"
-& npx wrangler kv bulk put $assetsPath --namespace-id e7ff4caa1f96456aadc4c1c5bf71b584 --remote
+\- 使用 npm exec 指令範例（避免全域安裝）：
+
+```
+
+npm exec --package=wrangler@4.68.0 -- wrangler kv bulk put assets.json --namespace-id <id>
+
+```
 if ($LASTEXITCODE -ne 0) {
  Write-Host "Upload failed!"
  Read-Host "Press Enter to exit"
@@ -147,7 +191,11 @@ Write-Host "Step 3 completed"
 
 Write-Host ""
 Write-Host "[4/4] Deploying Workers..."
-& npx wrangler deploy
+```
+
+npm exec --package=wrangler@4.68.0 -- wrangler deploy
+
+```
 if ($LASTEXITCODE -ne 0) {
  Write-Host "Deployment failed!"
  Read-Host "Press Enter to exit"
