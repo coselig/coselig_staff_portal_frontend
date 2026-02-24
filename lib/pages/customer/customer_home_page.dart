@@ -38,7 +38,29 @@ class _CustomerHomePageState extends State<CustomerHomePage> {
   final List<Loop> _loops = [];
   final List<SwitchModel> _switches = [];
   final TextEditingController _switchCountController = TextEditingController();
-  final TextEditingController _otherDevicesController = TextEditingController();
+  List<OtherDevice> _otherDevices = [];
+
+  void _addOtherDevice() {
+    setState(() {
+      _otherDevices.add(OtherDevice(name: '', price: 0));
+    });
+  }
+
+  void _removeOtherDevice(int index) {
+    setState(() {
+      _otherDevices.removeAt(index);
+    });
+  }
+
+  void _updateOtherDevice(int index, {String? name, double? price}) {
+    setState(() {
+      final old = _otherDevices[index];
+      _otherDevices[index] = OtherDevice(
+        name: name ?? old.name,
+        price: price ?? old.price,
+      );
+    });
+  }
   // 開關管理方法
   void _showAddSwitchDialog() async {
     try {
@@ -123,7 +145,6 @@ class _CustomerHomePageState extends State<CustomerHomePage> {
   @override
   void dispose() {
     _switchCountController.dispose();
-    _otherDevicesController.dispose();
     _powerSupplyController.dispose();
     _boardMaterialsController.dispose();
     _wiringController.dispose();
@@ -604,7 +625,7 @@ class _CustomerHomePageState extends State<CustomerHomePage> {
                       loops: _loops,
                       modules: _modules,
                       switchCount: _switchCountController.text,
-                      otherDevices: _otherDevicesController.text,
+                      otherDevices: _otherDevices,
                       powerSupply: _powerSupplyController.text,
                       boardMaterials: _boardMaterialsController.text,
                       wiring: _wiringController.text,
@@ -852,7 +873,10 @@ class _CustomerHomePageState extends State<CustomerHomePage> {
                           loops: _loops,
                           switches: _switches,
                           switchCountController: _switchCountController,
-                          otherDevicesController: _otherDevicesController,
+                          otherDevices: _otherDevices,
+                          onAddOtherDevice: _addOtherDevice,
+                          onRemoveOtherDevice: _removeOtherDevice,
+                          onUpdateOtherDevice: _updateOtherDevice,
                           onAddLoop: _showAddLoopDialog,
                           onAddSwitch: _showAddSwitchDialog,
                           onRemoveLoop: _removeLoop,
@@ -1641,7 +1665,7 @@ class _CustomerHomePageState extends State<CustomerHomePage> {
                 _loops.clear();
                 _modules.clear();
                 _switchCountController.clear();
-                _otherDevicesController.clear();
+                _otherDevices.clear();
                 _powerSupplyController.clear();
                 _boardMaterialsController.clear();
                 _wiringController.clear();
@@ -1721,7 +1745,7 @@ class _CustomerHomePageState extends State<CustomerHomePage> {
                     loops: _loops,
                     modules: _modules,
                     switchCount: _switchCountController.text,
-                    otherDevices: _otherDevicesController.text,
+                    otherDevices: _otherDevices,
                     powerSupply: _powerSupplyController.text,
                     boardMaterials: _boardMaterialsController.text,
                     wiring: _wiringController.text,
@@ -1804,7 +1828,7 @@ class _CustomerHomePageState extends State<CustomerHomePage> {
           _modules.clear();
           _modules.addAll(quoteData.modules);
           _switchCountController.text = quoteData.switchCount;
-          _otherDevicesController.text = quoteData.otherDevices;
+          _otherDevices = List<OtherDevice>.from(quoteData.otherDevices);
           _powerSupplyController.text = quoteData.powerSupply;
           _boardMaterialsController.text = quoteData.boardMaterials;
           _wiringController.text = quoteData.wiring;

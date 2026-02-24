@@ -10,3 +10,4 @@ export 'fixture_type_data.dart';
 export 'loop_fixture.dart';
 export 'loop.dart';
 export 'switch_model.dart';
+export 'other_device.dart';

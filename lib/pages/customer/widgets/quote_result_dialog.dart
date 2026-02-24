@@ -5,7 +5,7 @@ class QuoteResultDialog extends StatelessWidget {
   final List<Loop> loops;
   final List<Module> modules;
   final String switchCount;
-  final String otherDevices;
+  final List<OtherDevice> otherDevices;
   final String powerSupply;
   final String boardMaterials;
   final String wiring;
@@ -117,7 +117,15 @@ class QuoteResultDialog extends StatelessWidget {
               '開關：${switchCount.isNotEmpty ? '$switchCount個' : '未配置'}',
             ),
             if (otherDevices.isNotEmpty)
-              Text('其他設備：$otherDevices'),
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Text('其他設備：'),
+                  ...otherDevices.map(
+                    (d) => Text('• ${d.name}：${d.price.toStringAsFixed(0)} 元'),
+                  ),
+                ],
+              ),
             const SizedBox(height: 16),
             const Text(
               '迴路配置：',

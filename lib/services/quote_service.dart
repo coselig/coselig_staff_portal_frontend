@@ -55,16 +55,15 @@ class QuoteConfiguration {
     );
   }
 }
-
 class QuoteData {
   final List<Loop> loops;
   final List<Module> modules;
   final String switchCount;
-  final String otherDevices;
+  final List<OtherDevice> otherDevices;
   final String powerSupply;
   final String boardMaterials;
   final String wiring;
-  final List<SwitchModel> switches; // 新增開關配置欄位
+  final List<SwitchModel> switches;
 
   // 樣態選項
   final bool ceilingHasLn;
@@ -79,18 +78,26 @@ class QuoteData {
     required this.powerSupply,
     required this.boardMaterials,
     required this.wiring,
-    required this.switches, // 初始化開關配置欄位
+    required this.switches,
     required this.ceilingHasLn,
     required this.ceilingHasMaintenanceHole,
     required this.switchHasLn,
   });
 
   factory QuoteData.fromJson(Map<String, dynamic> json) {
+    List<OtherDevice> parseOtherDevices(dynamic raw) {
+      if (raw == null) return [];
+      if (raw is List) {
+        return raw.map((d) => OtherDevice.fromJson(d)).toList();
+      }
+      // 若是空字串或其他型態，直接回傳空陣列
+      return [];
+    }
     return QuoteData(
       loops: (json['loops'] as List?)?.map((l) => Loop.fromJson(l)).toList() ?? [],
       modules: (json['modules'] as List?)?.map((m) => Module.fromJson(m)).toList() ?? [],
       switchCount: json['switchCount'] ?? '',
-      otherDevices: json['otherDevices'] ?? '',
+      otherDevices: parseOtherDevices(json['otherDevices']),
       powerSupply: json['powerSupply'] ?? '',
       boardMaterials: json['boardMaterials'] ?? '',
       wiring: json['wiring'] ?? '',
@@ -98,7 +105,7 @@ class QuoteData {
           (json['switches'] as List?)
               ?.map((s) => SwitchModel.fromJson(s))
               .toList() ??
-          [], // 反序列化開關配置
+          [],
       ceilingHasLn: json['ceilingHasLn'] ?? false,
       ceilingHasMaintenanceHole: json['ceilingHasMaintenanceHole'] ?? false,
       switchHasLn: json['switchHasLn'] ?? false,
@@ -110,11 +117,11 @@ class QuoteData {
       'loops': loops.map((l) => l.toJson()).toList(),
       'modules': modules.map((m) => m.toJson()).toList(),
       'switchCount': switchCount,
-      'otherDevices': otherDevices,
+      'otherDevices': otherDevices.map((d) => d.toJson()).toList(),
       'powerSupply': powerSupply,
       'boardMaterials': boardMaterials,
       'wiring': wiring,
-      'switches': switches.map((s) => s.toJson()).toList(), // 序列化開關配置
+      'switches': switches.map((s) => s.toJson()).toList(),
       'ceilingHasLn': ceilingHasLn,
       'ceilingHasMaintenanceHole': ceilingHasMaintenanceHole,
       'switchHasLn': switchHasLn,

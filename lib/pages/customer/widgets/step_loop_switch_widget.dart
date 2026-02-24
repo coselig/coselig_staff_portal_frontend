@@ -7,7 +7,7 @@ class StepLoopSwitchWidget extends StatelessWidget {
   final List<Loop> loops;
   final List<SwitchModel> switches;
   final TextEditingController switchCountController;
-  final TextEditingController otherDevicesController;
+  final List<OtherDevice> otherDevices;
   final VoidCallback onAddLoop;
   final VoidCallback onAddSwitch;
   final Function(int) onRemoveLoop;
@@ -17,13 +17,16 @@ class StepLoopSwitchWidget extends StatelessWidget {
   final Function(int, int) onEditFixtureInLoop;
   final Function(int, SwitchModel) onUpdateSwitch;
   final Function(int) onRemoveSwitch;
+  final VoidCallback onAddOtherDevice;
+  final Function(int) onRemoveOtherDevice;
+  final Function(int, {String? name, double? price}) onUpdateOtherDevice;
 
   const StepLoopSwitchWidget({
     super.key,
     required this.loops,
     required this.switches,
     required this.switchCountController,
-    required this.otherDevicesController,
+    required this.otherDevices,
     required this.onAddLoop,
     required this.onAddSwitch,
     required this.onRemoveLoop,
@@ -33,6 +36,9 @@ class StepLoopSwitchWidget extends StatelessWidget {
     required this.onEditFixtureInLoop,
     required this.onUpdateSwitch,
     required this.onRemoveSwitch,
+    required this.onAddOtherDevice,
+    required this.onRemoveOtherDevice,
+    required this.onUpdateOtherDevice,
   });
 
   @override
@@ -168,14 +174,59 @@ class StepLoopSwitchWidget extends StatelessWidget {
           '其他設備',
           style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
         ),
-        const SizedBox(height: 16),
-        TextField(
-          controller: otherDevicesController,
-          decoration: const InputDecoration(
-            labelText: '其他感應器、設備 (例如：冷氣、窗簾等)',
-            border: OutlineInputBorder(),
-          ),
-          maxLines: 3,
+        const SizedBox(height: 8),
+        ...otherDevices.asMap().entries.map((entry) {
+          final idx = entry.key;
+          final device = entry.value;
+          return Padding(
+            padding: const EdgeInsets.symmetric(vertical: 4.0),
+            child: Row(
+              children: [
+                Expanded(
+                  flex: 2,
+                  child: TextFormField(
+                    initialValue: device.name,
+                    decoration: const InputDecoration(
+                      labelText: '設備名稱',
+                      border: OutlineInputBorder(),
+                    ),
+                    onChanged: (val) => onUpdateOtherDevice(idx, name: val),
+                  ),
+                ),
+                const SizedBox(width: 8),
+                Expanded(
+                  flex: 1,
+                  child: TextFormField(
+                    initialValue: device.price == 0
+                        ? ''
+                        : device.price.toString(),
+                    decoration: const InputDecoration(
+                      labelText: '價格',
+                      border: OutlineInputBorder(),
+                    ),
+                    keyboardType: TextInputType.numberWithOptions(
+                      decimal: true,
+                    ),
+                    onChanged: (val) {
+                      final parsed = double.tryParse(val) ?? 0;
+                      onUpdateOtherDevice(idx, price: parsed);
+                    },
+                  ),
+                ),
+                IconButton(
+                  icon: const Icon(Icons.delete, color: Colors.red),
+                  onPressed: () => onRemoveOtherDevice(idx),
+                  tooltip: '刪除',
+                ),
+              ],
+            ),
+          );
+        }),
+        const SizedBox(height: 8),
+        OutlinedButton.icon(
+          onPressed: onAddOtherDevice,
+          icon: const Icon(Icons.add),
+          label: const Text('新增其他設備'),
         ),
       ],
     );
