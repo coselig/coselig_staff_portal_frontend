@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:coselig_staff_portal/models/quote/power_supply.dart';
 import 'package:coselig_staff_portal/models/quote/quote_models.dart';
 
 class QuoteResultDialog extends StatelessWidget {

@@ -103,6 +103,7 @@ class MainApp extends StatelessWidget {
       builder: (context, uiSettings, child) {
         final baseLightTheme = ThemeData(
           brightness: Brightness.light,
+          fontFamily: 'Iansui',
           colorScheme: ColorScheme.fromSeed(
             seedColor: const Color(0xFFfEBC82),
             brightness: Brightness.light,
@@ -111,6 +112,7 @@ class MainApp extends StatelessWidget {
         );
         final baseDarkTheme = ThemeData(
           brightness: Brightness.dark,
+          fontFamily: 'Iansui',
           colorScheme: ColorScheme.fromSeed(
             seedColor: const Color(0xFFfEBC82),
             brightness: Brightness.dark,
