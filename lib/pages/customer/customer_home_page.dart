@@ -857,14 +857,6 @@ class _CustomerHomePageState extends State<CustomerHomePage> {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        // 顯示配置開關數 / 迴路數量
-                        Text(
-                          '配置開關數 / 迴路數量: ${_switches.fold<int>(0, (sum, s) => sum + s.count)} / ${_loops.length}',
-                          style: TextStyle(
-                            fontSize: 14,
-                            color: Theme.of(context).colorScheme.primary,
-                          ),
-                        ),
                         const SizedBox(height: 16),
                         StepLoopSwitchWidget(
                           loops: _loops,
