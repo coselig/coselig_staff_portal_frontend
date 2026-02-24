@@ -677,12 +677,8 @@ class _CustomerHomePageState extends State<CustomerHomePage> {
                                   const SizedBox(height: 16),
                                 ElevatedButton.icon(
                                   onPressed: details.onStepContinue,
-                                  icon: _currentStep < 3
-                                      ? const Icon(Icons.arrow_forward)
-                                      : const Icon(Icons.calculate),
-                                  label: Text(
-                                    _currentStep < 3 ? '下一步' : '生成報價',
-                                  ),
+                                  icon: const Icon(Icons.arrow_forward),
+                                  label: Text('下一步'),
                                   style: ElevatedButton.styleFrom(
                                     padding: const EdgeInsets.symmetric(
                                       horizontal: 24,
@@ -721,11 +717,11 @@ class _CustomerHomePageState extends State<CustomerHomePage> {
                                 Expanded(
                                   child: ElevatedButton.icon(
                                     onPressed: details.onStepContinue,
-                                    icon: _currentStep < 2
+                                    icon: _currentStep < 3
                                         ? const Icon(Icons.arrow_forward)
                                         : const Icon(Icons.calculate),
                                     label: Text(
-                                      _currentStep < 2 ? '下一步' : '生成報價',
+                                      _currentStep < 3 ? '下一步' : '生成報價',
                                     ),
                                     style: ElevatedButton.styleFrom(
                                       padding: const EdgeInsets.symmetric(
