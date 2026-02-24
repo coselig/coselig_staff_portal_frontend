@@ -230,6 +230,7 @@ class _CustomerHomePageState extends State<CustomerHomePage> {
               onPressed: _createNewConfiguration,
               tooltip: '新建配置',
             ),
+            // 個人資料入口已移至側邊選單
             Container(
               margin: const EdgeInsets.symmetric(horizontal: 8),
               child: VerticalDivider(

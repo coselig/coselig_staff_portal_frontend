@@ -145,6 +145,13 @@ class AppDrawer extends StatelessWidget {
           ] else ...[
             // 顧客特定的選項
             ListTile(
+              leading: Icon(Icons.person),
+              title: Text('個人資料'),
+              onTap: () {
+                navigatorKey.currentState!.pushNamed('/customer_profile');
+              },
+            ),
+            ListTile(
               leading: Icon(Icons.store),
               title: Text('商店'),
               onTap: () {

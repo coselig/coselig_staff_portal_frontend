@@ -14,6 +14,7 @@ import 'package:coselig_staff_portal/pages/general/register_page.dart';
 import 'package:coselig_staff_portal/pages/general/splash_screen.dart';
 import 'package:coselig_staff_portal/pages/staff/staff_home_page.dart';
 import 'package:coselig_staff_portal/pages/customer/customer_home_page.dart';
+import 'package:coselig_staff_portal/pages/customer/profile_page.dart';
 import 'package:coselig_staff_portal/pages/staff/staff_data_page.dart';
 import 'package:coselig_staff_portal/services/attendance_service.dart';
 import 'package:coselig_staff_portal/services/auth_service.dart';
@@ -156,6 +157,7 @@ class MainApp extends StatelessWidget {
                 '/login': (context) => const AuthPage(),
                 '/home': (context) => const StaffHomePage(),
                 '/customer_home': (context) => const CustomerHomePage(),
+                '/customer_profile': (context) => const CustomerProfilePage(),
                 '/register': (context) => const RegisterPage(),
                 '/admin': (context) => const AllAttendanceViewPage(),
                 '/discovery_generate': (context) =>
