@@ -39,6 +39,7 @@ void main() async {
   // 顯示版本信息
   final currentTime = DateTime.now().toIso8601String();
 
+
   console.log('=== Coselig 員工系統啟動 ==='.toJS);
   console.log('版本: ${AppConstants.appVersion}'.toJS);
   console.log('構建: ${AppConstants.buildNumber}'.toJS);
