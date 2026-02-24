@@ -1,3 +1,4 @@
+export 'power_supply.dart';
 
 export 'ampere_check_result.dart';
 export 'light_fixture.dart';

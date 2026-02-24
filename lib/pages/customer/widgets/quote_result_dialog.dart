@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:coselig_staff_portal/models/quote/power_supply.dart';
 import 'package:coselig_staff_portal/models/quote/quote_models.dart';
 
 class QuoteResultDialog extends StatelessWidget {
@@ -6,7 +7,7 @@ class QuoteResultDialog extends StatelessWidget {
   final List<Module> modules;
   final String switchCount;
   final List<OtherDevice> otherDevices;
-  final String powerSupply;
+  final List<PowerSupply> powerSupplies;
   final String boardMaterials;
   final String wiring;
 
@@ -21,7 +22,7 @@ class QuoteResultDialog extends StatelessWidget {
     required this.modules,
     required this.switchCount,
     required this.otherDevices,
-    required this.powerSupply,
+    required this.powerSupplies,
     required this.boardMaterials,
     required this.wiring,
     required this.ceilingHasLn,
@@ -191,8 +192,16 @@ class QuoteResultDialog extends StatelessWidget {
               ),
             ],
             const SizedBox(height: 16),
-            if (powerSupply.isNotEmpty)
-              Text('電源：$powerSupply'),
+            if (powerSupplies.isNotEmpty)
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Text('電源：'),
+                  ...powerSupplies.map(
+                    (ps) => Text('- ${ps.name}：${ps.price}元'),
+                  ),
+                ],
+              ),
             if (boardMaterials.isNotEmpty)
               Text('板材：$boardMaterials'),
             if (wiring.isNotEmpty)

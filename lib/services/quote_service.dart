@@ -1,3 +1,4 @@
+import 'package:coselig_staff_portal/models/quote/power_supply.dart';
 import 'package:flutter/material.dart';
 import 'package:http/browser_client.dart';
 import 'dart:convert';
@@ -60,7 +61,7 @@ class QuoteData {
   final List<Module> modules;
   final String switchCount;
   final List<OtherDevice> otherDevices;
-  final String powerSupply;
+  final List<PowerSupply> powerSupplies;
   final String boardMaterials;
   final String wiring;
   final List<SwitchModel> switches;
@@ -75,7 +76,7 @@ class QuoteData {
     required this.modules,
     required this.switchCount,
     required this.otherDevices,
-    required this.powerSupply,
+    required this.powerSupplies,
     required this.boardMaterials,
     required this.wiring,
     required this.switches,
@@ -98,7 +99,11 @@ class QuoteData {
       modules: (json['modules'] as List?)?.map((m) => Module.fromJson(m)).toList() ?? [],
       switchCount: json['switchCount'] ?? '',
       otherDevices: parseOtherDevices(json['otherDevices']),
-      powerSupply: json['powerSupply'] ?? '',
+      powerSupplies:
+          (json['powerSupplies'] as List?)
+              ?.map((ps) => PowerSupply.fromJson(ps))
+              .toList() ??
+          [],
       boardMaterials: json['boardMaterials'] ?? '',
       wiring: json['wiring'] ?? '',
       switches:
@@ -118,7 +123,7 @@ class QuoteData {
       'modules': modules.map((m) => m.toJson()).toList(),
       'switchCount': switchCount,
       'otherDevices': otherDevices.map((d) => d.toJson()).toList(),
-      'powerSupply': powerSupply,
+      'powerSupplies': powerSupplies.map((ps) => ps.toJson()).toList(),
       'boardMaterials': boardMaterials,
       'wiring': wiring,
       'switches': switches.map((s) => s.toJson()).toList(),

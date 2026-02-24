@@ -1,13 +1,17 @@
 import 'package:flutter/material.dart';
+import 'package:coselig_staff_portal/models/quote/power_supply.dart';
+import 'package:coselig_staff_portal/pages/customer/widgets/power_supply_list_widget.dart';
 
 class StepMaterialWidget extends StatelessWidget {
-  final TextEditingController powerSupplyController;
+  final List<PowerSupply> powerSupplies;
+  final Function(List<PowerSupply>) onPowerSuppliesChanged;
   final TextEditingController boardMaterialsController;
   final TextEditingController wiringController;
 
   const StepMaterialWidget({
     super.key,
-    required this.powerSupplyController,
+    required this.powerSupplies,
+    required this.onPowerSuppliesChanged,
     required this.boardMaterialsController,
     required this.wiringController,
   });
@@ -22,14 +26,9 @@ class StepMaterialWidget extends StatelessWidget {
           style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
         ),
         const SizedBox(height: 16),
-        TextField(
-          controller: powerSupplyController,
-          decoration: const InputDecoration(
-            labelText: '電源供應配置',
-            border: OutlineInputBorder(),
-            hintText: '例如：12V/5A電源供應器 x 2',
-          ),
-          maxLines: 2,
+        PowerSupplyListWidget(
+          powerSupplies: powerSupplies,
+          onChanged: onPowerSuppliesChanged,
         ),
         const SizedBox(height: 16),
         TextField(

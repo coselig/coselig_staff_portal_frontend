@@ -1,6 +1,7 @@
 import 'package:coselig_staff_portal/pages/customer/widgets/edit_fixture_dialog.dart';
 import 'package:coselig_staff_portal/services/quote_service.dart';
 import 'package:flutter/material.dart';
+import 'package:coselig_staff_portal/models/quote/power_supply.dart';
 import 'package:coselig_staff_portal/widgets/app_drawer.dart';
 import 'package:universal_html/html.dart' as html;
 import 'package:coselig_staff_portal/services/customer_service.dart';
@@ -117,7 +118,7 @@ class _CustomerHomePageState extends State<CustomerHomePage> {
   final List<Module> _modules = [];
 
   // 第三步：材料配置
-  final TextEditingController _powerSupplyController = TextEditingController();
+  List<PowerSupply> _powerSupplies = [];
   final TextEditingController _boardMaterialsController =
       TextEditingController();
   final TextEditingController _wiringController = TextEditingController();
@@ -145,7 +146,6 @@ class _CustomerHomePageState extends State<CustomerHomePage> {
   @override
   void dispose() {
     _switchCountController.dispose();
-    _powerSupplyController.dispose();
     _boardMaterialsController.dispose();
     _wiringController.dispose();
     super.dispose();
@@ -626,7 +626,7 @@ class _CustomerHomePageState extends State<CustomerHomePage> {
                       modules: _modules,
                       switchCount: _switchCountController.text,
                       otherDevices: _otherDevices,
-                      powerSupply: _powerSupplyController.text,
+                      powerSupplies: _powerSupplies,
                       boardMaterials: _boardMaterialsController.text,
                       wiring: _wiringController.text,
                       ceilingHasLn: _ceilingHasLn,
@@ -1012,7 +1012,13 @@ class _CustomerHomePageState extends State<CustomerHomePage> {
                       ),
                     ),
                     child: StepMaterialWidget(
-                      powerSupplyController: _powerSupplyController,
+                      powerSupplies: _powerSupplies,
+                      onPowerSuppliesChanged: (list) {
+                        setState(() {
+                          _powerSupplies.clear();
+                          _powerSupplies.addAll(list);
+                        });
+                      },
                       boardMaterialsController: _boardMaterialsController,
                       wiringController: _wiringController,
                     ),
@@ -1666,7 +1672,7 @@ class _CustomerHomePageState extends State<CustomerHomePage> {
                 _modules.clear();
                 _switchCountController.clear();
                 _otherDevices.clear();
-                _powerSupplyController.clear();
+                _powerSupplies.clear();
                 _boardMaterialsController.clear();
                 _wiringController.clear();
                 // reset style options
@@ -1746,7 +1752,7 @@ class _CustomerHomePageState extends State<CustomerHomePage> {
                     modules: _modules,
                     switchCount: _switchCountController.text,
                     otherDevices: _otherDevices,
-                    powerSupply: _powerSupplyController.text,
+                    powerSupplies: _powerSupplies,
                     boardMaterials: _boardMaterialsController.text,
                     wiring: _wiringController.text,
                     ceilingHasLn: _ceilingHasLn,
@@ -1829,7 +1835,7 @@ class _CustomerHomePageState extends State<CustomerHomePage> {
           _modules.addAll(quoteData.modules);
           _switchCountController.text = quoteData.switchCount;
           _otherDevices = List<OtherDevice>.from(quoteData.otherDevices);
-          _powerSupplyController.text = quoteData.powerSupply;
+          _powerSupplies = List<PowerSupply>.from(quoteData.powerSupplies);
           _boardMaterialsController.text = quoteData.boardMaterials;
           _wiringController.text = quoteData.wiring;
           // restore new style options
