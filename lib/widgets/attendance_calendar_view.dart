@@ -1,5 +1,3 @@
-import 'dart:math';
-
 import 'package:coselig_staff_portal/utils/time_utils.dart';
 import 'package:coselig_staff_portal/services/holiday_service.dart';
 import 'package:coselig_staff_portal/services/ui_settings_provider.dart';
@@ -34,8 +32,6 @@ class _AttendanceCalendarViewState extends State<AttendanceCalendarView> {
   Map<int, dynamic> _holidaysMap = {};
   static final Map<String, List<Holiday>> _holidaysCache = {}; // 全局快取
   bool _isLoading = false;
-  double _scale = 1.0;
-  double _previousScale = 1.0;
 
   @override
   void initState() {
@@ -117,35 +113,26 @@ class _AttendanceCalendarViewState extends State<AttendanceCalendarView> {
   Widget build(BuildContext context) {
     context.watch<UiSettingsProvider>();
     final firstDayOfMonth = DateTime(widget.month.year, widget.month.month, 1);
-    // 取得本月最後一天的日期
     final lastDayOfMonth = DateTime(
       widget.month.year,
       widget.month.month + 1,
       0,
     );
-    // 1號是星期幾（1=週一, 7=週日，若為7則轉成0，讓1號對齊在週日）
     final firstWeekday = firstDayOfMonth.weekday == 7
         ? 0
         : firstDayOfMonth.weekday;
-    // 本月天數
     final daysInMonth = lastDayOfMonth.day;
-    // 計算總格數（補足前面空格與最後一週）
     final totalCells = ((daysInMonth + firstWeekday) / 7).ceil() * 7;
     final List<Widget> gridItems = [];
-    // 產生月曆格子
     for (int i = 0; i < totalCells; i++) {
-      // 前面 firstWeekday 個格子補空白，讓1號對齊正確星期
-      // 超過本月天數的格子也補空白
       if (i < firstWeekday || i - firstWeekday + 1 > daysInMonth) {
         gridItems.add(const SizedBox.shrink());
       } else {
-        // 計算當前格子是幾號
         final day = i - firstWeekday + 1;
         final record = widget.recordsMap[day];
         final leave = widget.leaveDaysMap[day];
-        final holiday = _holidaysMap[day]; // 使用內部的節假日數據
+        final holiday = _holidaysMap[day];
         final isToday = widget.todayDay == day;
-        // 判斷是否為週末（週日或週六）
         final isWeekend = (i % 7 == 0) || (i % 7 == 6);
         gridItems.add(
           _buildCalendarDay(
@@ -166,100 +153,72 @@ class _AttendanceCalendarViewState extends State<AttendanceCalendarView> {
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
       child: Padding(
         padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
-        child: LayoutBuilder(
-          builder: (context, constraints) {
-            constraints.maxWidth.clamp(280.0, 420.0); // 最小280，最大420
-            return InteractiveViewer(
-              scaleEnabled: true,
-              panEnabled: true,
-              minScale: 0.5,
-              maxScale: 3.0,
-              onInteractionUpdate: (ScaleUpdateDetails details) {
-                setState(() {
-                  _scale = _previousScale * details.scale;
-                });
-              },
-              onInteractionEnd: (ScaleEndDetails details) {
-                _previousScale = _scale;
-              },
-              child: Column(
-                children: [
-                  // 刷新按鈕行
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.end,
-                    children: [
-                      IconButton(
-                        icon: const Icon(Icons.refresh),
-                        tooltip: '刷新節假日數據',
-                        onPressed: _isLoading ? null : _refreshHolidays,
+        child: Column(
+          children: [
+            Row(
+              mainAxisAlignment: MainAxisAlignment.end,
+              children: [
+                IconButton(
+                  icon: const Icon(Icons.refresh),
+                  tooltip: '刷新節假日數據',
+                  onPressed: _isLoading ? null : _refreshHolidays,
+                ),
+              ],
+            ),
+            const SizedBox(height: 4),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Builder(
+                  builder: (context) {
+                    final uiSettings = context.watch<UiSettingsProvider>();
+                    return Text(
+                      '${widget.month.year}年 ${widget.month.month}月',
+                      style: TextStyle(
+                        fontSize: 18 * uiSettings.fontSizeScale,
+                        fontWeight: FontWeight.bold,
+                        color: Theme.of(context).colorScheme.primary,
                       ),
-                    ],
-                  ),
-                  const SizedBox(height: 4),
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Builder(
-                        builder: (context) {
-                          final uiSettings = context
-                              .watch<UiSettingsProvider>();
-                          return Text(
-                            '${widget.month.year}年 ${widget.month.month}月',
-                            style: TextStyle(
-                              fontSize: max(
-                                12.0,
-                                18 * uiSettings.fontSizeScale * _scale,
-                              ),
-                              fontWeight: FontWeight.bold,
-                              color: Theme.of(context).colorScheme.primary,
-                            ),
-                          );
-                        },
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 8),
-                  GridView.count(
-                    crossAxisCount: 7,
-                    shrinkWrap: true,
-                    physics: const NeverScrollableScrollPhysics(),
-                    children: [
-                      for (final label in ['日', '一', '二', '三', '四', '五', '六'])
-                        Center(
-                          child: Builder(
-                            builder: (context) {
-                              final uiSettings = context
-                                  .watch<UiSettingsProvider>();
-                              return Text(
-                                label,
-                                style: TextStyle(
-                                  fontWeight: FontWeight.bold,
-                                  fontSize: max(
-                                    10.0,
-                                    14 * uiSettings.fontSizeScale * _scale,
-                                  ),
-                                  color: Theme.of(
-                                    context,
-                                  ).colorScheme.onSurfaceVariant,
-                                ),
-                              );
-                            },
+                    );
+                  },
+                ),
+              ],
+            ),
+            const SizedBox(height: 8),
+            GridView.count(
+              crossAxisCount: 7,
+              shrinkWrap: true,
+              physics: const NeverScrollableScrollPhysics(),
+              children: [
+                for (final label in ['日', '一', '二', '三', '四', '五', '六'])
+                  Center(
+                    child: Builder(
+                      builder: (context) {
+                        final uiSettings = context.watch<UiSettingsProvider>();
+                        return Text(
+                          label,
+                          style: TextStyle(
+                            fontWeight: FontWeight.bold,
+                            fontSize: 14 * uiSettings.fontSizeScale,
+                            color: Theme.of(
+                              context,
+                            ).colorScheme.onSurfaceVariant,
                           ),
-                        ),
-                    ],
+                        );
+                      },
+                    ),
                   ),
-                  const SizedBox(height: 8),
-                  GridView.count(
-                    crossAxisCount: 7,
-                    shrinkWrap: true,
-                    physics: const NeverScrollableScrollPhysics(),
-                    childAspectRatio: 1.0, // 正方形比例
-                    children: gridItems,
-                  ),
-                ],
-              ),
-            );
-          },
+              ],
+            ),
+            const SizedBox(height: 8),
+            GridView.count(
+              crossAxisCount: 7,
+              shrinkWrap: true,
+              physics: const NeverScrollableScrollPhysics(),
+              childAspectRatio: 1.0,
+              children: gridItems,
+            ),
+          ],
         ),
       ),
     );
@@ -463,10 +422,7 @@ class _AttendanceCalendarViewState extends State<AttendanceCalendarView> {
                     style: TextStyle(
                       color: textColor,
                       fontWeight: FontWeight.bold,
-                      fontSize: max(
-                        12.0,
-                        18 * uiSettings.fontSizeScale * _scale,
-                      ),
+                      fontSize: 18 * uiSettings.fontSizeScale,
                     ),
                   );
                 },
@@ -481,10 +437,7 @@ class _AttendanceCalendarViewState extends State<AttendanceCalendarView> {
                         status,
                         style: TextStyle(
                           color: textColor,
-                          fontSize: max(
-                            8.0,
-                            12 * uiSettings.fontSizeScale * _scale,
-                          ),
+                          fontSize: 12 * uiSettings.fontSizeScale,
                         ),
                         textAlign: TextAlign.center,
                       );
