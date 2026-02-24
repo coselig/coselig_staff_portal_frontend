@@ -1,3 +1,4 @@
+import 'package:coselig_staff_portal/pages/customer/widgets/edit_fixture_dialog.dart';
 import 'package:coselig_staff_portal/services/quote_service.dart';
 import 'package:flutter/material.dart';
 import 'package:coselig_staff_portal/widgets/app_drawer.dart';
@@ -15,7 +16,8 @@ import 'widgets/add_module_dialog.dart';
 import 'widgets/add_fixture_dialog.dart';
 import 'widgets/quote_result_dialog.dart';
 import 'widgets/edit_loop_dialog.dart';
-import 'widgets/edit_fixture_dialog.dart';
+
+import 'package:coselig_staff_portal/models/loop_info.dart';
 
 class CustomerHomePage extends StatefulWidget {
   const CustomerHomePage({super.key});
@@ -1415,10 +1417,10 @@ class _CustomerHomePageState extends State<CustomerHomePage> {
     final unassigned = <Loop>[];
 
     // 預先計算每個迴路的資訊
-    final loopInfos = <_LoopInfo>[];
+    final loopInfos = <LoopInfo>[];
     for (final loop in sortedLoops) {
       loopInfos.add(
-        _LoopInfo(
+        LoopInfo(
           loop: loop,
           channels: getChannelsPerLoop(loop.dimmingType),
           ampere: getLoopAmpere(loop),
@@ -1889,19 +1891,4 @@ class _CustomerHomePageState extends State<CustomerHomePage> {
   }
 }
 
-// 自動分配用的迴路資訊輔助類
-class _LoopInfo {
-  final Loop loop;
-  final int channels;
-  final double ampere;
-  final double amperePerCh;
-  final bool isRelay;
-
-  const _LoopInfo({
-    required this.loop,
-    required this.channels,
-    required this.ampere,
-    required this.amperePerCh,
-    required this.isRelay,
-  });
-}
+// 已移至 models/loop_info.dart
