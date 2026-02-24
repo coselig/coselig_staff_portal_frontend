@@ -52,6 +52,34 @@ flutter build web --release
 
 如需協助或有問題，請聯絡專案維護者或在 repository 中建立 issue。
 
+功能總覽
+
+後端（API / 功能）
+
+- 認證：帳密登入、註冊、Google 登入、Session 管理、登出、`/api/me`。
+- 使用者管理：取得/更新使用者、列出所有使用者（管理員權限）。
+- 出勤系統：打卡（check-in / check-out）、跨日下班處理、補打卡（管理員與員工自助）、今日/月出勤查詢、在職名單、期間名稱更新。
+- 客戶管理：建立、查詢、更新、刪除（含引用檢查，避免刪除有報價的客戶）。
+- 估價系統：儲存/載入/列出/刪除估價配置，管理模組/燈具/開關選項（CRUD）。
+- 裝置配置：儲存/載入/列出/刪除 device configurations（Discovery）。
+- 靜態資源與 KV 支援：使用 `@cloudflare/kv-asset-handler` 提供靜態檔，並支援將靜態檔上傳至 KV。
+
+前端（UI / 功能）
+
+- 認證頁面：登入、註冊、Google 登入整合、Splash。
+- 首頁：員工首頁、顧客首頁、個人資料頁面。
+- 出勤介面：打卡 UI、日曆與月份檢視、手動補打卡對話框、出勤匯出（Excel）。
+- 管理者功能：出勤總覽、使用者資料檢視、模組/燈具/開關選項管理頁面。
+- 估價與客戶：估價編輯/儲存/載入、客戶資料頁面。
+- 裝置與 BLE：裝置產生頁面、BLE 支援頁面（前端有相應頁面與元件）。
+
+部署與開發流程
+
+- 本機開發：`flutter pub get`、`flutter run -d chrome`。
+- 建置：`flutter build web --release`。
+- 自動化部署（範例）：`deploy.ps1` 會讀取 `pubspec.yaml` 版本、建置前端、產生 `assets.json`、上傳 KV、部署 Workers、並更新版本號。
+- 注意：部署腳本依賴本機 Node、wrangler、KV namespace id 與專案路徑設定，使用前請確認環境。
+
 部署腳本範例（`deploy.ps1`）
 
 下面是後端專案中用來自動建置與部署前端的 PowerShell 腳本 `deploy.ps1`，可作為參考：
