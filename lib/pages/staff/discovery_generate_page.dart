@@ -27,6 +27,7 @@ class _DiscoveryGeneratePageState extends State<DiscoveryGeneratePage> {
     // 檢查是否已登入
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _service.fetchConfigurations(); // 加載所有配置列表
+      _service.fetchDeviceConfigOptions(); // 加載裝置設定選項
     });
 
     // 監聽Module ID輸入變化

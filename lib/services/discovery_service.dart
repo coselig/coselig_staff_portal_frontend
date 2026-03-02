@@ -121,6 +121,7 @@ class DiscoveryService extends ChangeNotifier {
     ..withCredentials = true; // 自動處理 cookies
   final List<Device> _devices = [];
   final List<DeviceConfiguration> _configurations = [];
+  final List<DeviceConfigOption> _deviceConfigOptions = [];
   String _generatedOutput = '';
   String _currentConfigurationName = '新配置';
   bool _isLoading = false;
@@ -135,12 +136,35 @@ class DiscoveryService extends ChangeNotifier {
   List<Device> get devices => List.unmodifiable(_devices);
   List<DeviceConfiguration> get configurations =>
       List.unmodifiable(_configurations);
+  List<DeviceConfigOption> get deviceConfigOptions =>
+      List.unmodifiable(_deviceConfigOptions);
   String get currentConfigurationName => _currentConfigurationName;
   bool get isLoading => _isLoading;
   String? get error => _error;
 
   // Combined map for device configurations: brand -> model -> {'types': [...], 'channels': {type: [...]}, 'channel_map': {token: [atomics]}}
-  final Map<String, Map<String, Map<String, dynamic>>> deviceConfigs = {
+  Map<String, Map<String, Map<String, dynamic>>> get deviceConfigs {
+    if (_deviceConfigOptions.isNotEmpty) {
+      return _buildDeviceConfigsFromOptions();
+    }
+    return _defaultDeviceConfigs;
+  }
+
+  Map<String, Map<String, Map<String, dynamic>>>
+  _buildDeviceConfigsFromOptions() {
+    final Map<String, Map<String, Map<String, dynamic>>> result = {};
+    for (final opt in _deviceConfigOptions) {
+      result.putIfAbsent(opt.brand, () => {});
+      result[opt.brand]![opt.model] = {
+        'types': opt.types,
+        'channels': opt.channels,
+        'channel_map': opt.channelMap,
+      };
+    }
+    return result;
+  }
+
+  final Map<String, Map<String, Map<String, dynamic>>> _defaultDeviceConfigs = {
     'sunwave': {
       'p404': {
         'types': ['dual', 'single', 'rgb'],
@@ -644,5 +668,192 @@ class DiscoveryService extends ChangeNotifier {
   void setConfigurationName(String name) {
     _currentConfigurationName = name;
     notifyListeners();
+  }
+
+  // ===== 裝置設定選項 CRUD =====
+
+  Future<void> fetchDeviceConfigOptions() async {
+    _isLoading = true;
+    _error = null;
+    notifyListeners();
+
+    try {
+      final response = await _client.get(
+        Uri.parse('$baseUrl/api/device-config-options'),
+      );
+
+      if (response.statusCode == 200) {
+        final data = jsonDecode(response.body);
+        final options = data['deviceConfigOptions'] as List;
+        _deviceConfigOptions.clear();
+        _deviceConfigOptions.addAll(
+          options.map((json) => DeviceConfigOption.fromJson(json)).toList(),
+        );
+        notifyListeners();
+      } else if (response.statusCode == 401) {
+        _error = 'Unauthorized';
+        navigatorKey.currentState?.pushReplacementNamed('/login');
+      } else {
+        final error = jsonDecode(response.body);
+        _error = error['error'] ?? 'Failed to fetch device config options';
+        notifyListeners();
+      }
+    } catch (e) {
+      _error = 'Network error: $e';
+      notifyListeners();
+    } finally {
+      _isLoading = false;
+      notifyListeners();
+    }
+  }
+
+  Future<List<DeviceConfigOption>> fetchAllDeviceConfigOptions() async {
+    await fetchDeviceConfigOptions();
+    return List.unmodifiable(_deviceConfigOptions);
+  }
+
+  Future<void> addDeviceConfigOption(DeviceConfigOption option) async {
+    _isLoading = true;
+    _error = null;
+    notifyListeners();
+
+    try {
+      final response = await _client.post(
+        Uri.parse('$baseUrl/api/device-config-options'),
+        headers: {'Content-Type': 'application/json'},
+        body: jsonEncode(option.toJson()),
+      );
+
+      if (response.statusCode == 201) {
+        await fetchDeviceConfigOptions();
+      } else {
+        final error = jsonDecode(response.body);
+        _error = error['error'] ?? 'Failed to add device config option';
+        notifyListeners();
+        throw Exception(_error);
+      }
+    } catch (e) {
+      if (_error == null) _error = 'Network error: $e';
+      notifyListeners();
+      rethrow;
+    } finally {
+      _isLoading = false;
+      notifyListeners();
+    }
+  }
+
+  Future<void> updateDeviceConfigOption(
+    int id,
+    Map<String, dynamic> data,
+  ) async {
+    _isLoading = true;
+    _error = null;
+    notifyListeners();
+
+    try {
+      final response = await _client.put(
+        Uri.parse('$baseUrl/api/device-config-options?id=$id'),
+        headers: {'Content-Type': 'application/json'},
+        body: jsonEncode(data),
+      );
+
+      if (response.statusCode == 200) {
+        await fetchDeviceConfigOptions();
+      } else {
+        final error = jsonDecode(response.body);
+        _error = error['error'] ?? 'Failed to update device config option';
+        notifyListeners();
+        throw Exception(_error);
+      }
+    } catch (e) {
+      if (_error == null) _error = 'Network error: $e';
+      notifyListeners();
+      rethrow;
+    } finally {
+      _isLoading = false;
+      notifyListeners();
+    }
+  }
+
+  Future<void> deleteDeviceConfigOption(int id) async {
+    _isLoading = true;
+    _error = null;
+    notifyListeners();
+
+    try {
+      final response = await _client.delete(
+        Uri.parse('$baseUrl/api/device-config-options?id=$id'),
+      );
+
+      if (response.statusCode == 200) {
+        await fetchDeviceConfigOptions();
+      } else {
+        final error = jsonDecode(response.body);
+        _error = error['error'] ?? 'Failed to delete device config option';
+        notifyListeners();
+        throw Exception(_error);
+      }
+    } catch (e) {
+      if (_error == null) _error = 'Network error: $e';
+      notifyListeners();
+      rethrow;
+    } finally {
+      _isLoading = false;
+      notifyListeners();
+    }
+  }
+}
+
+class DeviceConfigOption {
+  final int? id;
+  final String brand;
+  final String model;
+  final List<String> types;
+  final Map<String, List<String>> channels;
+  final Map<String, List<String>> channelMap;
+  final String? createdAt;
+  final String? updatedAt;
+
+  DeviceConfigOption({
+    this.id,
+    required this.brand,
+    required this.model,
+    required this.types,
+    required this.channels,
+    required this.channelMap,
+    this.createdAt,
+    this.updatedAt,
+  });
+
+  factory DeviceConfigOption.fromJson(Map<String, dynamic> json) {
+    return DeviceConfigOption(
+      id: json['id'],
+      brand: json['brand'] ?? '',
+      model: json['model'] ?? '',
+      types: (json['types'] as List?)?.cast<String>() ?? [],
+      channels:
+          (json['channels'] as Map<String, dynamic>?)?.map(
+            (k, v) => MapEntry(k, (v as List).cast<String>()),
+          ) ??
+          {},
+      channelMap:
+          (json['channelMap'] as Map<String, dynamic>?)?.map(
+            (k, v) => MapEntry(k, (v as List).cast<String>()),
+          ) ??
+          {},
+      createdAt: json['createdAt'],
+      updatedAt: json['updatedAt'],
+    );
+  }
+
+  Map<String, dynamic> toJson() {
+    return {
+      if (id != null) 'id': id,
+      'brand': brand,
+      'model': model,
+      'types': types,
+      'channels': channels,
+      'channelMap': channelMap,
+    };
   }
 }

@@ -67,6 +67,15 @@ class AppDrawer extends StatelessWidget {
                 navigatorKey.currentState!.pushNamed('/switch_management');
               },
             ),
+            ListTile(
+              leading: Icon(Icons.device_hub),
+              title: Text('裝置設定管理'),
+              onTap: () {
+                navigatorKey.currentState!.pushNamed(
+                  '/device_config_management',
+                );
+              },
+            ),
           ] else if (authService.isManager) ...[
             ListTile(
               leading: Icon(Icons.people),

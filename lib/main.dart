@@ -3,6 +3,7 @@ import 'dart:js_interop';
 import 'package:coselig_staff_portal/constants/app_constants.dart';
 import 'package:coselig_staff_portal/pages/admin/attendance_view_page.dart';
 import 'package:coselig_staff_portal/pages/admin/switch_management_page.dart';
+import 'package:coselig_staff_portal/pages/admin/device_config_management_page.dart';
 import 'package:coselig_staff_portal/pages/admin/user_data_view_page.dart';
 import 'package:coselig_staff_portal/pages/admin/module_management_page.dart';
 import 'package:coselig_staff_portal/pages/admin/fixture_type_management_page.dart';
@@ -170,6 +171,8 @@ class MainApp extends StatelessWidget {
                 '/fixture_type_management': (context) =>
                     const FixtureTypeManagementPage(),
                 '/switch_management': (context) => const SwitchManagementPage(),
+                '/device_config_management': (context) =>
+                    const DeviceConfigManagementPage(),
                 '/privacy': (context) => const PrivacyPolicyPage(),
               },
             );
