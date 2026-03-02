@@ -7,8 +7,8 @@ class QuoteResultDialog extends StatelessWidget {
   final String switchCount;
   final List<OtherDevice> otherDevices;
   final List<PowerSupply> powerSupplies;
-  final String boardMaterials;
-  final String wiring;
+  final List<MaterialItem> boardMaterials;
+  final List<MaterialItem> wiring;
 
   // 樣態選項
   final bool ceilingHasLn;
@@ -48,11 +48,18 @@ class QuoteResultDialog extends StatelessWidget {
       0.0,
       (sum, d) => sum + d.price,
     );
+    final totalBoardMaterialPrice = boardMaterials.fold(
+      0.0,
+      (sum, m) => sum + m.price,
+    );
+    final totalWiringPrice = wiring.fold(0.0, (sum, m) => sum + m.price);
     final grandTotal =
         totalFixturePrice +
         totalModulePrice +
         totalPowerSupplyPrice +
-        totalOtherDevicePrice;
+        totalOtherDevicePrice +
+        totalBoardMaterialPrice +
+        totalWiringPrice;
 
     return AlertDialog(
       title: const Text('估價摘要'),
@@ -109,6 +116,20 @@ class QuoteResultDialog extends StatelessWidget {
                         context,
                         '其他設備總價',
                         totalOtherDevicePrice,
+                        Theme.of(context).colorScheme.primary,
+                      ),
+                    if (totalBoardMaterialPrice > 0)
+                      _buildPriceRow(
+                        context,
+                        '板材/配電箱總價',
+                        totalBoardMaterialPrice,
+                        Theme.of(context).colorScheme.primary,
+                      ),
+                    if (totalWiringPrice > 0)
+                      _buildPriceRow(
+                        context,
+                        '線材總價',
+                        totalWiringPrice,
                         Theme.of(context).colorScheme.primary,
                       ),
                     Divider(
@@ -226,9 +247,25 @@ class QuoteResultDialog extends StatelessWidget {
                 ],
               ),
             if (boardMaterials.isNotEmpty)
-              Text('板材：$boardMaterials'),
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Text('板材、配電箱：'),
+                  ...boardMaterials.map(
+                    (m) => Text('- ${m.name}：${m.price.toStringAsFixed(0)} 元'),
+                  ),
+                ],
+              ),
             if (wiring.isNotEmpty)
-              Text('線材：$wiring'),
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Text('線材：'),
+                  ...wiring.map(
+                    (m) => Text('- ${m.name}：${m.price.toStringAsFixed(0)} 元'),
+                  ),
+                ],
+              ),
           ],
         ),
       ),

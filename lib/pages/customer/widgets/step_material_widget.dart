@@ -1,19 +1,25 @@
 import 'package:flutter/material.dart';
 import 'package:coselig_staff_portal/models/quote/power_supply.dart';
+import 'package:coselig_staff_portal/models/quote/material_item.dart';
 import 'package:coselig_staff_portal/pages/customer/widgets/power_supply_list_widget.dart';
+import 'package:coselig_staff_portal/pages/customer/widgets/item_list_widget.dart';
 
 class StepMaterialWidget extends StatelessWidget {
   final List<PowerSupply> powerSupplies;
   final Function(List<PowerSupply>) onPowerSuppliesChanged;
-  final TextEditingController boardMaterialsController;
-  final TextEditingController wiringController;
+  final List<MaterialItem> boardMaterials;
+  final Function(List<MaterialItem>) onBoardMaterialsChanged;
+  final List<MaterialItem> wiringItems;
+  final Function(List<MaterialItem>) onWiringItemsChanged;
 
   const StepMaterialWidget({
     super.key,
     required this.powerSupplies,
     required this.onPowerSuppliesChanged,
-    required this.boardMaterialsController,
-    required this.wiringController,
+    required this.boardMaterials,
+    required this.onBoardMaterialsChanged,
+    required this.wiringItems,
+    required this.onWiringItemsChanged,
   });
 
   @override
@@ -31,24 +37,18 @@ class StepMaterialWidget extends StatelessWidget {
           onChanged: onPowerSuppliesChanged,
         ),
         const SizedBox(height: 16),
-        TextField(
-          controller: boardMaterialsController,
-          decoration: const InputDecoration(
-            labelText: '板材、配電箱配置',
-            border: OutlineInputBorder(),
-            hintText: '例如：配電箱 400x300x150mm x 1',
-          ),
-          maxLines: 2,
+        ItemListWidget(
+          title: '板材、配電箱配置',
+          items: boardMaterials,
+          onChanged: onBoardMaterialsChanged,
+          addTooltip: '新增板材/配電箱項目',
         ),
         const SizedBox(height: 16),
-        TextField(
-          controller: wiringController,
-          decoration: const InputDecoration(
-            labelText: '線材配置',
-            border: OutlineInputBorder(),
-            hintText: '例如：2.5mm²電線 50m, 1.5mm²電線 30m',
-          ),
-          maxLines: 3,
+        ItemListWidget(
+          title: '線材配置',
+          items: wiringItems,
+          onChanged: onWiringItemsChanged,
+          addTooltip: '新增線材項目',
         ),
       ],
     );

@@ -1,4 +1,5 @@
 export 'power_supply.dart';
+export 'material_item.dart';
 
 export 'ampere_check_result.dart';
 export 'light_fixture.dart';

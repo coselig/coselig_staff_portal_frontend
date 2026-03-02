@@ -61,8 +61,8 @@ class QuoteData {
   final String switchCount;
   final List<OtherDevice> otherDevices;
   final List<PowerSupply> powerSupplies;
-  final String boardMaterials;
-  final String wiring;
+  final List<MaterialItem> boardMaterials;
+  final List<MaterialItem> wiring;
   final List<SwitchModel> switches;
 
   // 樣態選項
@@ -93,6 +93,19 @@ class QuoteData {
       // 若是空字串或其他型態，直接回傳空陣列
       return [];
     }
+
+    List<MaterialItem> parseMaterialItems(dynamic raw) {
+      if (raw == null) return [];
+      if (raw is List) {
+        return raw.map((m) => MaterialItem.fromJson(m)).toList();
+      }
+      // 向下相容：若舊資料是字串，轉成單一項目
+      if (raw is String && raw.isNotEmpty) {
+        return [MaterialItem(name: raw, price: 0)];
+      }
+      return [];
+    }
+
     return QuoteData(
       loops: (json['loops'] as List?)?.map((l) => Loop.fromJson(l)).toList() ?? [],
       modules: (json['modules'] as List?)?.map((m) => Module.fromJson(m)).toList() ?? [],
@@ -103,8 +116,8 @@ class QuoteData {
               ?.map((ps) => PowerSupply.fromJson(ps))
               .toList() ??
           [],
-      boardMaterials: json['boardMaterials'] ?? '',
-      wiring: json['wiring'] ?? '',
+      boardMaterials: parseMaterialItems(json['boardMaterials']),
+      wiring: parseMaterialItems(json['wiring']),
       switches:
           (json['switches'] as List?)
               ?.map((s) => SwitchModel.fromJson(s))
@@ -123,8 +136,8 @@ class QuoteData {
       'switchCount': switchCount,
       'otherDevices': otherDevices.map((d) => d.toJson()).toList(),
       'powerSupplies': powerSupplies.map((ps) => ps.toJson()).toList(),
-      'boardMaterials': boardMaterials,
-      'wiring': wiring,
+      'boardMaterials': boardMaterials.map((m) => m.toJson()).toList(),
+      'wiring': wiring.map((m) => m.toJson()).toList(),
       'switches': switches.map((s) => s.toJson()).toList(),
       'ceilingHasLn': ceilingHasLn,
       'ceilingHasMaintenanceHole': ceilingHasMaintenanceHole,

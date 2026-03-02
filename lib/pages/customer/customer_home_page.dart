@@ -118,9 +118,8 @@ class _CustomerHomePageState extends State<CustomerHomePage> {
 
   // 第三步：材料配置
   List<PowerSupply> _powerSupplies = [];
-  final TextEditingController _boardMaterialsController =
-      TextEditingController();
-  final TextEditingController _wiringController = TextEditingController();
+  List<MaterialItem> _boardMaterials = [];
+  List<MaterialItem> _wiringItems = [];
 
   late QuoteService _quoteService;
   late CustomerService _customerService;
@@ -145,8 +144,6 @@ class _CustomerHomePageState extends State<CustomerHomePage> {
   @override
   void dispose() {
     _switchCountController.dispose();
-    _boardMaterialsController.dispose();
-    _wiringController.dispose();
     super.dispose();
   }
 
@@ -627,8 +624,8 @@ class _CustomerHomePageState extends State<CustomerHomePage> {
                       switchCount: _switchCountController.text,
                       otherDevices: _otherDevices,
                       powerSupplies: _powerSupplies,
-                      boardMaterials: _boardMaterialsController.text,
-                      wiring: _wiringController.text,
+                      boardMaterials: _boardMaterials,
+                      wiring: _wiringItems,
                       ceilingHasLn: _ceilingHasLn,
                       ceilingHasMaintenanceHole: _ceilingHasMaintenanceHole,
                       switchHasLn: _switchHasLn,
@@ -1007,8 +1004,20 @@ class _CustomerHomePageState extends State<CustomerHomePage> {
                           _powerSupplies.addAll(list);
                         });
                       },
-                      boardMaterialsController: _boardMaterialsController,
-                      wiringController: _wiringController,
+                      boardMaterials: _boardMaterials,
+                      onBoardMaterialsChanged: (list) {
+                        setState(() {
+                          _boardMaterials.clear();
+                          _boardMaterials.addAll(list);
+                        });
+                      },
+                      wiringItems: _wiringItems,
+                      onWiringItemsChanged: (list) {
+                        setState(() {
+                          _wiringItems.clear();
+                          _wiringItems.addAll(list);
+                        });
+                      },
                     ),
                   ),
                   isActive: _currentStep >= 3,
@@ -1661,8 +1670,8 @@ class _CustomerHomePageState extends State<CustomerHomePage> {
                 _switchCountController.clear();
                 _otherDevices.clear();
                 _powerSupplies.clear();
-                _boardMaterialsController.clear();
-                _wiringController.clear();
+                _boardMaterials.clear();
+                _wiringItems.clear();
                 // reset style options
                 _ceilingHasLn = false;
                 _ceilingHasMaintenanceHole = false;
@@ -1741,8 +1750,8 @@ class _CustomerHomePageState extends State<CustomerHomePage> {
                     switchCount: _switchCountController.text,
                     otherDevices: _otherDevices,
                     powerSupplies: _powerSupplies,
-                    boardMaterials: _boardMaterialsController.text,
-                    wiring: _wiringController.text,
+                    boardMaterials: _boardMaterials,
+                    wiring: _wiringItems,
                     ceilingHasLn: _ceilingHasLn,
                     ceilingHasMaintenanceHole: _ceilingHasMaintenanceHole,
                     switchHasLn: _switchHasLn,
@@ -1824,8 +1833,8 @@ class _CustomerHomePageState extends State<CustomerHomePage> {
           _switchCountController.text = quoteData.switchCount;
           _otherDevices = List<OtherDevice>.from(quoteData.otherDevices);
           _powerSupplies = List<PowerSupply>.from(quoteData.powerSupplies);
-          _boardMaterialsController.text = quoteData.boardMaterials;
-          _wiringController.text = quoteData.wiring;
+          _boardMaterials = List<MaterialItem>.from(quoteData.boardMaterials);
+          _wiringItems = List<MaterialItem>.from(quoteData.wiring);
           // restore new style options
           _ceilingHasLn = quoteData.ceilingHasLn;
           _ceilingHasMaintenanceHole = quoteData.ceilingHasMaintenanceHole;
