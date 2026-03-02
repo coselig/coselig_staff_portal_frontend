@@ -101,7 +101,7 @@ class _PowerSupplyListWidgetState extends State<PowerSupplyListWidget> {
               ),
             ],
           );
-        }).toList(),
+        }),
       ],
     );
   }

@@ -1,4 +1,3 @@
-import 'package:coselig_staff_portal/models/quote/power_supply.dart';
 import 'package:flutter/material.dart';
 import 'package:http/browser_client.dart';
 import 'dart:convert';

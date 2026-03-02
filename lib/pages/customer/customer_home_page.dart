@@ -1,7 +1,6 @@
 import 'package:coselig_staff_portal/pages/customer/widgets/edit_fixture_dialog.dart';
 import 'package:coselig_staff_portal/services/quote_service.dart';
 import 'package:flutter/material.dart';
-import 'package:coselig_staff_portal/models/quote/power_supply.dart';
 import 'package:coselig_staff_portal/widgets/app_drawer.dart';
 import 'package:universal_html/html.dart' as html;
 import 'package:coselig_staff_portal/services/customer_service.dart';
