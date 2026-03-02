@@ -49,7 +49,15 @@ class _SplashScreenState extends State<SplashScreen> {
         final currentPath = html.window.location.pathname;
         if (currentPath == '/discovery_generate' ||
             currentPath == '/admin' ||
-            currentPath == '/ble') {
+            currentPath == '/ble' ||
+            currentPath == '/customer_home' ||
+            currentPath == '/customer_profile' ||
+            currentPath == '/home' ||
+            currentPath == '/user_data' ||
+            currentPath == '/admin_user_preview' ||
+            currentPath == '/module_management' ||
+            currentPath == '/fixture_type_management' ||
+            currentPath == '/switch_management') {
           targetRoute = currentPath!;
         } else {
           // 根據角色導航到不同主頁面

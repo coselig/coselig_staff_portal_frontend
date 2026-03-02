@@ -218,36 +218,7 @@ class _CustomerHomePageState extends State<CustomerHomePage> {
               ),
             )
           else ...[
-            IconButton(
-              icon: Icon(
-                Icons.add,
-                color: Theme.of(context).colorScheme.primary,
-              ),
-              onPressed: _createNewConfiguration,
-              tooltip: '新建配置',
-            ),
-            // 個人資料入口已移至側邊選單
-            Container(
-              margin: const EdgeInsets.symmetric(horizontal: 8),
-              child: VerticalDivider(
-                color: Theme.of(
-                  context,
-                ).colorScheme.outline.withValues(alpha: 0.3),
-                width: 1,
-                thickness: 1,
-              ),
-            ),
             if (!authService.isCustomer) ...[
-              Container(
-                margin: const EdgeInsets.symmetric(horizontal: 8),
-                child: VerticalDivider(
-                  color: Theme.of(
-                    context,
-                  ).colorScheme.outline.withValues(alpha: 0.3),
-                  width: 1,
-                  thickness: 1,
-                ),
-              ),
               DropdownButton<Customer?>(
                 value: _selectedCustomer,
                 hint: Row(
@@ -336,63 +307,11 @@ class _CustomerHomePageState extends State<CustomerHomePage> {
                   ..._customerService.customers.map((customer) {
                     return DropdownMenuItem<Customer?>(
                       value: customer,
-                      child: Container(
-                        constraints: const BoxConstraints(minWidth: 400),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              customer.name,
-                              style: TextStyle(
-                                fontWeight: FontWeight.w500,
-                                color: Theme.of(context).colorScheme.onSurface,
-                              ),
-                            ),
-                            if (customer.chineseName != null &&
-                                customer.chineseName!.isNotEmpty)
-                              Text(
-                                customer.chineseName!,
-                                style: TextStyle(
-                                  fontSize: 12,
-                                  color: Theme.of(
-                                    context,
-                                  ).colorScheme.onSurfaceVariant,
-                                ),
-                              ),
-                            if (customer.company != null &&
-                                customer.company!.isNotEmpty)
-                              Text(
-                                customer.company!,
-                                style: TextStyle(
-                                  fontSize: 12,
-                                  color: Theme.of(
-                                    context,
-                                  ).colorScheme.onSurfaceVariant,
-                                ),
-                              ),
-                            if (customer.email != null &&
-                                customer.email!.isNotEmpty)
-                              Text(
-                                customer.email!,
-                                style: TextStyle(
-                                  fontSize: 12,
-                                  color: Theme.of(
-                                    context,
-                                  ).colorScheme.onSurfaceVariant,
-                                ),
-                              ),
-                            if (customer.phone != null &&
-                                customer.phone!.isNotEmpty)
-                              Text(
-                                '電話: ${customer.phone}',
-                                style: TextStyle(
-                                  fontSize: 12,
-                                  color: Theme.of(
-                                    context,
-                                  ).colorScheme.onSurfaceVariant,
-                                ),
-                              ),
-                          ],
+                      child: Text(
+                        customer.name,
+                        style: TextStyle(
+                          fontWeight: FontWeight.w500,
+                          color: Theme.of(context).colorScheme.onSurface,
                         ),
                       ),
                     );
@@ -406,14 +325,6 @@ class _CustomerHomePageState extends State<CustomerHomePage> {
                 },
               ),
             ],
-            IconButton(
-              icon: Icon(
-                Icons.save,
-                color: Theme.of(context).colorScheme.primary,
-              ),
-              onPressed: _saveConfiguration,
-              tooltip: '儲存配置',
-            ),
             Container(
               margin: const EdgeInsets.symmetric(horizontal: 8),
               child: VerticalDivider(
@@ -491,65 +402,13 @@ class _CustomerHomePageState extends State<CustomerHomePage> {
                           items: configurations.map((config) {
                             return DropdownMenuItem<String>(
                               value: config.name,
-                              child: Container(
-                                constraints: const BoxConstraints(
-                                  minWidth: 350,
-                                ),
-                                child: Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    Text(
-                                      config.name,
-                                      style: TextStyle(
-                                        fontWeight: FontWeight.w500,
-                                        color: Theme.of(
-                                          context,
-                                        ).colorScheme.onSurface,
-                                      ),
-                                    ),
-                                    Text(
-                                      config.updatedAt,
-                                      style: TextStyle(
-                                        fontSize: 12,
-                                        color: Theme.of(
-                                          context,
-                                        ).colorScheme.onSurfaceVariant,
-                                      ),
-                                    ),
-                                    if (config.customerName != null)
-                                      Text(
-                                        '客戶: ${config.customerName}${config.customerCompany != null ? ' (${config.customerCompany})' : ''}',
-                                        style: TextStyle(
-                                          fontSize: 12,
-                                          color: Theme.of(
-                                            context,
-                                          ).colorScheme.primary,
-                                          fontWeight: FontWeight.w500,
-                                        ),
-                                      ),
-                                    if (config.projectName != null &&
-                                        config.projectName!.isNotEmpty)
-                                      Text(
-                                        '項目: ${config.projectName}',
-                                        style: TextStyle(
-                                          fontSize: 12,
-                                          color: Theme.of(
-                                            context,
-                                          ).colorScheme.secondary,
-                                        ),
-                                      ),
-                                    if (config.projectAddress != null &&
-                                        config.projectAddress!.isNotEmpty)
-                                      Text(
-                                        '地址: ${config.projectAddress}',
-                                        style: TextStyle(
-                                          fontSize: 12,
-                                          color: Theme.of(
-                                            context,
-                                          ).colorScheme.secondary,
-                                        ),
-                                      ),
-                                  ],
+                              child: Text(
+                                config.name,
+                                style: TextStyle(
+                                  fontWeight: FontWeight.w500,
+                                  color: Theme.of(
+                                    context,
+                                  ).colorScheme.onSurface,
                                 ),
                               ),
                             );
@@ -565,30 +424,42 @@ class _CustomerHomePageState extends State<CustomerHomePage> {
                           },
                         ),
                       )
-                    : IconButton(
-                        icon: Icon(
-                          Icons.refresh,
-                          color: Theme.of(context).colorScheme.primary,
-                        ),
-                        onPressed: _loadConfigurations,
-                        tooltip: '重新載入配置列表',
-                      );
+                    : const SizedBox.shrink();
               },
             ),
 
+            //新建配置按鈕
+            IconButton(
+              icon: Icon(
+                Icons.add,
+                color: Theme.of(context).colorScheme.primary,
+              ),
+              onPressed: _createNewConfiguration,
+              tooltip: '新建配置',
+            ),
+
+            //儲存配置按鈕
+            IconButton(
+              icon: Icon(
+                Icons.save,
+                color: Theme.of(context).colorScheme.primary,
+              ),
+              onPressed: _saveConfiguration,
+              tooltip: '儲存配置',
+            ),
+
             //刪除配置按鈕
-            TextButton(
+            IconButton(
+              icon: Icon(
+                Icons.delete,
+                color: _selectedConfigurationName != null
+                    ? Theme.of(context).colorScheme.error
+                    : Theme.of(context).colorScheme.outline,
+              ),
               onPressed: _selectedConfigurationName != null
                   ? () => _showDeleteConfirmation(_currentConfigurationName)
                   : null,
-              child: Text(
-                _selectedConfigurationName != null ? '刪除當前配置' : '尚未載入配置',
-                style: TextStyle(
-                  color: _selectedConfigurationName != null
-                      ? Theme.of(context).colorScheme.error
-                      : Theme.of(context).colorScheme.outline,
-                ),
-              ),
+              tooltip: _selectedConfigurationName != null ? '刪除當前配置' : '尚未載入配置',
             ),
           ],
         ],
