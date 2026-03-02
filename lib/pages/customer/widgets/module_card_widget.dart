@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:coselig_staff_portal/models/quote/quote_models.dart';
 
-class ModuleCardWidget extends StatelessWidget {
+class ModuleCardWidget extends StatefulWidget {
   final int index;
   final Module module;
   final List<Loop> unassignedLoops;
@@ -22,42 +22,79 @@ class ModuleCardWidget extends StatelessWidget {
   });
 
   @override
+  State<ModuleCardWidget> createState() => _ModuleCardWidgetState();
+}
+
+class _ModuleCardWidgetState extends State<ModuleCardWidget> {
+  bool _isExpanded = false;
+
+  @override
   Widget build(BuildContext context) {
+    final module = widget.module;
     return Card(
       margin: const EdgeInsets.only(bottom: 16),
-      child: Padding(
-        padding: const EdgeInsets.all(16.0),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        '${module.brand.isNotEmpty ? '[${module.brand}] ' : ''}${module.model} 模組',
-                        style: const TextStyle(
-                          fontSize: 16,
-                          fontWeight: FontWeight.bold,
-                        ),
+      child: Column(
+        children: [
+          // 標題列：點擊展開/收合
+          InkWell(
+            onTap: () => setState(() => _isExpanded = !_isExpanded),
+            borderRadius: BorderRadius.circular(12),
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+              child: Row(
+                children: [
+                  Icon(
+                    _isExpanded ? Icons.expand_less : Icons.expand_more,
+                    color: Theme.of(context).colorScheme.primary,
+                  ),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: Text(
+                      '${module.brand.isNotEmpty ? '[${module.brand}] ' : ''}${module.model} 模組',
+                      style: const TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.bold,
                       ),
-                    ],
+                    ),
                   ),
-                ),
-                IconButton(
-                  onPressed: () => onRemoveModule(index),
-                  icon: Icon(
-                    Icons.delete,
-                    color: Theme.of(context).colorScheme.error,
+                  if (!_isExpanded) ...[
+                    Text(
+                      '${module.usedChannels}/${module.channelCount}ch · ${module.isDimmable ? '調光' : '繼電器'}',
+                      style: TextStyle(
+                        fontSize: 12,
+                        color: Theme.of(context).colorScheme.onSurfaceVariant,
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                  ],
+                  IconButton(
+                    onPressed: () => widget.onRemoveModule(widget.index),
+                    icon: Icon(
+                      Icons.delete,
+                      color: Theme.of(context).colorScheme.error,
+                    ),
+                    tooltip: '刪除此模組',
                   ),
-                  tooltip: '刪除此模組',
-                ),
-              ],
+                ],
+              ),
             ),
-            const SizedBox(height: 8),
+          ),
+          if (_isExpanded)
+            Padding(
+              padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+              child: _buildExpandedContent(context),
+            ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildExpandedContent(BuildContext context) {
+    final module = widget.module;
+    final index = widget.index;
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
             Text(
               '通道: ${module.usedChannels}/${module.channelCount} (可用: ${module.availableChannels})',
               style: TextStyle(
@@ -162,7 +199,7 @@ class ModuleCardWidget extends StatelessWidget {
                       children: [
                         IconButton(
                           onPressed: () =>
-                              onEditLoop(index, allocationIndex),
+                          widget.onEditLoop(index, allocationIndex),
                           icon: Icon(
                             Icons.edit,
                             color: Theme.of(context).colorScheme.primary,
@@ -172,7 +209,7 @@ class ModuleCardWidget extends StatelessWidget {
                         ),
                         IconButton(
                           onPressed: () =>
-                              onRemoveLoop(index, allocationIndex),
+                          widget.onRemoveLoop(index, allocationIndex),
                           icon: Icon(
                             Icons.remove_circle,
                             color: Theme.of(context).colorScheme.error,
@@ -189,7 +226,8 @@ class ModuleCardWidget extends StatelessWidget {
             ],
 
             // 添加迴路按鈕
-            if (module.availableChannels > 0 && unassignedLoops.isNotEmpty) ...[
+        if (module.availableChannels > 0 &&
+            widget.unassignedLoops.isNotEmpty) ...[
               const Text(
                 '添加迴路:',
                 style: TextStyle(fontWeight: FontWeight.w500),
@@ -198,7 +236,7 @@ class ModuleCardWidget extends StatelessWidget {
               Wrap(
                 spacing: 8,
                 runSpacing: 8,
-                children: unassignedLoops
+            children: widget.unassignedLoops
                     .where((loop) => module.canAssignLoop(loop, 1))
                     .map((loop) {
                       final ampereCheck = module.checkLoopAmpereLimit(loop, 1);
@@ -208,7 +246,9 @@ class ModuleCardWidget extends StatelessWidget {
                           ampereCheck == AmpereCheckResult.warning;
 
                       return ElevatedButton(
-                        onPressed: isBlocked ? null : () => onAssignLoop(index, loop),
+                    onPressed: isBlocked
+                        ? null
+                        : () => widget.onAssignLoop(index, loop),
                         style: ElevatedButton.styleFrom(
                           backgroundColor: isBlocked
                               ? Colors.red.shade100
@@ -242,9 +282,7 @@ class ModuleCardWidget extends StatelessWidget {
                     .toList(),
               ),
             ],
-          ],
-        ),
-      ),
+      ],
     );
   }
 }

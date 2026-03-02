@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:coselig_staff_portal/pages/customer/widgets/edit_fixture_dialog.dart';
 import 'package:coselig_staff_portal/services/quote_service.dart';
 import 'package:flutter/material.dart';
@@ -44,12 +45,14 @@ class _CustomerHomePageState extends State<CustomerHomePage> {
     setState(() {
       _otherDevices.add(OtherDevice(name: '', price: 0));
     });
+    _autoSave();
   }
 
   void _removeOtherDevice(int index) {
     setState(() {
       _otherDevices.removeAt(index);
     });
+    _autoSave();
   }
 
   void _updateOtherDevice(int index, {String? name, double? price}) {
@@ -60,6 +63,7 @@ class _CustomerHomePageState extends State<CustomerHomePage> {
         price: price ?? old.price,
       );
     });
+    _autoSave();
   }
   // 開關管理方法
   void _showAddSwitchDialog() async {
@@ -87,6 +91,7 @@ class _CustomerHomePageState extends State<CustomerHomePage> {
               _switches.add(selectedSwitch);
             });
             _saveSwitchConfigurations();
+            _autoSave();
           },
         ),
       );
@@ -104,6 +109,7 @@ class _CustomerHomePageState extends State<CustomerHomePage> {
       _switches[index] = updatedSwitch;
     });
     _saveSwitchConfigurations();
+    _autoSave();
   }
 
   void _removeSwitch(int index) {
@@ -111,6 +117,7 @@ class _CustomerHomePageState extends State<CustomerHomePage> {
       _switches.removeAt(index);
     });
     _saveSwitchConfigurations();
+    _autoSave();
   }
 
   // 第二步：模組配置
@@ -127,6 +134,8 @@ class _CustomerHomePageState extends State<CustomerHomePage> {
   String? _selectedConfigurationName; // 追蹤下拉選單中選中的配置
   bool _isLoading = false;
   Customer? _selectedCustomer; // 選中的客戶
+  Timer? _autoSaveTimer;
+  bool _autoSaving = false;
 
   @override
   void initState() {
@@ -143,8 +152,47 @@ class _CustomerHomePageState extends State<CustomerHomePage> {
 
   @override
   void dispose() {
+    _autoSaveTimer?.cancel();
     _switchCountController.dispose();
     super.dispose();
+  }
+
+  /// 自動存檔（帶 debounce，僅在已有已存儲配置時才會觸發）
+  void _autoSave() {
+    if (_selectedConfigurationName == null) return;
+    _autoSaveTimer?.cancel();
+    _autoSaveTimer = Timer(const Duration(milliseconds: 800), () async {
+      if (_autoSaving) return;
+      _autoSaving = true;
+      try {
+        final quoteData = QuoteData(
+          switches: _switches,
+          loops: _loops,
+          modules: _modules,
+          switchCount: _switchCountController.text,
+          otherDevices: _otherDevices,
+          powerSupplies: _powerSupplies,
+          boardMaterials: _boardMaterials,
+          wiring: _wiringItems,
+          ceilingHasLn: _ceilingHasLn,
+          ceilingHasMaintenanceHole: _ceilingHasMaintenanceHole,
+          switchHasLn: _switchHasLn,
+        );
+        final authService = Provider.of<AuthService>(context, listen: false);
+        final effectiveCustomerId = authService.isCustomer
+            ? int.tryParse(authService.userId ?? '')
+            : _selectedCustomer?.userId;
+        await _quoteService.saveConfiguration(
+          _currentConfigurationName,
+          quoteData,
+          customerUserId: effectiveCustomerId,
+        );
+      } catch (_) {
+        // 靜默處理自動存檔錯誤
+      } finally {
+        _autoSaving = false;
+      }
+    });
   }
 
   void _saveSwitchConfigurations() async {
@@ -652,18 +700,26 @@ class _CustomerHomePageState extends State<CustomerHomePage> {
                       CheckboxListTile(
                         title: const Text('天花版是否有LN'),
                         value: _ceilingHasLn,
-                        onChanged: (v) => setState(() => _ceilingHasLn = v!),
+                        onChanged: (v) {
+                          setState(() => _ceilingHasLn = v!);
+                          _autoSave();
+                        },
                       ),
                       CheckboxListTile(
                         title: const Text('天花版是否有維修孔'),
                         value: _ceilingHasMaintenanceHole,
-                        onChanged: (v) =>
-                            setState(() => _ceilingHasMaintenanceHole = v!),
+                        onChanged: (v) {
+                          setState(() => _ceilingHasMaintenanceHole = v!);
+                          _autoSave();
+                        },
                       ),
                       CheckboxListTile(
                         title: const Text('開關是否有LN'),
                         value: _switchHasLn,
-                        onChanged: (v) => setState(() => _switchHasLn = v!),
+                        onChanged: (v) {
+                          setState(() => _switchHasLn = v!);
+                          _autoSave();
+                        },
                       ),
                     ],
                   ),
@@ -874,6 +930,7 @@ class _CustomerHomePageState extends State<CustomerHomePage> {
                           _powerSupplies.clear();
                           _powerSupplies.addAll(list);
                         });
+                        _autoSave();
                       },
                       boardMaterials: _boardMaterials,
                       onBoardMaterialsChanged: (list) {
@@ -881,6 +938,7 @@ class _CustomerHomePageState extends State<CustomerHomePage> {
                           _boardMaterials.clear();
                           _boardMaterials.addAll(list);
                         });
+                        _autoSave();
                       },
                       wiringItems: _wiringItems,
                       onWiringItemsChanged: (list) {
@@ -888,6 +946,7 @@ class _CustomerHomePageState extends State<CustomerHomePage> {
                           _wiringItems.clear();
                           _wiringItems.addAll(list);
                         });
+                        _autoSave();
                       },
                     ),
                   ),
@@ -946,6 +1005,7 @@ class _CustomerHomePageState extends State<CustomerHomePage> {
           setState(() {
             _modules.add(module);
           });
+          _autoSave();
         },
       ),
     );
@@ -955,6 +1015,7 @@ class _CustomerHomePageState extends State<CustomerHomePage> {
     setState(() {
       _modules.removeAt(index);
     });
+    _autoSave();
   }
 
   void _showAddLoopDialog() {
@@ -965,6 +1026,7 @@ class _CustomerHomePageState extends State<CustomerHomePage> {
           setState(() {
             _loops.add(Loop(name: name));
           });
+          _autoSave();
         },
       ),
     );
@@ -975,6 +1037,7 @@ class _CustomerHomePageState extends State<CustomerHomePage> {
     setState(() {
       _loops[index] = updatedLoop;
     });
+    _autoSave();
   }
 
   // 刪除迴路
@@ -982,6 +1045,7 @@ class _CustomerHomePageState extends State<CustomerHomePage> {
     setState(() {
       _loops.removeAt(index);
     });
+    _autoSave();
   }
 
   // 向迴路添加燈具
@@ -997,6 +1061,7 @@ class _CustomerHomePageState extends State<CustomerHomePage> {
             )..add(LoopFixture(name: name, totalWatt: totalWatt, price: price));
             _loops[loopIndex] = loop.copyWith(fixtures: updatedFixtures);
           });
+          _autoSave();
         },
       ),
     );
@@ -1016,6 +1081,7 @@ class _CustomerHomePageState extends State<CustomerHomePage> {
             updatedFixtures[fixtureIndex] = updatedFixture;
             _loops[loopIndex] = loop.copyWith(fixtures: updatedFixtures);
           });
+          _autoSave();
         },
       ),
     );
@@ -1029,6 +1095,7 @@ class _CustomerHomePageState extends State<CustomerHomePage> {
         ..removeAt(fixtureIndex);
       _loops[loopIndex] = loop.copyWith(fixtures: updatedFixtures);
     });
+    _autoSave();
   }
 
   // 獲取未分配的迴路
@@ -1111,6 +1178,7 @@ class _CustomerHomePageState extends State<CustomerHomePage> {
         );
       }
     });
+    _autoSave();
   }
 
   // 從模組移除迴路分配
@@ -1124,6 +1192,7 @@ class _CustomerHomePageState extends State<CustomerHomePage> {
         loopAllocations: updatedLoopAllocations,
       );
     });
+    _autoSave();
   }
 
   // 編輯模組中的迴路
@@ -1147,6 +1216,7 @@ class _CustomerHomePageState extends State<CustomerHomePage> {
               loopAllocations: updatedLoopAllocations,
             );
           });
+          _autoSave();
         },
       ),
     );
@@ -1503,6 +1573,7 @@ class _CustomerHomePageState extends State<CustomerHomePage> {
                   _modules.clear();
                   _modules.addAll(newModules);
                 });
+                _autoSave();
                 Navigator.of(context).pop();
                 ScaffoldMessenger.of(context).showSnackBar(
                   SnackBar(

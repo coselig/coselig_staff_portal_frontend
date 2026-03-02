@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:coselig_staff_portal/models/quote/quote_models.dart';
 
-class SwitchCardWidget extends StatelessWidget {
+class SwitchCardWidget extends StatefulWidget {
   final int index;
   final SwitchModel switchModel;
   final Function(int, SwitchModel) onUpdateSwitch;
@@ -16,61 +16,101 @@ class SwitchCardWidget extends StatelessWidget {
   });
 
   @override
+  State<SwitchCardWidget> createState() => _SwitchCardWidgetState();
+}
+
+class _SwitchCardWidgetState extends State<SwitchCardWidget> {
+  bool _isExpanded = false;
+
+  @override
   Widget build(BuildContext context) {
     return Card(
       margin: const EdgeInsets.only(bottom: 16),
-      child: Padding(
-        padding: const EdgeInsets.all(16.0),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Expanded(
-                  child: Text(
-                    switchModel.name,
-                    style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+      child: Column(
+        children: [
+          // 標題列：點擊展開/收合
+          InkWell(
+            onTap: () => setState(() => _isExpanded = !_isExpanded),
+            borderRadius: BorderRadius.circular(12),
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+              child: Row(
+                children: [
+                  Icon(
+                    _isExpanded ? Icons.expand_less : Icons.expand_more,
+                    color: Theme.of(context).colorScheme.primary,
                   ),
-                ),
-                IconButton(
-                  icon: const Icon(Icons.edit),
-                  onPressed: () {
-                    // 編輯開關
-                    _showEditSwitchDialog(context);
-                  },
-                ),
-                IconButton(
-                  icon: const Icon(Icons.delete),
-                  onPressed: () => onRemoveSwitch(index),
-                ),
-              ],
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: Text(
+                      widget.switchModel.name,
+                      style: const TextStyle(
+                        fontWeight: FontWeight.bold,
+                        fontSize: 16,
+                      ),
+                    ),
+                  ),
+                  if (!_isExpanded) ...[
+                    Text(
+                      'x${widget.switchModel.count} · ${widget.switchModel.fireType}',
+                      style: TextStyle(
+                        fontSize: 12,
+                        color: Theme.of(context).colorScheme.onSurfaceVariant,
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                  ],
+                  IconButton(
+                    icon: const Icon(Icons.edit),
+                    onPressed: () => _showEditSwitchDialog(context),
+                  ),
+                  IconButton(
+                    icon: const Icon(Icons.delete),
+                    onPressed: () => widget.onRemoveSwitch(widget.index),
+                  ),
+                ],
+              ),
             ),
-            const SizedBox(height: 8),
-            Text('數量：${switchModel.count}'),
-            if (switchModel.price > 0) Text('價格：${switchModel.price}'),
-            Text('單火/零火：${switchModel.fireType}'),
-            Text('是否可以聯網：${switchModel.networkable ? '是' : '否'}'),
-            Text('協定類型：${switchModel.protocol}'),
-            Text('顏色：${switchModel.color}'),
-          ],
-        ),
+          ),
+          if (_isExpanded)
+            Padding(
+              padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text('數量：${widget.switchModel.count}'),
+                  if (widget.switchModel.price > 0)
+                    Text('價格：${widget.switchModel.price}'),
+                  Text('單火/零火：${widget.switchModel.fireType}'),
+                  Text('是否可以聯網：${widget.switchModel.networkable ? '是' : '否'}'),
+                  Text('協定類型：${widget.switchModel.protocol}'),
+                  Text('顏色：${widget.switchModel.color}'),
+                ],
+              ),
+            ),
+        ],
       ),
     );
   }
 
   void _showEditSwitchDialog(BuildContext context) {
-    final nameController = TextEditingController(text: switchModel.name);
-    final countController = TextEditingController(text: switchModel.count.toString());
-    final priceController = TextEditingController(text: switchModel.price.toString());
-    String fireType = switchModel.fireType.isNotEmpty
-        ? switchModel.fireType
+    final nameController = TextEditingController(text: widget.switchModel.name);
+    final countController = TextEditingController(
+      text: widget.switchModel.count.toString(),
+    );
+    final priceController = TextEditingController(
+      text: widget.switchModel.price.toString(),
+    );
+    String fireType = widget.switchModel.fireType.isNotEmpty
+        ? widget.switchModel.fireType
         : '單火';
-    String networkable = switchModel.networkable ? '是' : '否';
-    String protocol = switchModel.protocol.isNotEmpty
-        ? switchModel.protocol
+    String networkable = widget.switchModel.networkable ? '是' : '否';
+    String protocol = widget.switchModel.protocol.isNotEmpty
+        ? widget.switchModel.protocol
         : 'MQTT';
-    final colorController = TextEditingController(text: switchModel.color);
+    final colorController = TextEditingController(
+      text: widget.switchModel.color,
+    );
 
     showDialog(
       context: context,
@@ -133,19 +173,20 @@ class SwitchCardWidget extends StatelessWidget {
             ),
             ElevatedButton(
               onPressed: () {
-                final updated = switchModel.copyWith(
+                final updated = widget.switchModel.copyWith(
                   name: nameController.text,
                   count:
-                      int.tryParse(countController.text) ?? switchModel.count,
+                      int.tryParse(countController.text) ??
+                      widget.switchModel.count,
                   price:
                       double.tryParse(priceController.text) ??
-                      switchModel.price,
+                      widget.switchModel.price,
                   fireType: fireType,
                   networkable: networkable == '是',
                   protocol: protocol,
                   color: colorController.text,
                 );
-                onUpdateSwitch(index, updated);
+                widget.onUpdateSwitch(widget.index, updated);
                 Navigator.of(context).pop();
               },
               child: const Text('儲存'),

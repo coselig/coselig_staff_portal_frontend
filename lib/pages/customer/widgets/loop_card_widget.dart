@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:coselig_staff_portal/models/quote/quote_models.dart';
 
-class LoopCardWidget extends StatelessWidget {
+class LoopCardWidget extends StatefulWidget {
   final int index;
   final Loop loop;
   final Function(int, Loop) onUpdateLoop;
@@ -22,40 +22,83 @@ class LoopCardWidget extends StatelessWidget {
   });
 
   @override
+  State<LoopCardWidget> createState() => _LoopCardWidgetState();
+}
+
+class _LoopCardWidgetState extends State<LoopCardWidget> {
+  bool _isExpanded = false;
+
+  @override
   Widget build(BuildContext context) {
     return Card(
       margin: const EdgeInsets.only(bottom: 16),
-      child: Padding(
-        padding: const EdgeInsets.all(16.0),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            // 迴路標題和刪除按鈕
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Text(
-                  loop.name,
-                  style: const TextStyle(
-                    fontSize: 18,
-                    fontWeight: FontWeight.bold,
+      child: Column(
+        children: [
+          // 標題列：點擊展開/收合
+          InkWell(
+            onTap: () => setState(() => _isExpanded = !_isExpanded),
+            borderRadius: BorderRadius.circular(12),
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+              child: Row(
+                children: [
+                  Icon(
+                    _isExpanded ? Icons.expand_less : Icons.expand_more,
+                    color: Theme.of(context).colorScheme.primary,
                   ),
-                ),
-                IconButton(
-                  onPressed: () => onRemoveLoop(index),
-                  icon: Icon(
-                    Icons.delete,
-                    color: Theme.of(context).colorScheme.error,
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: Text(
+                      widget.loop.name,
+                      style: const TextStyle(
+                        fontSize: 18,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
                   ),
-                  tooltip: '刪除迴路',
-                ),
-              ],
+                  // 收合時顯示簡要資訊
+                  if (!_isExpanded) ...[
+                    Text(
+                      '${widget.loop.voltage}V · ${widget.loop.dimmingType} · ${widget.loop.totalWatt}W · ${widget.loop.fixtures.length}燈具',
+                      style: TextStyle(
+                        fontSize: 12,
+                        color: Theme.of(context).colorScheme.onSurfaceVariant,
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                  ],
+                  IconButton(
+                    onPressed: () => widget.onRemoveLoop(widget.index),
+                    icon: Icon(
+                      Icons.delete,
+                      color: Theme.of(context).colorScheme.error,
+                    ),
+                    tooltip: '刪除迴路',
+                  ),
+                ],
+              ),
             ),
-            const SizedBox(height: 16),
+          ),
+          // 展開的詳細內容
+          if (_isExpanded)
+            Padding(
+              padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+              child: _buildExpandedContent(context),
+            ),
+        ],
+      ),
+    );
+  }
 
-            // 迴路設定
-            Row(
-              children: [
+  Widget _buildExpandedContent(BuildContext context) {
+    final loop = widget.loop;
+    final index = widget.index;
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        // 迴路設定
+        Row(
+          children: [
                 Expanded(
                   child: DropdownButtonFormField<int>(
                     initialValue: loop.voltage,
@@ -72,7 +115,7 @@ class LoopCardWidget extends StatelessWidget {
                     ],
                     onChanged: (value) {
                       if (value != null) {
-                        onUpdateLoop(index, loop.copyWith(voltage: value));
+                    widget.onUpdateLoop(index, loop.copyWith(voltage: value));
                       }
                     },
                   ),
@@ -94,7 +137,10 @@ class LoopCardWidget extends StatelessWidget {
                     ],
                     onChanged: (value) {
                       if (value != null) {
-                        onUpdateLoop(index, loop.copyWith(dimmingType: value));
+                    widget.onUpdateLoop(
+                      index,
+                      loop.copyWith(dimmingType: value),
+                    );
                       }
                     },
                   ),
@@ -172,7 +218,7 @@ class LoopCardWidget extends StatelessWidget {
                   ),
                 ),
                 ElevatedButton.icon(
-                  onPressed: () => onAddFixture(index),
+              onPressed: () => widget.onAddFixture(index),
                   icon: const Icon(Icons.add),
                   label: const Text('添加燈具'),
                 ),
@@ -304,7 +350,7 @@ class LoopCardWidget extends StatelessWidget {
                           children: [
                             IconButton(
                               onPressed: () =>
-                                  onEditFixture(index, fixtureIndex),
+                              widget.onEditFixture(index, fixtureIndex),
                               icon: const Icon(Icons.edit, size: 20),
                               color: Theme.of(context).colorScheme.primary,
                               tooltip: '修改燈具',
@@ -316,7 +362,7 @@ class LoopCardWidget extends StatelessWidget {
                             ),
                             IconButton(
                               onPressed: () =>
-                                  onRemoveFixture(index, fixtureIndex),
+                              widget.onRemoveFixture(index, fixtureIndex),
                               icon: const Icon(Icons.remove_circle,
                                 size: 22),
                               color: Theme.of(context).colorScheme.error,
@@ -334,9 +380,7 @@ class LoopCardWidget extends StatelessWidget {
                   ),
                 );
               }),
-          ],
-        ),
-      ),
+      ],
     );
   }
 }
