@@ -388,6 +388,12 @@ class _CustomerHomePageState extends State<CustomerHomePage> {
                 final allConfigurations = quoteService.configurations;
                 final configurations = authService.isCustomer
                     ? allConfigurations
+                          .where(
+                            (c) =>
+                                c.customerUserId ==
+                                int.tryParse(authService.userId ?? ''),
+                          )
+                          .toList()
                     : allConfigurations
                           .where(
                             (c) => _selectedCustomer == null

@@ -9,8 +9,8 @@ class AppConstants {
   }
 
   // 動態從 pubspec.yaml 讀取版本號
-  static String get appVersion => _packageInfo?.version ?? '0.0.0';
-  static String get buildNumber => _packageInfo?.buildNumber ?? '0';
+  static String get appVersion => _packageInfo?.version ?? 'error';
+  static String get buildNumber => _packageInfo?.buildNumber ?? 'error';
   
   // 應用名稱
   static String get appName => 'Coselig 員工系統';
