@@ -147,6 +147,7 @@ class DiscoveryService extends ChangeNotifier {
     if (_deviceConfigOptions.isNotEmpty) {
       return _buildDeviceConfigsFromOptions();
     }
+    _error ??= '裝置設定選項尚未載入，請檢查網路連線或重新整理';
     return _defaultDeviceConfigs;
   }
 
@@ -164,88 +165,8 @@ class DiscoveryService extends ChangeNotifier {
     return result;
   }
 
-  final Map<String, Map<String, Map<String, dynamic>>> _defaultDeviceConfigs = {
-    'sunwave': {
-      'p404': {
-        'types': ['dual', 'single', 'rgb'],
-        'channels': {
-          'dual': ['a', 'b'],
-          'single': ['1', '2', '3', '4'],
-          'rgb': ['x'],
-        },
-        'channel_map': {
-          'a': ['1', '2'],
-          'b': ['3', '4'],
-          'x': ['1', '2', '3'],
-        },
-      },
-      'p210': {
-        'types': ['dual', 'single'],
-        'channels': {
-          'dual': ['a'],
-          'single': ['1', '2'],
-        },
-        'channel_map': {
-          'a': ['1', '2'],
-        },
-      },
-      'U4': {
-        'types': ['dual', 'single', 'rgb'],
-        'channels': {
-          'dual': ['a', 'b'],
-          'single': ['1', '2', '3', '4'],
-          'rgb': ['x'],
-        },
-        'channel_map': {
-          'a': ['1', '2'],
-          'b': ['3', '4'],
-          'x': ['1', '2', '3'],
-        },
-      },
-      'R8A': {
-        'types': ['relay'],
-        'channels': {
-          'relay': ['1', '2', '3', '4', '5', '6', '7', '8'],
-        },
-        'channel_map': {},
-      },
-      'R410': {
-        'types': ['relay'],
-        'channels': {
-          'relay': ['1', '2', '3', '4'],
-        },
-        'channel_map': {},
-      },
-    },
-    'guo': {
-      'p805': {
-        'types': ['dual', 'single', 'rgbw'],
-        'channels': {
-          'dual': ['a', 'b', 'c', 'd'],
-          'single': ['1', '2', '3', '4', '5', '6', '7', '8'],
-          'rgbw': ['x', 'y'],
-        },
-        'channel_map': {
-          'a': ['1', '2'],
-          'b': ['3', '4'],
-          'c': ['5', '6'],
-          'd': ['7', '8'],
-          'x': ['1', '2', '3', '4'],
-          'y': ['5', '6', '7', '8'],
-        },
-      },
-      'p305': {
-        'types': ['dual', 'single'],
-        'channels': {
-          'dual': ['a'],
-          'single': ['1', '2', '3'],
-        },
-        'channel_map': {
-          'a': ['1', '2'],
-        },
-      },
-    },
-  };
+  final Map<String, Map<String, Map<String, dynamic>>> _defaultDeviceConfigs =
+      {};
 
   List<String> getAvailableChannels(String brand, String model, String type) {
     final channelsMap = deviceConfigs[brand]?[model]?['channels'] as Map<String, dynamic>?;
@@ -733,7 +654,7 @@ class DiscoveryService extends ChangeNotifier {
         throw Exception(_error);
       }
     } catch (e) {
-      if (_error == null) _error = 'Network error: $e';
+      _error ??= 'Network error: $e';
       notifyListeners();
       rethrow;
     } finally {
@@ -766,7 +687,7 @@ class DiscoveryService extends ChangeNotifier {
         throw Exception(_error);
       }
     } catch (e) {
-      if (_error == null) _error = 'Network error: $e';
+      _error ??= 'Network error: $e';
       notifyListeners();
       rethrow;
     } finally {
@@ -794,7 +715,7 @@ class DiscoveryService extends ChangeNotifier {
         throw Exception(_error);
       }
     } catch (e) {
-      if (_error == null) _error = 'Network error: $e';
+      _error ??= 'Network error: $e';
       notifyListeners();
       rethrow;
     } finally {
