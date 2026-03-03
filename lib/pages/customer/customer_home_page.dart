@@ -1163,12 +1163,13 @@ class _CustomerHomePageState extends State<CustomerHomePage> {
     showDialog(
       context: context,
       builder: (context) => AddFixtureDialog(
-        onAddFixture: (name, totalWatt, price) {
+        onAddFixture: (fixture) {
           setState(() {
             final loop = _loops[loopIndex];
             final updatedFixtures = List<LoopFixture>.from(
               loop.fixtures,
-            )..add(LoopFixture(name: name, totalWatt: totalWatt, price: price));
+            )
+              ..add(fixture);
             _loops[loopIndex] = loop.copyWith(fixtures: updatedFixtures);
           });
           _autoSave();

@@ -270,6 +270,33 @@ class _LoopCardWidgetState extends State<LoopCardWidget> {
                                 spacing: 12,
                                 runSpacing: 4,
                                 children: [
+                              if (fixture.quantity != null)
+                                Row(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    Icon(
+                                      Icons.straighten,
+                                      size: 14,
+                                      color: Theme.of(
+                                        context,
+                                      ).colorScheme.onSurfaceVariant,
+                                    ),
+                                    const SizedBox(width: 2),
+                                    Text(
+                                      fixture.quantity ==
+                                              fixture.quantity!.roundToDouble()
+                                          ? '${fixture.quantity!.toInt()} 個'
+                                          : '${fixture.quantity!.toStringAsFixed(1)} m',
+                                      style: TextStyle(
+                                        color: Theme.of(
+                                          context,
+                                        ).colorScheme.onSurfaceVariant,
+                                        fontWeight: FontWeight.w500,
+                                        fontSize: 13,
+                                      ),
+                                    ),
+                                  ],
+                                ),
                                   Row(
                                     mainAxisSize: MainAxisSize.min,
                                     children: [

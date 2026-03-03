@@ -7,7 +7,7 @@ import 'package:coselig_staff_portal/services/quote_service.dart';
 const String _customFixtureType = '自訂燈具';
 
 class AddFixtureDialog extends StatefulWidget {
-  final Function(String, int, double) onAddFixture;
+  final Function(LoopFixture) onAddFixture;
 
   const AddFixtureDialog({super.key, required this.onAddFixture});
 
@@ -332,7 +332,18 @@ class _AddFixtureDialogState extends State<AddFixtureDialog> {
                       final name = _getFixtureName();
                       final totalWatt = _calculateTotalWatt();
                       final totalPrice = _calculateTotalPrice();
-                      widget.onAddFixture(name, totalWatt, totalPrice);
+                      final quantity = _getQuantity();
+                      final unitWatt = _getUnitWatt();
+                      widget.onAddFixture(
+                        LoopFixture(
+                          name: name,
+                          totalWatt: totalWatt,
+                          price: totalPrice,
+                          fixtureType: selectedType,
+                          quantity: quantity,
+                          unitWatt: unitWatt,
+                        ),
+                      );
                       Navigator.of(context).pop();
                     }
                   : null,
