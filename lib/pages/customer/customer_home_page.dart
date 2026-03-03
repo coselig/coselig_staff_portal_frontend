@@ -1369,6 +1369,7 @@ class _CustomerHomePageState extends State<CustomerHomePage> {
       context: context,
       builder: (context) {
         String? selectedBrand; // null 表示不限
+        bool groupBySpace = true; // 是否依空間分組
         return StatefulBuilder(
           builder: (context, setDialogState) {
             return AlertDialog(
@@ -1403,6 +1404,21 @@ class _CustomerHomePageState extends State<CustomerHomePage> {
                       });
                     },
                   ),
+                  const SizedBox(height: 16),
+                  SwitchListTile(
+                    title: const Text('依空間分組'),
+                    subtitle: const Text(
+                      '不同空間的迴路不會共用同一個模組',
+                      style: TextStyle(fontSize: 12),
+                    ),
+                    value: groupBySpace,
+                    contentPadding: EdgeInsets.zero,
+                    onChanged: (value) {
+                      setDialogState(() {
+                        groupBySpace = value;
+                      });
+                    },
+                  ),
                 ],
               ),
               actions: [
@@ -1413,7 +1429,11 @@ class _CustomerHomePageState extends State<CustomerHomePage> {
                 ElevatedButton(
                   onPressed: () {
                     Navigator.of(context).pop();
-                    _runAutoAssign(selectedBrand);
+                    if (groupBySpace) {
+                      _runAutoAssignBySpace(selectedBrand);
+                    } else {
+                      _runAutoAssign(selectedBrand);
+                    }
                   },
                   child: const Text('開始分配'),
                 ),
@@ -1691,6 +1711,340 @@ class _CustomerHomePageState extends State<CustomerHomePage> {
                     content: Text(
                       '已自動分配 ${_loops.length - unassigned.length} 個迴路到 ${newModules.length} 個模組'
                       '${unassigned.isNotEmpty ? "，${unassigned.length} 個迴路未分配" : ""}',
+                    ),
+                  ),
+                );
+              },
+              child: const Text('套用'),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  // 依空間分組的自動分配
+  void _runAutoAssignBySpace(String? brandFilter) {
+    final quoteService = Provider.of<QuoteService>(context, listen: false);
+    final allModuleOptions = quoteService.moduleOptions;
+
+    // 根據廠牌篩選模組選項
+    final moduleOptions = brandFilter == null
+        ? allModuleOptions
+        : allModuleOptions.where((o) => o.brand == brandFilter).toList();
+
+    if (moduleOptions.isEmpty) {
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('該廠牌沒有可用的模組選項')));
+      return;
+    }
+
+    // 輔助函數
+    int getChannelsPerLoop(String dimmingType) {
+      switch (dimmingType) {
+        case 'WRGB':
+          return 4;
+        case 'RGB':
+          return 3;
+        case '雙色溫':
+          return 2;
+        case '單色溫':
+        case '繼電器':
+          return 1;
+        default:
+          return 1;
+      }
+    }
+
+    double getLoopAmpere(Loop loop) {
+      final totalWatt = loop.fixtures.fold(0, (sum, f) => sum + f.totalWatt);
+      return loop.voltage > 0 ? totalWatt / loop.voltage : 0;
+    }
+
+    double getLoopAmperePerChannel(Loop loop) {
+      final channels = getChannelsPerLoop(loop.dimmingType);
+      return channels > 0 ? getLoopAmpere(loop) / channels : 0;
+    }
+
+    bool isRelayLoop(Loop loop) => loop.dimmingType == '繼電器';
+
+    final sortedDimmableOptions =
+        moduleOptions.where((o) => o.isDimmable).toList()
+          ..sort((a, b) => b.channelCount.compareTo(a.channelCount));
+    final sortedRelayOptions =
+        moduleOptions.where((o) => !o.isDimmable).toList()
+          ..sort((a, b) => b.channelCount.compareTo(a.channelCount));
+
+    // 按空間分組迴路
+    final spaceLoopsMap = <String, List<Loop>>{};
+    for (final loop in _loops) {
+      final space = loop.space;
+      spaceLoopsMap.putIfAbsent(space, () => []).add(loop);
+    }
+
+    // 保持空間順序與 _spaces 一致
+    final orderedSpaces = <String>[];
+    for (final space in _spaces) {
+      if (spaceLoopsMap.containsKey(space)) {
+        orderedSpaces.add(space);
+      }
+    }
+    // 加入不在 _spaces 中的空間
+    for (final space in spaceLoopsMap.keys) {
+      if (!orderedSpaces.contains(space)) {
+        orderedSpaces.add(space);
+      }
+    }
+
+    final allNewModules = <Module>[];
+    final allUnassigned = <Loop>[];
+    // 記錄每個模組屬於哪個空間（用於結果顯示）
+    final moduleSpaceMap = <int, String>{};
+
+    for (final space in orderedSpaces) {
+      final spaceLoops = spaceLoopsMap[space]!;
+
+      // 對此空間的迴路排序（大迴路優先）
+      spaceLoops.sort((a, b) {
+        final channelsA = getChannelsPerLoop(a.dimmingType);
+        final channelsB = getChannelsPerLoop(b.dimmingType);
+        if (channelsA != channelsB) return channelsB.compareTo(channelsA);
+        return getLoopAmpere(b).compareTo(getLoopAmpere(a));
+      });
+
+      final loopInfos = spaceLoops
+          .map(
+            (loop) => LoopInfo(
+              loop: loop,
+              channels: getChannelsPerLoop(loop.dimmingType),
+              ampere: getLoopAmpere(loop),
+              amperePerCh: getLoopAmperePerChannel(loop),
+              isRelay: isRelayLoop(loop),
+            ),
+          )
+          .toList();
+
+      // 此空間獨立的模組列表
+      final spaceModules = <Module>[];
+
+      for (int li = 0; li < loopInfos.length; li++) {
+        final info = loopInfos[li];
+
+        // 嘗試放進此空間已建立的模組（Best Fit）
+        int bestModuleIndex = -1;
+        int bestAvailable = 999;
+
+        for (int i = 0; i < spaceModules.length; i++) {
+          final m = spaceModules[i];
+          if (info.isRelay && m.isDimmable) continue;
+          if (!info.isRelay && !m.isDimmable) continue;
+
+          if (m.availableChannels >= info.channels &&
+              info.amperePerCh <= m.maxAmperePerChannel &&
+              m.totalMaxAmpere + info.ampere <= m.maxAmpereTotal) {
+            if (m.availableChannels < bestAvailable) {
+              bestAvailable = m.availableChannels;
+              bestModuleIndex = i;
+            }
+          }
+        }
+
+        if (bestModuleIndex >= 0) {
+          final m = spaceModules[bestModuleIndex];
+          final updatedAllocations = List<LoopAllocation>.from(
+            m.loopAllocations,
+          )..add(LoopAllocation(loop: info.loop));
+          spaceModules[bestModuleIndex] = m.copyWith(
+            loopAllocations: updatedAllocations,
+          );
+        } else {
+          // 建立新模組 - 計算此空間剩餘同類型迴路所需通道數
+          int remainingChannels = info.channels;
+          for (int j = li + 1; j < loopInfos.length; j++) {
+            final other = loopInfos[j];
+            if (other.isRelay == info.isRelay) {
+              remainingChannels += other.channels;
+            }
+          }
+
+          final options = info.isRelay
+              ? sortedRelayOptions
+              : sortedDimmableOptions;
+          final fallbackOptions = options.isEmpty
+              ? (info.isRelay ? sortedDimmableOptions : sortedRelayOptions)
+              : options;
+
+          ModuleOption? chosen;
+          for (final opt in fallbackOptions) {
+            if (opt.channelCount >= info.channels &&
+                info.amperePerCh <= opt.maxAmperePerChannel &&
+                info.ampere <= opt.maxAmpereTotal) {
+              chosen ??= opt;
+              if (opt.channelCount >= remainingChannels) {
+                chosen = opt;
+              }
+            }
+          }
+
+          if (chosen != null && chosen.channelCount > remainingChannels * 2) {
+            for (final opt in fallbackOptions.reversed) {
+              if (opt.channelCount >= remainingChannels &&
+                  info.amperePerCh <= opt.maxAmperePerChannel &&
+                  info.ampere <= opt.maxAmpereTotal) {
+                chosen = opt;
+                break;
+              }
+            }
+          }
+
+          if (chosen != null) {
+            final newModule = Module(
+              model: chosen.model,
+              brand: chosen.brand,
+              channelCount: chosen.channelCount,
+              isDimmable: chosen.isDimmable,
+              maxAmperePerChannel: chosen.maxAmperePerChannel,
+              maxAmpereTotal: chosen.maxAmpereTotal,
+              price: chosen.price,
+              loopAllocations: [LoopAllocation(loop: info.loop)],
+            );
+            spaceModules.add(newModule);
+          } else {
+            allUnassigned.add(info.loop);
+          }
+        }
+      }
+
+      // 將此空間的模組加入總列表，並記錄空間
+      for (final m in spaceModules) {
+        moduleSpaceMap[allNewModules.length] = space;
+        allNewModules.add(m);
+      }
+    }
+
+    // 顯示確認對話框
+    showDialog(
+      context: context,
+      builder: (context) {
+        return AlertDialog(
+          title: const Text('自動分配結果（依空間分組）'),
+          content: SingleChildScrollView(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text(
+                  '將建立 ${allNewModules.length} 個模組（${orderedSpaces.length} 個空間）：',
+                ),
+                const SizedBox(height: 8),
+                ...orderedSpaces.map((space) {
+                  // 找出屬於此空間的模組
+                  final spaceModuleEntries = allNewModules
+                      .asMap()
+                      .entries
+                      .where((e) => moduleSpaceMap[e.key] == space)
+                      .toList();
+                  if (spaceModuleEntries.isEmpty) {
+                    return const SizedBox.shrink();
+                  }
+                  return Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Container(
+                        width: double.infinity,
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 12,
+                          vertical: 6,
+                        ),
+                        decoration: BoxDecoration(
+                          color: Theme.of(
+                            context,
+                          ).colorScheme.primaryContainer.withValues(alpha: 0.5),
+                          borderRadius: BorderRadius.circular(6),
+                        ),
+                        child: Text(
+                          '📍 $space',
+                          style: const TextStyle(
+                            fontWeight: FontWeight.bold,
+                            fontSize: 14,
+                          ),
+                        ),
+                      ),
+                      const SizedBox(height: 4),
+                      ...spaceModuleEntries.map((entry) {
+                        final m = entry.value;
+                        return Padding(
+                          padding: const EdgeInsets.only(bottom: 8),
+                          child: Card(
+                            child: Padding(
+                              padding: const EdgeInsets.all(8),
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    '${m.brand.isNotEmpty ? "[${m.brand}] " : ""}${m.model}',
+                                    style: const TextStyle(
+                                      fontWeight: FontWeight.bold,
+                                    ),
+                                  ),
+                                  Text(
+                                    '通道: ${m.usedChannels}/${m.channelCount}  '
+                                    '安培: ${m.totalMaxAmpere.toStringAsFixed(2)}/${m.maxAmpereTotal}A',
+                                    style: const TextStyle(fontSize: 12),
+                                  ),
+                                  ...m.loopAllocations.map(
+                                    (a) => Text(
+                                      '  • ${a.loop.name} (${a.loop.dimmingType}, ${a.loop.voltage}V)',
+                                      style: const TextStyle(fontSize: 12),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ),
+                        );
+                      }),
+                      const SizedBox(height: 8),
+                    ],
+                  );
+                }),
+                if (allUnassigned.isNotEmpty) ...[
+                  const SizedBox(height: 8),
+                  Text(
+                    '⚠ 以下迴路無法自動分配（沒有適合的模組選項）：',
+                    style: TextStyle(
+                      color: Theme.of(context).colorScheme.error,
+                    ),
+                  ),
+                  ...allUnassigned.map((l) => Text('  • ${l.name}')),
+                ],
+                const SizedBox(height: 12),
+                const Text(
+                  '此操作將清除現有的模組配置，確定要套用嗎？',
+                  style: TextStyle(fontWeight: FontWeight.w500),
+                ),
+              ],
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(),
+              child: const Text('取消'),
+            ),
+            ElevatedButton(
+              onPressed: () {
+                setState(() {
+                  _modules.clear();
+                  _modules.addAll(allNewModules);
+                });
+                _autoSave();
+                Navigator.of(context).pop();
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(
+                    content: Text(
+                      '已依空間分組分配 ${_loops.length - allUnassigned.length} 個迴路到 ${allNewModules.length} 個模組'
+                      '${allUnassigned.isNotEmpty ? "，${allUnassigned.length} 個迴路未分配" : ""}',
                     ),
                   ),
                 );
