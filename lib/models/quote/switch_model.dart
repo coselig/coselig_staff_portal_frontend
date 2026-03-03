@@ -7,6 +7,7 @@ class SwitchModel {
   bool networkable;
   String protocol;
   String color;
+  String space;
 
   SwitchModel({
     this.id,
@@ -17,6 +18,7 @@ class SwitchModel {
     this.networkable = false,
     this.protocol = '',
     this.color = '',
+    this.space = '未分類',
   });
 
   SwitchModel copyWith({
@@ -28,6 +30,7 @@ class SwitchModel {
     bool? networkable,
     String? protocol,
     String? color,
+    String? space,
   }) {
     return SwitchModel(
       id: id ?? this.id,
@@ -38,6 +41,7 @@ class SwitchModel {
       networkable: networkable ?? this.networkable,
       protocol: protocol ?? this.protocol,
       color: color ?? this.color,
+      space: space ?? this.space,
     );
   }
 
@@ -51,6 +55,7 @@ class SwitchModel {
       'networkable': networkable,
       'protocol': protocol,
       'color': color,
+      'space': space,
     };
   }
 
@@ -67,6 +72,7 @@ class SwitchModel {
           json['networkable'] == '是',
       protocol: json['protocol'] ?? '',
       color: json['color'] ?? '',
+      space: json['space'] ?? '未分類',
     );
   }
 }

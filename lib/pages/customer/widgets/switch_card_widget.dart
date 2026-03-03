@@ -6,6 +6,7 @@ class SwitchCardWidget extends StatefulWidget {
   final SwitchModel switchModel;
   final Function(int, SwitchModel) onUpdateSwitch;
   final Function(int) onRemoveSwitch;
+  final List<String> spaces;
 
   const SwitchCardWidget({
     super.key,
@@ -13,6 +14,7 @@ class SwitchCardWidget extends StatefulWidget {
     required this.switchModel,
     required this.onUpdateSwitch,
     required this.onRemoveSwitch,
+    required this.spaces,
   });
 
   @override
@@ -108,6 +110,7 @@ class _SwitchCardWidgetState extends State<SwitchCardWidget> {
     String protocol = widget.switchModel.protocol.isNotEmpty
         ? widget.switchModel.protocol
         : 'MQTT';
+    String space = widget.switchModel.space;
     final colorController = TextEditingController(
       text: widget.switchModel.color,
     );
@@ -121,6 +124,14 @@ class _SwitchCardWidgetState extends State<SwitchCardWidget> {
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
+                DropdownButtonFormField<String>(
+                  initialValue: space,
+                  decoration: const InputDecoration(labelText: '所屬空間'),
+                  items: widget.spaces
+                      .map((s) => DropdownMenuItem(value: s, child: Text(s)))
+                      .toList(),
+                  onChanged: (v) => setState(() => space = v ?? '未分類'),
+                ),
                 TextField(
                   controller: nameController,
                   decoration: const InputDecoration(labelText: '名稱'),
@@ -185,6 +196,7 @@ class _SwitchCardWidgetState extends State<SwitchCardWidget> {
                   networkable: networkable == '是',
                   protocol: protocol,
                   color: colorController.text,
+                  space: space,
                 );
                 widget.onUpdateSwitch(widget.index, updated);
                 Navigator.of(context).pop();

@@ -59,6 +59,12 @@ class _CustomerHomePageState extends State<CustomerHomePage> {
           _loops[i] = _loops[i].copyWith(space: '未分類');
         }
       }
+      // 將該空間下的開關移至「未分類」
+      for (int i = 0; i < _switches.length; i++) {
+        if (_switches[i].space == name) {
+          _switches[i] = _switches[i].copyWith(space: '未分類');
+        }
+      }
     });
     _autoSave();
   }
@@ -74,14 +80,22 @@ class _CustomerHomePageState extends State<CustomerHomePage> {
           _loops[i] = _loops[i].copyWith(space: newName);
         }
       }
+      // 更新所有開關的空間名稱
+      for (int i = 0; i < _switches.length; i++) {
+        if (_switches[i].space == oldName) {
+          _switches[i] = _switches[i].copyWith(space: newName);
+        }
+      }
     });
     _autoSave();
   }
 
-  /// 從迴路中重建空間列表
+  /// 從迴路和開關中重建空間列表
   void _rebuildSpacesFromLoops() {
     final spacesFromLoops = _loops.map((l) => l.space).toSet();
-    for (final space in spacesFromLoops) {
+    final spacesFromSwitches = _switches.map((s) => s.space).toSet();
+    final allSpaces = {...spacesFromLoops, ...spacesFromSwitches};
+    for (final space in allSpaces) {
       if (!_spaces.contains(space)) {
         _spaces.add(space);
       }
@@ -178,8 +192,9 @@ class _CustomerHomePageState extends State<CustomerHomePage> {
       showDialog(
         context: context,
         builder: (context) => AddSwitchDialog(
-          switchOptions: switchOptions, // 傳遞開關選項到對話框
+          switchOptions: switchOptions,
           loopCount: loopCount,
+          spaces: _spaces,
           onSelectSwitch: (selectedSwitch) {
             setState(() {
               _switches.add(selectedSwitch);

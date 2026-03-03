@@ -4,18 +4,21 @@ import 'package:coselig_staff_portal/models/quote/quote_models.dart';
 class AddSwitchDialog extends StatelessWidget {
   final Function(SwitchModel) onSelectSwitch;
   final List<SwitchModel> switchOptions;
-  final int loopCount; // 新增迴路數量參數
+  final int loopCount;
+  final List<String> spaces;
 
   const AddSwitchDialog({
     super.key,
     required this.onSelectSwitch,
     required this.switchOptions,
     required this.loopCount,
+    required this.spaces,
   });
 
   @override
   Widget build(BuildContext context) {
     SwitchModel? selectedSwitch;
+    String selectedSpace = spaces.isNotEmpty ? spaces.first : '未分類';
 
     return StatefulBuilder(
       builder: (context, setState) => AlertDialog(
@@ -23,6 +26,20 @@ class AddSwitchDialog extends StatelessWidget {
         content: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
+            DropdownButtonFormField<String>(
+              initialValue: selectedSpace,
+              decoration: const InputDecoration(labelText: '所屬空間'),
+              items: spaces
+                  .map(
+                    (space) =>
+                        DropdownMenuItem(value: space, child: Text(space)),
+                  )
+                  .toList(),
+              onChanged: (value) {
+                setState(() => selectedSpace = value ?? '未分類');
+              },
+            ),
+            const SizedBox(height: 16),
             DropdownButtonFormField<SwitchModel>(
               decoration: const InputDecoration(labelText: '選擇一個開關'),
               items: switchOptions
@@ -55,7 +72,9 @@ class AddSwitchDialog extends StatelessWidget {
           ElevatedButton(
             onPressed: selectedSwitch != null
                 ? () {
-                    onSelectSwitch(selectedSwitch!);
+                    onSelectSwitch(
+                      selectedSwitch!.copyWith(space: selectedSpace),
+                    );
                     Navigator.of(context).pop();
                   }
                 : null,

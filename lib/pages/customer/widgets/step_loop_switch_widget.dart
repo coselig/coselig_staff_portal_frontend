@@ -503,16 +503,7 @@ class _StepLoopSwitchWidgetState extends State<StepLoopSwitchWidget> {
               ),
             )
           else
-            ...widget.switches.asMap().entries.map((entry) {
-              final index = entry.key;
-              final switchModel = entry.value;
-              return SwitchCardWidget(
-                index: index,
-                switchModel: switchModel,
-                onUpdateSwitch: widget.onUpdateSwitch,
-                onRemoveSwitch: widget.onRemoveSwitch,
-              );
-            }),
+            ..._buildSwitchesBySpace(context),
         ],
 
         const SizedBox(height: 24),
@@ -598,6 +589,109 @@ class _StepLoopSwitchWidgetState extends State<StepLoopSwitchWidget> {
         ],
       ],
     );
+  }
+
+  /// 按空間分組開關
+  Map<String, List<MapEntry<int, SwitchModel>>> _groupSwitchesBySpace() {
+    final grouped = <String, List<MapEntry<int, SwitchModel>>>{};
+    for (final space in widget.spaces) {
+      grouped[space] = [];
+    }
+    for (int i = 0; i < widget.switches.length; i++) {
+      final sw = widget.switches[i];
+      grouped.putIfAbsent(sw.space, () => []);
+      grouped[sw.space]!.add(MapEntry(i, sw));
+    }
+    return grouped;
+  }
+
+  List<Widget> _buildSwitchesBySpace(BuildContext context) {
+    final groupedSwitches = _groupSwitchesBySpace();
+    final widgets = <Widget>[];
+
+    for (final spaceEntry in groupedSwitches.entries) {
+      final spaceName = spaceEntry.key;
+      final switchesInSpace = spaceEntry.value;
+
+      if (switchesInSpace.isEmpty) continue;
+
+      widgets.add(
+        Container(
+          margin: const EdgeInsets.only(bottom: 12),
+          decoration: BoxDecoration(
+            border: Border.all(
+              color: Theme.of(
+                context,
+              ).colorScheme.outline.withValues(alpha: 0.3),
+            ),
+            borderRadius: BorderRadius.circular(12),
+          ),
+          child: Column(
+            children: [
+              // 空間標題
+              Container(
+                width: double.infinity,
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 12,
+                  vertical: 8,
+                ),
+                decoration: BoxDecoration(
+                  color: Theme.of(
+                    context,
+                  ).colorScheme.secondaryContainer.withValues(alpha: 0.3),
+                  borderRadius: const BorderRadius.vertical(
+                    top: Radius.circular(12),
+                  ),
+                ),
+                child: Row(
+                  children: [
+                    Icon(
+                      Icons.room,
+                      size: 18,
+                      color: Theme.of(context).colorScheme.secondary,
+                    ),
+                    const SizedBox(width: 6),
+                    Text(
+                      spaceName,
+                      style: TextStyle(
+                        fontSize: 15,
+                        fontWeight: FontWeight.w600,
+                        color: Theme.of(context).colorScheme.onSurface,
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    Text(
+                      '(${switchesInSpace.fold<int>(0, (sum, e) => sum + e.value.count)} 開關)',
+                      style: TextStyle(
+                        fontSize: 12,
+                        color: Theme.of(context).colorScheme.onSurfaceVariant,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              // 開關卡片列表
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                child: Column(
+                  children: switchesInSpace.map((entry) {
+                    return SwitchCardWidget(
+                      index: entry.key,
+                      switchModel: entry.value,
+                      onUpdateSwitch: widget.onUpdateSwitch,
+                      onRemoveSwitch: widget.onRemoveSwitch,
+                      spaces: widget.spaces,
+                    );
+                  }).toList(),
+                ),
+              ),
+            ],
+          ),
+        ),
+      );
+    }
+
+    return widgets;
   }
 
   Widget _buildDraggableLoopCard({
