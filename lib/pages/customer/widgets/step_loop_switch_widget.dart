@@ -24,6 +24,8 @@ class StepLoopSwitchWidget extends StatefulWidget {
   final Function(String) onAddSpace;
   final Function(String) onRemoveSpace;
   final Function(String, String) onRenameSpace;
+  final Function(String, int, int) onReorderLoopsInSpace;
+  final Function(int, String) onMoveLoopToSpace;
 
   const StepLoopSwitchWidget({
     super.key,
@@ -47,6 +49,8 @@ class StepLoopSwitchWidget extends StatefulWidget {
     required this.onAddSpace,
     required this.onRemoveSpace,
     required this.onRenameSpace,
+    required this.onReorderLoopsInSpace,
+    required this.onMoveLoopToSpace,
   });
 
   @override
@@ -273,99 +277,143 @@ class _StepLoopSwitchWidgetState extends State<StepLoopSwitchWidget> {
                 ),
                 child: Column(
                   children: [
-                    // 空間標題列
-                    InkWell(
-                      onTap: () {
-                        setState(() {
-                          if (isCollapsed) {
-                            _collapsedSpaces.remove(spaceName);
-                          } else {
-                            _collapsedSpaces.add(spaceName);
-                          }
-                        });
+                    // 空間標題列（支援拖放迴路到此空間）
+                    DragTarget<int>(
+                      onWillAcceptWithDetails: (details) {
+                        // 只接受來自不同空間的迴路
+                        final draggedLoop = widget.loops[details.data];
+                        return draggedLoop.space != spaceName;
                       },
-                      borderRadius: const BorderRadius.vertical(
-                        top: Radius.circular(12),
-                      ),
-                      child: Container(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 12,
-                          vertical: 8,
-                        ),
-                        decoration: BoxDecoration(
-                          color: Theme.of(
-                            context,
-                          ).colorScheme.primaryContainer.withValues(alpha: 0.3),
-                          borderRadius: isCollapsed
-                              ? BorderRadius.circular(12)
-                              : const BorderRadius.vertical(
-                                  top: Radius.circular(12),
+                      onAcceptWithDetails: (details) {
+                        widget.onMoveLoopToSpace(details.data, spaceName);
+                      },
+                      builder: (context, candidateData, rejectedData) {
+                        final isHovering = candidateData.isNotEmpty;
+                        return InkWell(
+                          onTap: () {
+                            setState(() {
+                              if (isCollapsed) {
+                                _collapsedSpaces.remove(spaceName);
+                              } else {
+                                _collapsedSpaces.add(spaceName);
+                              }
+                            });
+                          },
+                          borderRadius: const BorderRadius.vertical(
+                            top: Radius.circular(12),
+                          ),
+                          child: Container(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 12,
+                              vertical: 8,
+                            ),
+                            decoration: BoxDecoration(
+                              color: isHovering
+                                  ? Theme.of(context).colorScheme.primary
+                                        .withValues(alpha: 0.15)
+                                  : Theme.of(context)
+                                        .colorScheme
+                                        .primaryContainer
+                                        .withValues(alpha: 0.3),
+                              borderRadius: isCollapsed
+                                  ? BorderRadius.circular(12)
+                                  : const BorderRadius.vertical(
+                                      top: Radius.circular(12),
+                                    ),
+                              border: isHovering
+                                  ? Border.all(
+                                      color: Theme.of(
+                                        context,
+                                      ).colorScheme.primary,
+                                      width: 2,
+                                    )
+                                  : null,
+                            ),
+                            child: Row(
+                              children: [
+                                Icon(
+                                  isCollapsed
+                                      ? Icons.expand_more
+                                      : Icons.expand_less,
+                                  size: 20,
+                                  color: Theme.of(context).colorScheme.primary,
                                 ),
-                        ),
-                        child: Row(
-                          children: [
-                            Icon(
-                              isCollapsed
-                                  ? Icons.expand_more
-                                  : Icons.expand_less,
-                              size: 20,
-                              color: Theme.of(context).colorScheme.primary,
-                            ),
-                            const SizedBox(width: 4),
-                            Icon(
-                              Icons.room,
-                              size: 18,
-                              color: Theme.of(context).colorScheme.primary,
-                            ),
-                            const SizedBox(width: 6),
-                            Text(
-                              spaceName,
-                              style: TextStyle(
-                                fontSize: 15,
-                                fontWeight: FontWeight.w600,
-                                color: Theme.of(context).colorScheme.onSurface,
-                              ),
-                            ),
-                            const SizedBox(width: 8),
-                            Text(
-                              '(${loopsInSpace.length} 迴路)',
-                              style: TextStyle(
-                                fontSize: 12,
-                                color: Theme.of(
-                                  context,
-                                ).colorScheme.onSurfaceVariant,
-                              ),
-                            ),
-                            const Spacer(),
-                            if (spaceName != '未分類') ...[
-                              IconButton(
-                                icon: Icon(
-                                  Icons.edit,
+                                const SizedBox(width: 4),
+                                Icon(
+                                  Icons.room,
                                   size: 18,
                                   color: Theme.of(context).colorScheme.primary,
                                 ),
-                                onPressed: () =>
-                                    _showRenameSpaceDialog(spaceName),
-                                tooltip: '重新命名',
-                                constraints: const BoxConstraints(),
-                                padding: const EdgeInsets.all(4),
-                              ),
-                              IconButton(
-                                icon: Icon(
-                                  Icons.delete_outline,
-                                  size: 18,
-                                  color: Theme.of(context).colorScheme.error,
+                                const SizedBox(width: 6),
+                                Text(
+                                  spaceName,
+                                  style: TextStyle(
+                                    fontSize: 15,
+                                    fontWeight: FontWeight.w600,
+                                    color: Theme.of(
+                                      context,
+                                    ).colorScheme.onSurface,
+                                  ),
                                 ),
-                                onPressed: () =>
-                                    _showDeleteSpaceDialog(spaceName),
-                                tooltip: '刪除空間',
-                                constraints: const BoxConstraints(),
-                                padding: const EdgeInsets.all(4),
-                              ),
-                            ],
-                          ],
-                        ),
-                      ),
+                                const SizedBox(width: 8),
+                                Text(
+                                  '(${loopsInSpace.length} 迴路)',
+                                  style: TextStyle(
+                                    fontSize: 12,
+                                    color: Theme.of(
+                                      context,
+                                    ).colorScheme.onSurfaceVariant,
+                                  ),
+                                ),
+                                if (isHovering) ...[
+                                  const SizedBox(width: 8),
+                                  Text(
+                                    '拖放至此',
+                                    style: TextStyle(
+                                      fontSize: 12,
+                                      fontWeight: FontWeight.w500,
+                                      color: Theme.of(
+                                        context,
+                                      ).colorScheme.primary,
+                                    ),
+                                  ),
+                                ],
+                                const Spacer(),
+                                if (spaceName != '未分類') ...[
+                                  IconButton(
+                                    icon: Icon(
+                                      Icons.edit,
+                                      size: 18,
+                                      color: Theme.of(
+                                        context,
+                                      ).colorScheme.primary,
+                                    ),
+                                    onPressed: () =>
+                                        _showRenameSpaceDialog(spaceName),
+                                    tooltip: '重新命名',
+                                    constraints: const BoxConstraints(),
+                                    padding: const EdgeInsets.all(4),
+                                  ),
+                                  IconButton(
+                                    icon: Icon(
+                                      Icons.delete_outline,
+                                      size: 18,
+                                      color: Theme.of(
+                                        context,
+                                      ).colorScheme.error,
+                                    ),
+                                    onPressed: () =>
+                                        _showDeleteSpaceDialog(spaceName),
+                                    tooltip: '刪除空間',
+                                    constraints: const BoxConstraints(),
+                                    padding: const EdgeInsets.all(4),
+                                  ),
+                                ],
+                              ],
+                            ),
+                          ),
+                        );
+                      },
                     ),
                     // 展開的迴路列表
                     if (!isCollapsed) ...[
@@ -388,17 +436,23 @@ class _StepLoopSwitchWidgetState extends State<StepLoopSwitchWidget> {
                             vertical: 4,
                           ),
                           child: Column(
-                            children: loopsInSpace.map((entry) {
-                              return LoopCardWidget(
-                                index: entry.key,
-                                loop: entry.value,
-                                onUpdateLoop: widget.onUpdateLoop,
-                                onRemoveLoop: widget.onRemoveLoop,
-                                onAddFixture: widget.onAddFixtureToLoop,
-                                onRemoveFixture: widget.onRemoveFixtureFromLoop,
-                                onEditFixture: widget.onEditFixtureInLoop,
-                              );
-                            }).toList(),
+                            children: [
+                              for (
+                                int localIdx = 0;
+                                localIdx < loopsInSpace.length;
+                                localIdx++
+                              )
+                                _buildDraggableLoopCard(
+                                  key: ValueKey(
+                                    'loop_${loopsInSpace[localIdx].key}',
+                                  ),
+                                  globalIndex: loopsInSpace[localIdx].key,
+                                  localIndex: localIdx,
+                                  loop: loopsInSpace[localIdx].value,
+                                  spaceName: spaceName,
+                                  totalInSpace: loopsInSpace.length,
+                                ),
+                            ],
                           ),
                         ),
                     ],
@@ -543,6 +597,138 @@ class _StepLoopSwitchWidgetState extends State<StepLoopSwitchWidget> {
           }),
         ],
       ],
+    );
+  }
+
+  Widget _buildDraggableLoopCard({
+    required Key key,
+    required int globalIndex,
+    required int localIndex,
+    required Loop loop,
+    required String spaceName,
+    required int totalInSpace,
+  }) {
+    final cardContent = Row(
+      key: key,
+      children: [
+        // 拖拉把手
+        MouseRegion(
+          cursor: SystemMouseCursors.grab,
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 8),
+            child: Icon(
+              Icons.drag_indicator,
+              color: Theme.of(
+                context,
+              ).colorScheme.onSurface.withValues(alpha: 0.4),
+            ),
+          ),
+        ),
+        Expanded(
+          child: LoopCardWidget(
+            index: globalIndex,
+            loop: loop,
+            onUpdateLoop: widget.onUpdateLoop,
+            onRemoveLoop: widget.onRemoveLoop,
+            onAddFixture: widget.onAddFixtureToLoop,
+            onRemoveFixture: widget.onRemoveFixtureFromLoop,
+            onEditFixture: widget.onEditFixtureInLoop,
+          ),
+        ),
+      ],
+    );
+
+    return DragTarget<int>(
+      onWillAcceptWithDetails: (details) {
+        if (details.data == globalIndex) return false;
+        return true;
+      },
+      onAcceptWithDetails: (details) {
+        final draggedIndex = details.data;
+        final draggedLoop = widget.loops[draggedIndex];
+        if (draggedLoop.space != spaceName) {
+          // 跨空間移動
+          widget.onMoveLoopToSpace(draggedIndex, spaceName);
+        } else {
+          // 同空間內重新排序：找到被拖動的迴路在本空間的 localIndex
+          int draggedLocalIdx = -1;
+          int count = 0;
+          for (int i = 0; i < widget.loops.length; i++) {
+            if (widget.loops[i].space == spaceName) {
+              if (i == draggedIndex) {
+                draggedLocalIdx = count;
+                break;
+              }
+              count++;
+            }
+          }
+          if (draggedLocalIdx >= 0 && draggedLocalIdx != localIndex) {
+            int newLocal = localIndex;
+            if (draggedLocalIdx < localIndex) {
+              newLocal += 1; // ReorderableListView 的慣例
+            }
+            widget.onReorderLoopsInSpace(spaceName, draggedLocalIdx, newLocal);
+          }
+        }
+      },
+      builder: (context, candidateData, rejectedData) {
+        final isAccepting = candidateData.isNotEmpty;
+        return Draggable<int>(
+          data: globalIndex,
+          feedback: Material(
+            elevation: 4,
+            borderRadius: BorderRadius.circular(12),
+            child: SizedBox(
+              width: MediaQuery.of(context).size.width * 0.6,
+              child: Opacity(
+                opacity: 0.85,
+                child: Card(
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 16,
+                      vertical: 12,
+                    ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Icon(
+                          Icons.drag_indicator,
+                          color: Theme.of(context).colorScheme.primary,
+                        ),
+                        const SizedBox(width: 8),
+                        Expanded(
+                          child: Text(
+                            loop.name,
+                            style: const TextStyle(
+                              fontSize: 16,
+                              fontWeight: FontWeight.bold,
+                            ),
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+            ),
+          ),
+          childWhenDragging: Opacity(opacity: 0.3, child: cardContent),
+          child: Container(
+            decoration: isAccepting
+                ? BoxDecoration(
+                    border: Border(
+                      top: BorderSide(
+                        color: Theme.of(context).colorScheme.primary,
+                        width: 3,
+                      ),
+                    ),
+                  )
+                : null,
+            child: cardContent,
+          ),
+        );
+      },
     );
   }
 }

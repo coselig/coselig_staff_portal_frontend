@@ -88,6 +88,53 @@ class _CustomerHomePageState extends State<CustomerHomePage> {
     }
   }
 
+  /// 在同一空間內重新排序迴路
+  void _reorderLoopsInSpace(
+    String space,
+    int oldLocalIndex,
+    int newLocalIndex,
+  ) {
+    // 取得該空間內的迴路的全域 index
+    final globalIndices = <int>[];
+    for (int i = 0; i < _loops.length; i++) {
+      if (_loops[i].space == space) {
+        globalIndices.add(i);
+      }
+    }
+    if (oldLocalIndex < 0 || oldLocalIndex >= globalIndices.length) return;
+    if (newLocalIndex < 0 || newLocalIndex > globalIndices.length) return;
+    if (newLocalIndex > oldLocalIndex) newLocalIndex -= 1;
+    if (oldLocalIndex == newLocalIndex) return;
+
+    setState(() {
+      final movedLoop = _loops.removeAt(globalIndices[oldLocalIndex]);
+      // 重新計算 globalIndices，因為已經 removeAt 了
+      final updatedIndices = <int>[];
+      for (int i = 0; i < _loops.length; i++) {
+        if (_loops[i].space == space) {
+          updatedIndices.add(i);
+        }
+      }
+      final insertAt = newLocalIndex < updatedIndices.length
+          ? updatedIndices[newLocalIndex]
+          : (updatedIndices.isNotEmpty
+                ? updatedIndices.last + 1
+                : _loops.length);
+      _loops.insert(insertAt, movedLoop);
+    });
+    _autoSave();
+  }
+
+  /// 將迴路移動到另一個空間
+  void _moveLoopToSpace(int loopIndex, String targetSpace) {
+    if (loopIndex < 0 || loopIndex >= _loops.length) return;
+    if (_loops[loopIndex].space == targetSpace) return;
+    setState(() {
+      _loops[loopIndex] = _loops[loopIndex].copyWith(space: targetSpace);
+    });
+    _autoSave();
+  }
+
   void _addOtherDevice() {
     setState(() {
       _otherDevices.add(OtherDevice(name: '', price: 0));
@@ -855,6 +902,8 @@ class _CustomerHomePageState extends State<CustomerHomePage> {
                           onAddSpace: _addSpace,
                           onRemoveSpace: _removeSpace,
                           onRenameSpace: _renameSpace,
+                          onReorderLoopsInSpace: _reorderLoopsInSpace,
+                          onMoveLoopToSpace: _moveLoopToSpace,
                         ),
                       ],
                     ),
