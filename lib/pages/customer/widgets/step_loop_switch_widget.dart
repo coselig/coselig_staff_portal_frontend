@@ -8,6 +8,7 @@ class StepLoopSwitchWidget extends StatefulWidget {
   final List<SwitchModel> switches;
   final TextEditingController switchCountController;
   final List<OtherDevice> otherDevices;
+  final List<String> spaces;
   final VoidCallback onAddLoop;
   final VoidCallback onAddSwitch;
   final Function(int) onRemoveLoop;
@@ -20,6 +21,9 @@ class StepLoopSwitchWidget extends StatefulWidget {
   final VoidCallback onAddOtherDevice;
   final Function(int) onRemoveOtherDevice;
   final Function(int, {String? name, double? price}) onUpdateOtherDevice;
+  final Function(String) onAddSpace;
+  final Function(String) onRemoveSpace;
+  final Function(String, String) onRenameSpace;
 
   const StepLoopSwitchWidget({
     super.key,
@@ -27,6 +31,7 @@ class StepLoopSwitchWidget extends StatefulWidget {
     required this.switches,
     required this.switchCountController,
     required this.otherDevices,
+    required this.spaces,
     required this.onAddLoop,
     required this.onAddSwitch,
     required this.onRemoveLoop,
@@ -39,6 +44,9 @@ class StepLoopSwitchWidget extends StatefulWidget {
     required this.onAddOtherDevice,
     required this.onRemoveOtherDevice,
     required this.onUpdateOtherDevice,
+    required this.onAddSpace,
+    required this.onRemoveSpace,
+    required this.onRenameSpace,
   });
 
   @override
@@ -49,6 +57,7 @@ class _StepLoopSwitchWidgetState extends State<StepLoopSwitchWidget> {
   late bool _loopsExpanded;
   late bool _switchesExpanded;
   late bool _otherDevicesExpanded;
+  final Set<String> _collapsedSpaces = {};
 
   @override
   void initState() {
@@ -72,8 +81,127 @@ class _StepLoopSwitchWidgetState extends State<StepLoopSwitchWidget> {
     }
   }
 
+  void _showAddSpaceDialog() {
+    final controller = TextEditingController();
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('新增空間'),
+        content: TextField(
+          controller: controller,
+          autofocus: true,
+          decoration: const InputDecoration(
+            labelText: '空間名稱',
+            border: OutlineInputBorder(),
+            hintText: '例如：客廳、臥室、廚房',
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(),
+            child: const Text('取消'),
+          ),
+          ElevatedButton(
+            onPressed: () {
+              final name = controller.text.trim();
+              if (name.isNotEmpty) {
+                widget.onAddSpace(name);
+                Navigator.of(context).pop();
+              }
+            },
+            child: const Text('確定'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _showRenameSpaceDialog(String oldName) {
+    final controller = TextEditingController(text: oldName);
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('重新命名空間'),
+        content: TextField(
+          controller: controller,
+          autofocus: true,
+          decoration: const InputDecoration(
+            labelText: '空間名稱',
+            border: OutlineInputBorder(),
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(),
+            child: const Text('取消'),
+          ),
+          ElevatedButton(
+            onPressed: () {
+              final newName = controller.text.trim();
+              if (newName.isNotEmpty && newName != oldName) {
+                widget.onRenameSpace(oldName, newName);
+                Navigator.of(context).pop();
+              }
+            },
+            child: const Text('確定'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _showDeleteSpaceDialog(String spaceName) {
+    final loopsInSpace = widget.loops.where((l) => l.space == spaceName).length;
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('刪除空間'),
+        content: Text(
+          loopsInSpace > 0
+              ? '空間「$spaceName」中有 $loopsInSpace 個迴路，刪除後這些迴路將移至「未分類」。\n確定要刪除嗎？'
+              : '確定要刪除空間「$spaceName」嗎？',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(),
+            child: const Text('取消'),
+          ),
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Theme.of(context).colorScheme.error,
+              foregroundColor: Theme.of(context).colorScheme.onError,
+            ),
+            onPressed: () {
+              widget.onRemoveSpace(spaceName);
+              Navigator.of(context).pop();
+            },
+            child: const Text('刪除'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  /// 按空間分組迴路，保留原始 index
+  Map<String, List<MapEntry<int, Loop>>> _groupLoopsBySpace() {
+    final grouped = <String, List<MapEntry<int, Loop>>>{};
+    // 先按 spaces 順序建立空 list
+    for (final space in widget.spaces) {
+      grouped[space] = [];
+    }
+    // 再填入迴路
+    for (int i = 0; i < widget.loops.length; i++) {
+      final loop = widget.loops[i];
+      grouped.putIfAbsent(loop.space, () => []);
+      grouped[loop.space]!.add(MapEntry(i, loop));
+    }
+    return grouped;
+  }
+
   @override
   Widget build(BuildContext context) {
+    final groupedLoops = _groupLoopsBySpace();
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -95,6 +223,12 @@ class _StepLoopSwitchWidgetState extends State<StepLoopSwitchWidget> {
                 ),
               ),
               const Spacer(),
+              OutlinedButton.icon(
+                onPressed: _showAddSpaceDialog,
+                icon: const Icon(Icons.room, size: 18),
+                label: const Text('新增空間'),
+              ),
+              const SizedBox(width: 8),
               ElevatedButton.icon(
                 onPressed: widget.onAddLoop,
                 icon: const Icon(Icons.add),
@@ -106,12 +240,12 @@ class _StepLoopSwitchWidgetState extends State<StepLoopSwitchWidget> {
         const SizedBox(height: 8),
 
         if (_loopsExpanded) ...[
-          if (widget.loops.isEmpty)
+          if (widget.loops.isEmpty && widget.spaces.isEmpty)
             Center(
               child: Padding(
                 padding: const EdgeInsets.all(32.0),
                 child: Text(
-                  '尚未添加任何迴路\n點擊上方按鈕添加第一個迴路',
+                  '尚未添加任何迴路\n點擊上方按鈕新增空間並添加迴路',
                   textAlign: TextAlign.center,
                   style: TextStyle(
                     color: Theme.of(
@@ -122,17 +256,154 @@ class _StepLoopSwitchWidgetState extends State<StepLoopSwitchWidget> {
               ),
             )
           else
-            ...widget.loops.asMap().entries.map((entry) {
-              final index = entry.key;
-              final loop = entry.value;
-              return LoopCardWidget(
-                index: index,
-                loop: loop,
-                onUpdateLoop: widget.onUpdateLoop,
-                onRemoveLoop: widget.onRemoveLoop,
-                onAddFixture: widget.onAddFixtureToLoop,
-                onRemoveFixture: widget.onRemoveFixtureFromLoop,
-                onEditFixture: widget.onEditFixtureInLoop,
+            ...groupedLoops.entries.map((spaceEntry) {
+              final spaceName = spaceEntry.key;
+              final loopsInSpace = spaceEntry.value;
+              final isCollapsed = _collapsedSpaces.contains(spaceName);
+
+              return Container(
+                margin: const EdgeInsets.only(bottom: 12),
+                decoration: BoxDecoration(
+                  border: Border.all(
+                    color: Theme.of(
+                      context,
+                    ).colorScheme.outline.withValues(alpha: 0.3),
+                  ),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Column(
+                  children: [
+                    // 空間標題列
+                    InkWell(
+                      onTap: () {
+                        setState(() {
+                          if (isCollapsed) {
+                            _collapsedSpaces.remove(spaceName);
+                          } else {
+                            _collapsedSpaces.add(spaceName);
+                          }
+                        });
+                      },
+                      borderRadius: const BorderRadius.vertical(
+                        top: Radius.circular(12),
+                      ),
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 12,
+                          vertical: 8,
+                        ),
+                        decoration: BoxDecoration(
+                          color: Theme.of(
+                            context,
+                          ).colorScheme.primaryContainer.withValues(alpha: 0.3),
+                          borderRadius: isCollapsed
+                              ? BorderRadius.circular(12)
+                              : const BorderRadius.vertical(
+                                  top: Radius.circular(12),
+                                ),
+                        ),
+                        child: Row(
+                          children: [
+                            Icon(
+                              isCollapsed
+                                  ? Icons.expand_more
+                                  : Icons.expand_less,
+                              size: 20,
+                              color: Theme.of(context).colorScheme.primary,
+                            ),
+                            const SizedBox(width: 4),
+                            Icon(
+                              Icons.room,
+                              size: 18,
+                              color: Theme.of(context).colorScheme.primary,
+                            ),
+                            const SizedBox(width: 6),
+                            Text(
+                              spaceName,
+                              style: TextStyle(
+                                fontSize: 15,
+                                fontWeight: FontWeight.w600,
+                                color: Theme.of(context).colorScheme.onSurface,
+                              ),
+                            ),
+                            const SizedBox(width: 8),
+                            Text(
+                              '(${loopsInSpace.length} 迴路)',
+                              style: TextStyle(
+                                fontSize: 12,
+                                color: Theme.of(
+                                  context,
+                                ).colorScheme.onSurfaceVariant,
+                              ),
+                            ),
+                            const Spacer(),
+                            if (spaceName != '未分類') ...[
+                              IconButton(
+                                icon: Icon(
+                                  Icons.edit,
+                                  size: 18,
+                                  color: Theme.of(context).colorScheme.primary,
+                                ),
+                                onPressed: () =>
+                                    _showRenameSpaceDialog(spaceName),
+                                tooltip: '重新命名',
+                                constraints: const BoxConstraints(),
+                                padding: const EdgeInsets.all(4),
+                              ),
+                              IconButton(
+                                icon: Icon(
+                                  Icons.delete_outline,
+                                  size: 18,
+                                  color: Theme.of(context).colorScheme.error,
+                                ),
+                                onPressed: () =>
+                                    _showDeleteSpaceDialog(spaceName),
+                                tooltip: '刪除空間',
+                                constraints: const BoxConstraints(),
+                                padding: const EdgeInsets.all(4),
+                              ),
+                            ],
+                          ],
+                        ),
+                      ),
+                    ),
+                    // 展開的迴路列表
+                    if (!isCollapsed) ...[
+                      if (loopsInSpace.isEmpty)
+                        Padding(
+                          padding: const EdgeInsets.all(16),
+                          child: Text(
+                            '此空間尚無迴路',
+                            style: TextStyle(
+                              color: Theme.of(
+                                context,
+                              ).colorScheme.onSurface.withValues(alpha: 0.5),
+                            ),
+                          ),
+                        )
+                      else
+                        Padding(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 8,
+                            vertical: 4,
+                          ),
+                          child: Column(
+                            children: loopsInSpace.map((entry) {
+                              return LoopCardWidget(
+                                index: entry.key,
+                                loop: entry.value,
+                                onUpdateLoop: widget.onUpdateLoop,
+                                onRemoveLoop: widget.onRemoveLoop,
+                                onAddFixture: widget.onAddFixtureToLoop,
+                                onRemoveFixture: widget.onRemoveFixtureFromLoop,
+                                onEditFixture: widget.onEditFixtureInLoop,
+                              );
+                            }).toList(),
+                          ),
+                        ),
+                    ],
+                  ],
+                ),
               );
             }),
         ],

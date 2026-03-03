@@ -2,12 +2,14 @@ import 'loop_fixture.dart';
 
 class Loop {
   String name;
+  String space;
   int voltage;
   String dimmingType;
   List<LoopFixture> fixtures;
 
   Loop({
     required this.name,
+    this.space = '未分類',
     this.voltage = 12,
     this.dimmingType = 'WRGB',
     this.fixtures = const [],
@@ -15,12 +17,14 @@ class Loop {
 
   Loop copyWith({
     String? name,
+    String? space,
     int? voltage,
     String? dimmingType,
     List<LoopFixture>? fixtures,
   }) {
     return Loop(
       name: name ?? this.name,
+      space: space ?? this.space,
       voltage: voltage ?? this.voltage,
       dimmingType: dimmingType ?? this.dimmingType,
       fixtures: fixtures ?? this.fixtures,
@@ -34,6 +38,7 @@ class Loop {
   Map<String, dynamic> toJson() {
     return {
       'name': name,
+      'space': space,
       'voltage': voltage,
       'dimmingType': dimmingType,
       'fixtures': fixtures.map((f) => f.toJson()).toList(),
@@ -43,6 +48,7 @@ class Loop {
   factory Loop.fromJson(Map<String, dynamic> json) {
     return Loop(
       name: json['name'] ?? '',
+      space: json['space'] ?? '未分類',
       voltage: json['voltage'] ?? 12,
       dimmingType: json['dimmingType'] ?? 'WRGB',
       fixtures: (json['fixtures'] as List?)?.map((f) => LoopFixture.fromJson(f)).toList() ?? [],

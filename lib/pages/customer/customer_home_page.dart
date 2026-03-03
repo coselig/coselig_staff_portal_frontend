@@ -40,6 +40,53 @@ class _CustomerHomePageState extends State<CustomerHomePage> {
   final List<SwitchModel> _switches = [];
   final TextEditingController _switchCountController = TextEditingController();
   List<OtherDevice> _otherDevices = [];
+  final List<String> _spaces = ['未分類'];
+
+  void _addSpace(String name) {
+    if (!_spaces.contains(name)) {
+      setState(() => _spaces.add(name));
+      _autoSave();
+    }
+  }
+
+  void _removeSpace(String name) {
+    if (name == '未分類') return;
+    setState(() {
+      _spaces.remove(name);
+      // 將該空間下的迴路移至「未分類」
+      for (int i = 0; i < _loops.length; i++) {
+        if (_loops[i].space == name) {
+          _loops[i] = _loops[i].copyWith(space: '未分類');
+        }
+      }
+    });
+    _autoSave();
+  }
+
+  void _renameSpace(String oldName, String newName) {
+    if (oldName == '未分類' || _spaces.contains(newName)) return;
+    setState(() {
+      final idx = _spaces.indexOf(oldName);
+      if (idx != -1) _spaces[idx] = newName;
+      // 更新所有迴路的空間名稱
+      for (int i = 0; i < _loops.length; i++) {
+        if (_loops[i].space == oldName) {
+          _loops[i] = _loops[i].copyWith(space: newName);
+        }
+      }
+    });
+    _autoSave();
+  }
+
+  /// 從迴路中重建空間列表
+  void _rebuildSpacesFromLoops() {
+    final spacesFromLoops = _loops.map((l) => l.space).toSet();
+    for (final space in spacesFromLoops) {
+      if (!_spaces.contains(space)) {
+        _spaces.add(space);
+      }
+    }
+  }
 
   void _addOtherDevice() {
     setState(() {
@@ -792,6 +839,7 @@ class _CustomerHomePageState extends State<CustomerHomePage> {
                           switches: _switches,
                           switchCountController: _switchCountController,
                           otherDevices: _otherDevices,
+                          spaces: _spaces,
                           onAddOtherDevice: _addOtherDevice,
                           onRemoveOtherDevice: _removeOtherDevice,
                           onUpdateOtherDevice: _updateOtherDevice,
@@ -804,6 +852,9 @@ class _CustomerHomePageState extends State<CustomerHomePage> {
                           onEditFixtureInLoop: _showEditFixtureDialog,
                           onUpdateSwitch: _updateSwitch,
                           onRemoveSwitch: _removeSwitch,
+                          onAddSpace: _addSpace,
+                          onRemoveSpace: _removeSpace,
+                          onRenameSpace: _renameSpace,
                         ),
                       ],
                     ),
@@ -1028,9 +1079,13 @@ class _CustomerHomePageState extends State<CustomerHomePage> {
     showDialog(
       context: context,
       builder: (context) => AddLoopDialog(
-        onAddLoop: (name) {
+        spaces: _spaces,
+        onAddLoop: (name, space) {
           setState(() {
-            _loops.add(Loop(name: name));
+            if (!_spaces.contains(space)) {
+              _spaces.add(space);
+            }
+            _loops.add(Loop(name: name, space: space));
           });
           _autoSave();
         },
@@ -1620,6 +1675,8 @@ class _CustomerHomePageState extends State<CustomerHomePage> {
                 _powerSupplies.clear();
                 _boardMaterials.clear();
                 _wiringItems.clear();
+                _spaces.clear();
+                _spaces.add('未分類');
                 // reset style options
                 _ceilingHasLn = false;
                 _ceilingHasMaintenanceHole = false;
@@ -1793,6 +1850,11 @@ class _CustomerHomePageState extends State<CustomerHomePage> {
           // 載入開關資料
           _switches.clear();
           _switches.addAll(quoteData.switches);
+
+          // 從迴路重建空間列表
+          _spaces.clear();
+          _spaces.add('未分類');
+          _rebuildSpacesFromLoops();
         });
         ScaffoldMessenger.of(
           context,
@@ -1846,6 +1908,8 @@ class _CustomerHomePageState extends State<CustomerHomePage> {
         _selectedConfigurationName = null;
         _loops.clear();
         _modules.clear();
+        _spaces.clear();
+        _spaces.add('未分類');
         _ceilingHasLn = false;
         _ceilingHasMaintenanceHole = false;
         _switchHasLn = false;
