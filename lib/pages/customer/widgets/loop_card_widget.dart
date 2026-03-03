@@ -28,6 +28,53 @@ class LoopCardWidget extends StatefulWidget {
 class _LoopCardWidgetState extends State<LoopCardWidget> {
   bool _isExpanded = false;
 
+  void _showRenameDialog(BuildContext context) {
+    final controller = TextEditingController(text: widget.loop.name);
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('修改迴路名稱'),
+        content: TextField(
+          controller: controller,
+          autofocus: true,
+          decoration: const InputDecoration(
+            labelText: '迴路名稱',
+            border: OutlineInputBorder(),
+          ),
+          onSubmitted: (value) {
+            final name = value.trim();
+            if (name.isNotEmpty) {
+              widget.onUpdateLoop(
+                widget.index,
+                widget.loop.copyWith(name: name),
+              );
+              Navigator.of(context).pop();
+            }
+          },
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(),
+            child: const Text('取消'),
+          ),
+          ElevatedButton(
+            onPressed: () {
+              final name = controller.text.trim();
+              if (name.isNotEmpty) {
+                widget.onUpdateLoop(
+                  widget.index,
+                  widget.loop.copyWith(name: name),
+                );
+                Navigator.of(context).pop();
+              }
+            },
+            child: const Text('確定'),
+          ),
+        ],
+      ),
+    ).then((_) => controller.dispose());
+  }
+
   @override
   Widget build(BuildContext context) {
     return Card(
@@ -48,11 +95,30 @@ class _LoopCardWidgetState extends State<LoopCardWidget> {
                   ),
                   const SizedBox(width: 8),
                   Expanded(
-                    child: Text(
-                      widget.loop.name,
-                      style: const TextStyle(
-                        fontSize: 18,
-                        fontWeight: FontWeight.bold,
+                    child: GestureDetector(
+                      onTap: () => _showRenameDialog(context),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Flexible(
+                            child: Text(
+                              widget.loop.name,
+                              style: const TextStyle(
+                                fontSize: 18,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                          ),
+                          const SizedBox(width: 4),
+                          Icon(
+                            Icons.edit,
+                            size: 14,
+                            color: Theme.of(context)
+                                .colorScheme
+                                .onSurfaceVariant
+                                .withValues(alpha: 0.5),
+                          ),
+                        ],
                       ),
                     ),
                   ),
