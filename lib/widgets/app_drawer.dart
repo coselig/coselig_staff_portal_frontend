@@ -173,8 +173,11 @@ class AppDrawer extends StatelessWidget {
               },
             ),
           ),
+          ListTile(
+            leading: Icon(Icons.brightness_6),
+            title: ThemeToggleSwitch(),
+          ),
           const Divider(),
-          ListTile(title: ThemeToggleSwitch()),
           ListTile(
             leading: Icon(Icons.logout),
             title: Text('登出'),
