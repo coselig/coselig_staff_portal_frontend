@@ -117,7 +117,7 @@ class _LoginFrameState extends State<LoginFrame> {
                               .read<AttendanceService>()
                               .fetchAndCacheWorkingStaff();
                           navigatorKey.currentState!.pushReplacementNamed(
-                            '/home',
+                            authService.isCustomer ? '/customer_home' : '/home',
                           );
                         }
                       } else {
@@ -221,7 +221,7 @@ class _LoginFrameState extends State<LoginFrame> {
                             .read<AttendanceService>()
                             .fetchAndCacheWorkingStaff();
                         navigatorKey.currentState!.pushReplacementNamed(
-                          '/home',
+                          authService.isCustomer ? '/customer_home' : '/home',
                         );
                       }
                     }
