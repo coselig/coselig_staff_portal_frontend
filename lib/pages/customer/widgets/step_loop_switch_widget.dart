@@ -704,36 +704,6 @@ class _StepLoopSwitchWidgetState extends State<StepLoopSwitchWidget> {
     required String spaceName,
     required int totalInSpace,
   }) {
-    final cardContent = Row(
-      key: key,
-      children: [
-        // 拖拉把手
-        MouseRegion(
-          cursor: SystemMouseCursors.grab,
-          child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 8),
-            child: Icon(
-              Icons.drag_indicator,
-              color: Theme.of(
-                context,
-              ).colorScheme.onSurface.withValues(alpha: 0.4),
-            ),
-          ),
-        ),
-        Expanded(
-          child: LoopCardWidget(
-            index: globalIndex,
-            loop: loop,
-            onUpdateLoop: widget.onUpdateLoop,
-            onRemoveLoop: widget.onRemoveLoop,
-            onAddFixture: widget.onAddFixtureToLoop,
-            onRemoveFixture: widget.onRemoveFixtureFromLoop,
-            onEditFixture: widget.onEditFixtureInLoop,
-          ),
-        ),
-      ],
-    );
-
     return DragTarget<int>(
       onWillAcceptWithDetails: (details) {
         if (details.data == globalIndex) return false;
@@ -769,59 +739,107 @@ class _StepLoopSwitchWidgetState extends State<StepLoopSwitchWidget> {
       },
       builder: (context, candidateData, rejectedData) {
         final isAccepting = candidateData.isNotEmpty;
-        return Draggable<int>(
-          data: globalIndex,
-          feedback: Material(
-            elevation: 4,
-            borderRadius: BorderRadius.circular(12),
-            child: SizedBox(
-              width: MediaQuery.of(context).size.width * 0.6,
-              child: Opacity(
-                opacity: 0.85,
-                child: Card(
-                  child: Padding(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 16,
-                      vertical: 12,
+        return Container(
+          decoration: isAccepting
+              ? BoxDecoration(
+                  border: Border(
+                    top: BorderSide(
+                      color: Theme.of(context).colorScheme.primary,
+                      width: 3,
                     ),
-                    child: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Icon(
-                          Icons.drag_indicator,
-                          color: Theme.of(context).colorScheme.primary,
-                        ),
-                        const SizedBox(width: 8),
-                        Expanded(
-                          child: Text(
-                            loop.name,
-                            style: const TextStyle(
-                              fontSize: 16,
-                              fontWeight: FontWeight.bold,
-                            ),
-                            overflow: TextOverflow.ellipsis,
+                  ),
+                )
+              : null,
+          child: Row(
+            key: key,
+            children: [
+              // 只有拖拉把手可以觸發拖曳
+              Draggable<int>(
+                data: globalIndex,
+                feedback: Material(
+                  elevation: 4,
+                  borderRadius: BorderRadius.circular(12),
+                  child: SizedBox(
+                    width: MediaQuery.of(context).size.width * 0.6,
+                    child: Opacity(
+                      opacity: 0.85,
+                      child: Card(
+                        child: Padding(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 16,
+                            vertical: 12,
+                          ),
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Icon(
+                                Icons.drag_indicator,
+                                color: Theme.of(context).colorScheme.primary,
+                              ),
+                              const SizedBox(width: 8),
+                              Expanded(
+                                child: Text(
+                                  loop.name,
+                                  style: const TextStyle(
+                                    fontSize: 16,
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                  overflow: TextOverflow.ellipsis,
+                                ),
+                              ),
+                            ],
                           ),
                         ),
-                      ],
+                      ),
+                    ),
+                  ),
+                ),
+                childWhenDragging: Opacity(
+                  opacity: 0.3,
+                  child: MouseRegion(
+                    cursor: SystemMouseCursors.grab,
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 4,
+                        vertical: 8,
+                      ),
+                      child: Icon(
+                        Icons.drag_indicator,
+                        color: Theme.of(
+                          context,
+                        ).colorScheme.onSurface.withValues(alpha: 0.4),
+                      ),
+                    ),
+                  ),
+                ),
+                child: MouseRegion(
+                  cursor: SystemMouseCursors.grab,
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 4,
+                      vertical: 8,
+                    ),
+                    child: Icon(
+                      Icons.drag_indicator,
+                      color: Theme.of(
+                        context,
+                      ).colorScheme.onSurface.withValues(alpha: 0.4),
                     ),
                   ),
                 ),
               ),
-            ),
-          ),
-          childWhenDragging: Opacity(opacity: 0.3, child: cardContent),
-          child: Container(
-            decoration: isAccepting
-                ? BoxDecoration(
-                    border: Border(
-                      top: BorderSide(
-                        color: Theme.of(context).colorScheme.primary,
-                        width: 3,
-                      ),
-                    ),
-                  )
-                : null,
-            child: cardContent,
+              Expanded(
+                child: LoopCardWidget(
+                  index: globalIndex,
+                  loop: loop,
+                  onUpdateLoop: widget.onUpdateLoop,
+                  onRemoveLoop: widget.onRemoveLoop,
+                  onAddFixture: widget.onAddFixtureToLoop,
+                  onRemoveFixture: widget.onRemoveFixtureFromLoop,
+                  onEditFixture: widget.onEditFixtureInLoop,
+                ),
+              ),
+            ],
           ),
         );
       },
