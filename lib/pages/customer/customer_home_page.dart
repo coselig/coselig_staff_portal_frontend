@@ -150,6 +150,53 @@ class _CustomerHomePageState extends State<CustomerHomePage> {
     _autoSave();
   }
 
+  /// 在同一空間內重新排序開關
+  void _reorderSwitchesInSpace(
+    String space,
+    int oldLocalIndex,
+    int newLocalIndex,
+  ) {
+    final globalIndices = <int>[];
+    for (int i = 0; i < _switches.length; i++) {
+      if (_switches[i].space == space) {
+        globalIndices.add(i);
+      }
+    }
+    if (oldLocalIndex < 0 || oldLocalIndex >= globalIndices.length) return;
+    if (newLocalIndex < 0 || newLocalIndex > globalIndices.length) return;
+    if (newLocalIndex > oldLocalIndex) newLocalIndex -= 1;
+    if (oldLocalIndex == newLocalIndex) return;
+
+    setState(() {
+      final movedSwitch = _switches.removeAt(globalIndices[oldLocalIndex]);
+      final updatedIndices = <int>[];
+      for (int i = 0; i < _switches.length; i++) {
+        if (_switches[i].space == space) {
+          updatedIndices.add(i);
+        }
+      }
+      final insertAt = newLocalIndex < updatedIndices.length
+          ? updatedIndices[newLocalIndex]
+          : (updatedIndices.isNotEmpty
+                ? updatedIndices.last + 1
+                : _switches.length);
+      _switches.insert(insertAt, movedSwitch);
+    });
+    _autoSave();
+  }
+
+  /// 將開關移動到另一個空間
+  void _moveSwitchToSpace(int switchIndex, String targetSpace) {
+    if (switchIndex < 0 || switchIndex >= _switches.length) return;
+    if (_switches[switchIndex].space == targetSpace) return;
+    setState(() {
+      _switches[switchIndex] = _switches[switchIndex].copyWith(
+        space: targetSpace,
+      );
+    });
+    _autoSave();
+  }
+
   void _addOtherDevice() {
     setState(() {
       _otherDevices.add(OtherDevice(name: '', price: 0));
@@ -923,6 +970,8 @@ class _CustomerHomePageState extends State<CustomerHomePage> {
                           onRenameSpace: _renameSpace,
                           onReorderLoopsInSpace: _reorderLoopsInSpace,
                           onMoveLoopToSpace: _moveLoopToSpace,
+                          onReorderSwitchesInSpace: _reorderSwitchesInSpace,
+                          onMoveSwitchToSpace: _moveSwitchToSpace,
                         ),
                       ],
                     ),

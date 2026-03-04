@@ -27,6 +27,8 @@ class StepLoopSwitchWidget extends StatefulWidget {
   final Function(String, String) onRenameSpace;
   final Function(String, int, int) onReorderLoopsInSpace;
   final Function(int, String) onMoveLoopToSpace;
+  final Function(String, int, int) onReorderSwitchesInSpace;
+  final Function(int, String) onMoveSwitchToSpace;
 
   const StepLoopSwitchWidget({
     super.key,
@@ -52,6 +54,8 @@ class StepLoopSwitchWidget extends StatefulWidget {
     required this.onRenameSpace,
     required this.onReorderLoopsInSpace,
     required this.onMoveLoopToSpace,
+    required this.onReorderSwitchesInSpace,
+    required this.onMoveSwitchToSpace,
   });
 
   @override
@@ -629,60 +633,80 @@ class _StepLoopSwitchWidgetState extends State<StepLoopSwitchWidget> {
           ),
           child: Column(
             children: [
-              // 空間標題
-              Container(
-                width: double.infinity,
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 12,
-                  vertical: 8,
-                ),
-                decoration: BoxDecoration(
-                  color: Theme.of(
-                    context,
-                  ).colorScheme.secondaryContainer.withValues(alpha: 0.3),
-                  borderRadius: const BorderRadius.vertical(
-                    top: Radius.circular(12),
-                  ),
-                ),
-                child: Row(
-                  children: [
-                    Icon(
-                      Icons.room,
-                      size: context.scaledIconSize(18),
-                      color: Theme.of(context).colorScheme.secondary,
+              // 空間標題（支援拖曳開關到此空間）
+              DragTarget<String>(
+                onWillAcceptWithDetails: (details) {
+                  if (!details.data.startsWith('switch:')) return false;
+                  final draggedIndex = int.parse(details.data.substring(7));
+                  final draggedSwitch = widget.switches[draggedIndex];
+                  return draggedSwitch.space != spaceName;
+                },
+                onAcceptWithDetails: (details) {
+                  final draggedIndex = int.parse(details.data.substring(7));
+                  widget.onMoveSwitchToSpace(draggedIndex, spaceName);
+                },
+                builder: (context, candidateData, rejectedData) {
+                  final isAccepting = candidateData.isNotEmpty;
+                  return Container(
+                    width: double.infinity,
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 12,
+                      vertical: 8,
                     ),
-                    const SizedBox(width: 6),
-                    Text(
-                      spaceName,
-                      style: TextStyle(
-                        fontSize: 15,
-                        fontWeight: FontWeight.w600,
-                        color: Theme.of(context).colorScheme.onSurface,
+                    decoration: BoxDecoration(
+                      color: isAccepting
+                          ? Theme.of(context).colorScheme.primaryContainer
+                          : Theme.of(context).colorScheme.secondaryContainer
+                                .withValues(alpha: 0.3),
+                      borderRadius: const BorderRadius.vertical(
+                        top: Radius.circular(12),
                       ),
                     ),
-                    const SizedBox(width: 8),
-                    Text(
-                      '(${switchesInSpace.fold<int>(0, (sum, e) => sum + e.value.count)} 開關)',
-                      style: TextStyle(
-                        fontSize: 12,
-                        color: Theme.of(context).colorScheme.onSurfaceVariant,
-                      ),
+                    child: Row(
+                      children: [
+                        Icon(
+                          Icons.room,
+                          size: context.scaledIconSize(18),
+                          color: Theme.of(context).colorScheme.secondary,
+                        ),
+                        const SizedBox(width: 6),
+                        Text(
+                          spaceName,
+                          style: TextStyle(
+                            fontSize: 15,
+                            fontWeight: FontWeight.w600,
+                            color: Theme.of(context).colorScheme.onSurface,
+                          ),
+                        ),
+                        const SizedBox(width: 8),
+                        Text(
+                          '(${switchesInSpace.fold<int>(0, (sum, e) => sum + e.value.count)} 開關)',
+                          style: TextStyle(
+                            fontSize: 12,
+                            color: Theme.of(
+                              context,
+                            ).colorScheme.onSurfaceVariant,
+                          ),
+                        ),
+                      ],
                     ),
-                  ],
-                ),
+                  );
+                },
               ),
               // 開關卡片列表
               Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                 child: Column(
-                  children: switchesInSpace.map((entry) {
-                    return SwitchCardWidget(
-                      index: entry.key,
+                  children: switchesInSpace.asMap().entries.map((localEntry) {
+                    final localIndex = localEntry.key;
+                    final entry = localEntry.value;
+                    return _buildDraggableSwitchCard(
+                      key: ValueKey('switch_${entry.key}'),
+                      globalIndex: entry.key,
+                      localIndex: localIndex,
                       switchModel: entry.value,
-                      onUpdateSwitch: widget.onUpdateSwitch,
-                      onRemoveSwitch: widget.onRemoveSwitch,
-                      spaces: widget.spaces,
-                      loops: widget.loops,
+                      spaceName: spaceName,
+                      totalInSpace: switchesInSpace.length,
                     );
                   }).toList(),
                 ),
@@ -837,6 +861,162 @@ class _StepLoopSwitchWidgetState extends State<StepLoopSwitchWidget> {
                   onAddFixture: widget.onAddFixtureToLoop,
                   onRemoveFixture: widget.onRemoveFixtureFromLoop,
                   onEditFixture: widget.onEditFixtureInLoop,
+                ),
+              ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
+  Widget _buildDraggableSwitchCard({
+    required Key key,
+    required int globalIndex,
+    required int localIndex,
+    required SwitchModel switchModel,
+    required String spaceName,
+    required int totalInSpace,
+  }) {
+    return DragTarget<String>(
+      onWillAcceptWithDetails: (details) {
+        // 只接受 switch: 前綴的拖曳資料
+        if (!details.data.startsWith('switch:')) return false;
+        final draggedIndex = int.parse(details.data.substring(7));
+        if (draggedIndex == globalIndex) return false;
+        return true;
+      },
+      onAcceptWithDetails: (details) {
+        final draggedIndex = int.parse(details.data.substring(7));
+        final draggedSwitch = widget.switches[draggedIndex];
+        if (draggedSwitch.space != spaceName) {
+          // 跨空間移動
+          widget.onMoveSwitchToSpace(draggedIndex, spaceName);
+        } else {
+          // 同空間內重新排序
+          int draggedLocalIdx = -1;
+          int count = 0;
+          for (int i = 0; i < widget.switches.length; i++) {
+            if (widget.switches[i].space == spaceName) {
+              if (i == draggedIndex) {
+                draggedLocalIdx = count;
+                break;
+              }
+              count++;
+            }
+          }
+          if (draggedLocalIdx >= 0 && draggedLocalIdx != localIndex) {
+            int newLocal = localIndex;
+            if (draggedLocalIdx < localIndex) {
+              newLocal += 1;
+            }
+            widget.onReorderSwitchesInSpace(
+              spaceName,
+              draggedLocalIdx,
+              newLocal,
+            );
+          }
+        }
+      },
+      builder: (context, candidateData, rejectedData) {
+        final isAccepting = candidateData.isNotEmpty;
+        return Container(
+          decoration: isAccepting
+              ? BoxDecoration(
+                  border: Border(
+                    top: BorderSide(
+                      color: Theme.of(context).colorScheme.primary,
+                      width: 3,
+                    ),
+                  ),
+                )
+              : null,
+          child: Row(
+            key: key,
+            children: [
+              // 只有拖拉把手可以觸發拖曳
+              Draggable<String>(
+                data: 'switch:$globalIndex',
+                feedback: Material(
+                  elevation: 4,
+                  borderRadius: BorderRadius.circular(12),
+                  child: SizedBox(
+                    width: MediaQuery.of(context).size.width * 0.6,
+                    child: Opacity(
+                      opacity: 0.85,
+                      child: Card(
+                        child: Padding(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 16,
+                            vertical: 12,
+                          ),
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Icon(
+                                Icons.drag_indicator,
+                                color: Theme.of(context).colorScheme.primary,
+                              ),
+                              const SizedBox(width: 8),
+                              Expanded(
+                                child: Text(
+                                  switchModel.name,
+                                  style: const TextStyle(
+                                    fontSize: 16,
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                  overflow: TextOverflow.ellipsis,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+                childWhenDragging: Opacity(
+                  opacity: 0.3,
+                  child: MouseRegion(
+                    cursor: SystemMouseCursors.grab,
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 4,
+                        vertical: 8,
+                      ),
+                      child: Icon(
+                        Icons.drag_indicator,
+                        color: Theme.of(
+                          context,
+                        ).colorScheme.onSurface.withValues(alpha: 0.4),
+                      ),
+                    ),
+                  ),
+                ),
+                child: MouseRegion(
+                  cursor: SystemMouseCursors.grab,
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 4,
+                      vertical: 8,
+                    ),
+                    child: Icon(
+                      Icons.drag_indicator,
+                      color: Theme.of(
+                        context,
+                      ).colorScheme.onSurface.withValues(alpha: 0.4),
+                    ),
+                  ),
+                ),
+              ),
+              Expanded(
+                child: SwitchCardWidget(
+                  index: globalIndex,
+                  switchModel: switchModel,
+                  onUpdateSwitch: widget.onUpdateSwitch,
+                  onRemoveSwitch: widget.onRemoveSwitch,
+                  spaces: widget.spaces,
+                  loops: widget.loops,
                 ),
               ),
             ],

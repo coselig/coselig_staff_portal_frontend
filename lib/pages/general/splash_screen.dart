@@ -40,7 +40,7 @@ class _SplashScreenState extends State<SplashScreen> {
   Future<void> _doAutoLoginAndNavigate() async {
     final authService = context.read<AuthService>();
     // 同時進行自動登入和最少顯示 2 秒的 splash
-    final results = await Future.wait([
+    await Future.wait([
       authService.tryAutoLogin(),
       Future.delayed(const Duration(seconds: 2)),
     ]);
