@@ -87,7 +87,6 @@ class _SwitchCardWidgetState extends State<SwitchCardWidget> {
                   if (widget.switchModel.price > 0)
                     Text('價格：${widget.switchModel.price}'),
                   Text('單火/零火：${widget.switchModel.fireType}'),
-                  Text('是否可以聯網：${widget.switchModel.networkable ? '是' : '否'}'),
                   Text('協定類型：${widget.switchModel.protocol}'),
                   Text('顏色：${widget.switchModel.color}'),
                   const SizedBox(height: 12),
@@ -124,34 +123,36 @@ class _SwitchCardWidgetState extends State<SwitchCardWidget> {
                 ),
               ),
               const Spacer(),
-              Text(
-                '場景開關',
-                style: TextStyle(
-                  fontSize: 12,
-                  color: Theme.of(context).colorScheme.onSurfaceVariant,
+              if (widget.switchModel.sceneCapable) ...[
+                Text(
+                  '場景開關',
+                  style: TextStyle(
+                    fontSize: 12,
+                    color: Theme.of(context).colorScheme.onSurfaceVariant,
+                  ),
                 ),
-              ),
-              Switch(
-                value: gang.isScene,
-                onChanged: (value) {
-                  final updatedGangs = widget.switchModel.gangs
-                      .map((g) => g.copyWith())
-                      .toList();
-                  // 切換場景模式時，若關閉場景且已有多個迴路，保留第一個
-                  if (!value && gang.controlledLoopNames.length > 1) {
-                    updatedGangs[gangIndex] = gang.copyWith(
-                      isScene: false,
-                      controlledLoopNames: [gang.controlledLoopNames.first],
+                Switch(
+                  value: gang.isScene,
+                  onChanged: (value) {
+                    final updatedGangs = widget.switchModel.gangs
+                        .map((g) => g.copyWith())
+                        .toList();
+                    // 切換場景模式時，若關閉場景且已有多個迴路，保留第一個
+                    if (!value && gang.controlledLoopNames.length > 1) {
+                      updatedGangs[gangIndex] = gang.copyWith(
+                        isScene: false,
+                        controlledLoopNames: [gang.controlledLoopNames.first],
+                      );
+                    } else {
+                      updatedGangs[gangIndex] = gang.copyWith(isScene: value);
+                    }
+                    widget.onUpdateSwitch(
+                      widget.index,
+                      widget.switchModel.copyWith(gangs: updatedGangs),
                     );
-                  } else {
-                    updatedGangs[gangIndex] = gang.copyWith(isScene: value);
-                  }
-                  widget.onUpdateSwitch(
-                    widget.index,
-                    widget.switchModel.copyWith(gangs: updatedGangs),
-                  );
-                },
-              ),
+                  },
+                ),
+              ],
             ],
           ),
           const SizedBox(height: 4),
@@ -389,10 +390,9 @@ class _SwitchCardWidgetState extends State<SwitchCardWidget> {
     String fireType = widget.switchModel.fireType.isNotEmpty
         ? widget.switchModel.fireType
         : '單火';
-    String networkable = widget.switchModel.networkable ? '是' : '否';
     String protocol = widget.switchModel.protocol.isNotEmpty
         ? widget.switchModel.protocol
-        : 'MQTT';
+        : '無';
     String space = widget.switchModel.space;
     final colorController = TextEditingController(
       text: widget.switchModel.color,
@@ -438,20 +438,12 @@ class _SwitchCardWidgetState extends State<SwitchCardWidget> {
                   onChanged: (v) => setState(() => fireType = v ?? '單火'),
                 ),
                 DropdownButtonFormField<String>(
-                  initialValue: networkable,
-                  decoration: const InputDecoration(labelText: '是否可以聯網'),
-                  items: ['是', '否']
-                      .map((v) => DropdownMenuItem(value: v, child: Text(v)))
-                      .toList(),
-                  onChanged: (v) => setState(() => networkable = v ?? '否'),
-                ),
-                DropdownButtonFormField<String>(
                   initialValue: protocol,
                   decoration: const InputDecoration(labelText: '協定類型'),
-                  items: ['MQTT', 'zigbee', '藍芽', 'matter']
+                  items: ['無', 'MQTT', 'zigbee', '藍芽', 'matter']
                       .map((v) => DropdownMenuItem(value: v, child: Text(v)))
                       .toList(),
-                  onChanged: (v) => setState(() => protocol = v ?? 'MQTT'),
+                  onChanged: (v) => setState(() => protocol = v ?? '無'),
                 ),
                 TextField(
                   controller: colorController,
@@ -476,7 +468,6 @@ class _SwitchCardWidgetState extends State<SwitchCardWidget> {
                       double.tryParse(priceController.text) ??
                       widget.switchModel.price,
                   fireType: fireType,
-                  networkable: networkable == '是',
                   protocol: protocol,
                   color: colorController.text,
                   space: space,

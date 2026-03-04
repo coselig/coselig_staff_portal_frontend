@@ -77,18 +77,21 @@ class _GenericManagementPageState extends State<GenericManagementPage> {
 
   Future<void> _editItem(int index) async {
     final item = _items[index];
+    final itemMap = item is Map<String, dynamic>
+        ? item
+        : item.toJson() as Map<String, dynamic>;
     final result = await showDialog<Map<String, dynamic>>(
       context: context,
       builder: (context) => _GenericEditDialog(
         columns: widget.config['columns'],
-        initial: item is Map<String, dynamic> ? item : item.toJson(),
+        initial: itemMap,
       ),
     );
     if (result != null) {
       setState(() => _isLoading = true);
       try {
         final updateFn = widget.config['update'] as Future<void> Function(QuoteService, int, Map<String, dynamic>);
-        final id = item['id'] ?? (item is Map ? item['id'] : item.id);
+        final id = itemMap['id'];
         await updateFn(_quoteService, id, result);
         await _loadItems();
       } catch (e) {
@@ -121,7 +124,10 @@ class _GenericManagementPageState extends State<GenericManagementPage> {
       setState(() => _isLoading = true);
       try {
         final deleteFn = widget.config['delete'] as Future<void> Function(QuoteService, int);
-        final id = item['id'] ?? (item is Map ? item['id'] : item.id);
+        final itemMap = item is Map<String, dynamic>
+            ? item
+            : item.toJson() as Map<String, dynamic>;
+        final id = itemMap['id'];
         await deleteFn(_quoteService, id);
         await _loadItems();
       } catch (e) {
@@ -213,8 +219,31 @@ class _GenericEditDialogState extends State<_GenericEditDialog> {
     super.initState();
     _controllers = {
       for (var col in widget.columns)
-        col['name']: TextEditingController(text: widget.initial?[col['name']]?.toString() ?? ''),
+        col['name']: TextEditingController(
+          text: _resolveInitialValue(col, widget.initial?[col['name']]),
+        ),
     };
+  }
+
+  /// 將布林/數值轉為下拉選單對應的文字
+  String _resolveInitialValue(Map<String, dynamic> col, dynamic rawValue) {
+    if (rawValue == null) return '';
+    if (col['type'] == 'dropdown') {
+      final options = List<String>.from(col['options'] ?? []);
+      final str = rawValue.toString();
+      // 已經是選項之一，直接用
+      if (options.contains(str)) return str;
+      // 布林 / 0,1 → 是,否
+      if (options.contains('是') && options.contains('否')) {
+        if (rawValue == true || rawValue == 1 || str == 'true' || str == '1')
+          return '是';
+        if (rawValue == false || rawValue == 0 || str == 'false' || str == '0')
+          return '否';
+      }
+      // fallback: 第一個選項
+      return options.isNotEmpty ? options[0] : '';
+    }
+    return rawValue.toString();
   }
 
   @override
@@ -242,7 +271,7 @@ class _GenericEditDialogState extends State<_GenericEditDialog> {
                 return Padding(
                   padding: const EdgeInsets.symmetric(vertical: 8),
                   child: DropdownButtonFormField<String>(
-                    initialValue: _controllers[col['name']]!.text.isNotEmpty
+                    value: _controllers[col['name']]!.text.isNotEmpty
                         ? _controllers[col['name']]!.text
                         : (options.isNotEmpty ? options[0] : null),
                     decoration: InputDecoration(labelText: col['label']),

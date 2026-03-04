@@ -17,16 +17,10 @@ final switchConfig = {
       'options': ['單火', '零火'],
     },
     {
-      'name': 'networkable',
-      'label': '是否可以聯網',
-      'type': 'dropdown',
-      'options': ['是', '否'],
-    },
-    {
       'name': 'protocol',
       'label': '協定類型',
       'type': 'dropdown',
-      'options': ['MQTT', 'zigbee', '藍芽', 'matter'],
+      'options': ['無', 'MQTT', 'zigbee', '藍芽', 'matter'],
     },
     {'name': 'color', 'label': '顏色', 'type': 'text'},
     {
@@ -44,7 +38,6 @@ final switchConfig = {
           price: data['price'],
           count: data['count'].toInt(),
           fireType: data['fireType'] ?? '',
-          networkable: data['networkable'] == '是',
           protocol: data['protocol'] ?? '',
           color: data['color'] ?? '',
           sceneCapable: data['sceneCapable'] == '是',
@@ -59,7 +52,6 @@ final switchConfig = {
           price: data['price'],
           count: data['count'].toInt(),
           fireType: data['fireType'] ?? '',
-          networkable: data['networkable'] == '是',
           protocol: data['protocol'] ?? '',
           color: data['color'] ?? '',
           sceneCapable: data['sceneCapable'] == '是',
