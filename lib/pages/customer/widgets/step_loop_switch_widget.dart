@@ -681,6 +681,7 @@ class _StepLoopSwitchWidgetState extends State<StepLoopSwitchWidget> {
                       onUpdateSwitch: widget.onUpdateSwitch,
                       onRemoveSwitch: widget.onRemoveSwitch,
                       spaces: widget.spaces,
+                      loops: widget.loops,
                     );
                   }).toList(),
                 ),
