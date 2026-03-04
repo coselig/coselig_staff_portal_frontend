@@ -29,6 +29,12 @@ final switchConfig = {
       'options': ['MQTT', 'zigbee', '藍芽', 'matter'],
     },
     {'name': 'color', 'label': '顏色', 'type': 'text'},
+    {
+      'name': 'sceneCapable',
+      'label': '支援場景開關',
+      'type': 'dropdown',
+      'options': ['是', '否'],
+    },
   ],
   'fetch': (QuoteService service) => service.fetchSwitchOptions(),
   'add': (QuoteService service, Map<String, dynamic> data) =>
@@ -41,6 +47,7 @@ final switchConfig = {
           networkable: data['networkable'] == '是',
           protocol: data['protocol'] ?? '',
           color: data['color'] ?? '',
+          sceneCapable: data['sceneCapable'] == '是',
         ),
       ),
   'update': (QuoteService service, int id, Map<String, dynamic> data) =>
@@ -55,6 +62,7 @@ final switchConfig = {
           networkable: data['networkable'] == '是',
           protocol: data['protocol'] ?? '',
           color: data['color'] ?? '',
+          sceneCapable: data['sceneCapable'] == '是',
         ),
       ),
   'delete': (QuoteService service, int id) => service.deleteSwitchOption(id),

@@ -9,6 +9,7 @@ class SwitchModel {
   bool networkable;
   String protocol;
   String color;
+  bool sceneCapable;
   String space;
   List<SwitchGang> gangs;
 
@@ -21,6 +22,7 @@ class SwitchModel {
     this.networkable = false,
     this.protocol = '',
     this.color = '',
+    this.sceneCapable = false,
     this.space = '未分類',
     List<SwitchGang>? gangs,
   }) : gangs = gangs ?? List.generate(count, (_) => SwitchGang());
@@ -38,6 +40,7 @@ class SwitchModel {
     bool? networkable,
     String? protocol,
     String? color,
+    bool? sceneCapable,
     String? space,
     List<SwitchGang>? gangs,
   }) {
@@ -61,6 +64,7 @@ class SwitchModel {
       networkable: networkable ?? this.networkable,
       protocol: protocol ?? this.protocol,
       color: color ?? this.color,
+      sceneCapable: sceneCapable ?? this.sceneCapable,
       space: space ?? this.space,
       gangs: newGangs,
     );
@@ -76,6 +80,7 @@ class SwitchModel {
       'networkable': networkable,
       'protocol': protocol,
       'color': color,
+      'sceneCapable': sceneCapable,
       'space': space,
       'gangs': gangs.map((g) => g.toJson()).toList(),
     };
@@ -119,13 +124,19 @@ class SwitchModel {
       name: json['name'] ?? '',
       price: json['price']?.toDouble() ?? 0.0,
       count: count,
-      fireType: json['fireType'] ?? '',
+      fireType: json['fireType'] ?? json['fire_type'] ?? '',
       networkable:
           json['networkable'] == true ||
           json['networkable'] == 1 ||
           json['networkable'] == '是',
       protocol: json['protocol'] ?? '',
       color: json['color'] ?? '',
+      sceneCapable:
+          json['sceneCapable'] == true ||
+          json['sceneCapable'] == 1 ||
+          json['scene_capable'] == true ||
+          json['scene_capable'] == 1 ||
+          json['sceneCapable'] == '是',
       space: json['space'] ?? '未分類',
       gangs: gangs,
     );
