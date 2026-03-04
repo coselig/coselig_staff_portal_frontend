@@ -1,6 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
-import 'package:coselig_staff_portal/services/ui_settings_provider.dart';
 import 'package:coselig_staff_portal/utils/time_utils.dart';
 
 /// 打卡卡片元件
@@ -27,7 +25,6 @@ class AttendancePunchCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final uiSettings = context.watch<UiSettingsProvider>();
     final hasCheckedIn = checkInTime != null;
     final hasCheckedOut = checkOutTime != null;
 
@@ -44,7 +41,7 @@ class AttendancePunchCard extends StatelessWidget {
                   child: Text(
                     displayName,
                     style: TextStyle(
-                      fontSize: (18 * uiSettings.fontSizeScale).toDouble(),
+                      fontSize: 18,
                       fontWeight: FontWeight.bold,
                     ),
                   ),
@@ -73,7 +70,6 @@ class AttendancePunchCard extends StatelessWidget {
 
   /// 已完成打卡的狀態
   Widget _buildCompletedStatus(BuildContext context) {
-    final uiSettings = context.watch<UiSettingsProvider>();
     return Container(
       padding: EdgeInsets.all(12),
       decoration: BoxDecoration(
@@ -90,7 +86,7 @@ class AttendancePunchCard extends StatelessWidget {
           Text(
             '${formatTime(checkInTime)} ~ ${formatTime(checkOutTime)}',
             style: TextStyle(
-              fontSize: (16 * uiSettings.fontSizeScale).toDouble(),
+              fontSize: 16,
               fontWeight: FontWeight.w500,
               color: Theme.of(context).colorScheme.onTertiaryContainer,
             ),
@@ -102,7 +98,6 @@ class AttendancePunchCard extends StatelessWidget {
 
   /// 下班打卡按鈕（已上班）
   Widget _buildCheckOutButton(BuildContext context) {
-    final uiSettings = context.watch<UiSettingsProvider>();
     final screenWidth = MediaQuery.of(context).size.width;
     final isMobile = screenWidth < 600;
 
@@ -126,8 +121,7 @@ class AttendancePunchCard extends StatelessWidget {
                 Text(
                   '上班時間：${formatTime(checkInTime)}',
                   style: TextStyle(
-                    fontSize: ((isMobile ? 12 : 14) * uiSettings.fontSizeScale)
-                        .toDouble(),
+                    fontSize: (isMobile ? 12 : 14).toDouble(),
                   ),
                 ),
               ],
@@ -140,8 +134,7 @@ class AttendancePunchCard extends StatelessWidget {
           label: Text(
             '下班打卡',
             style: TextStyle(
-              fontSize: ((isMobile ? 12 : 14) * uiSettings.fontSizeScale)
-                  .toDouble(),
+              fontSize: (isMobile ? 12 : 14).toDouble(),
             ),
           ),
           onPressed: onCheckOut,
@@ -152,7 +145,6 @@ class AttendancePunchCard extends StatelessWidget {
 
   /// 上班打卡按鈕（尚未打卡）
   Widget _buildCheckInButton(BuildContext context) {
-    final uiSettings = context.watch<UiSettingsProvider>();
     return Row(
       children: [
         Expanded(
@@ -172,7 +164,7 @@ class AttendancePunchCard extends StatelessWidget {
                 Text(
                   '尚未打卡',
                   style: TextStyle(
-                    fontSize: (14 * uiSettings.fontSizeScale).toDouble(),
+                    fontSize: 14,
                     color: Theme.of(context).colorScheme.onSurfaceVariant,
                   ),
                 ),
@@ -186,7 +178,7 @@ class AttendancePunchCard extends StatelessWidget {
           label: Text(
             '上班打卡',
             style: TextStyle(
-              fontSize: (14 * uiSettings.fontSizeScale).toDouble(),
+              fontSize: 14,
             ),
           ),
           onPressed: onCheckIn,

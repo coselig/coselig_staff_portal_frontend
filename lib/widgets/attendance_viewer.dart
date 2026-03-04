@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:coselig_staff_portal/services/attendance_service.dart';
 import 'package:coselig_staff_portal/services/auth_service.dart';
-import 'package:coselig_staff_portal/services/ui_settings_provider.dart';
 import 'package:coselig_staff_portal/widgets/month_year_picker.dart';
 import 'package:coselig_staff_portal/widgets/attendance_calendar_view.dart';
 import 'package:coselig_staff_portal/services/attendance_excel_export_service.dart';
@@ -108,7 +107,6 @@ class _AttendanceViewerState extends State<AttendanceViewer> {
   Widget build(BuildContext context) {
     final attendance = context.watch<AttendanceService>();
     final authService = context.read<AuthService>();
-    context.watch<UiSettingsProvider>();
 
     // 權限檢查
     if (widget.isAdminMode && !authService.isAdmin) {
@@ -139,17 +137,12 @@ class _AttendanceViewerState extends State<AttendanceViewer> {
       child: Column(
         children: [
           if (attendance.errorMessage != null)
-            Builder(
-              builder: (context) {
-                final uiSettings = context.watch<UiSettingsProvider>();
-                return Text(
-                  attendance.errorMessage!,
-                  style: TextStyle(
-                    color: Theme.of(context).colorScheme.error,
-                    fontSize: (14 * uiSettings.fontSizeScale).toDouble(),
-                  ),
-                );
-              },
+            Text(
+              attendance.errorMessage!,
+              style: TextStyle(
+                color: Theme.of(context).colorScheme.error,
+                fontSize: 14,
+              ),
             ),
           const SizedBox(height: 24),
           Row(
@@ -473,17 +466,10 @@ class _AttendanceViewerState extends State<AttendanceViewer> {
                 },
               ),
             ),
-          Builder(
-            builder: (context) {
-              final uiSettings = context.watch<UiSettingsProvider>();
-              return Text(
-                '員工打卡總覽 - ${_selectedMonth.year}年${_selectedMonth.month}月',
-                style: TextStyle(
-                  fontSize: (20 * uiSettings.fontSizeScale).toDouble(),
-                  fontWeight: FontWeight.bold,
-                ),
-              );
-            },
+          Text(
+            '員工打卡總覽 - ${_selectedMonth.year}年${_selectedMonth.month}月',
+            style: TextStyle(
+              fontSize: 20, fontWeight: FontWeight.bold),
           ),
           const SizedBox(height: 20),
           Expanded(
@@ -521,21 +507,14 @@ class _AttendanceViewerState extends State<AttendanceViewer> {
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                              Builder(
-                                builder: (context) {
-                                  final uiSettings = context
-                                      .watch<UiSettingsProvider>();
-                                  return Text(
-                                    employee.isNotEmpty
-                                        ? '${employee['chinese_name'] ?? employee['name'] ?? '未知員工'} (${employee['email'] ?? ''})'
-                                        : '未知員工 ($userId)',
-                                    style: TextStyle(
-                                      fontSize: (18 * uiSettings.fontSizeScale)
-                                          .toDouble(),
-                                      fontWeight: FontWeight.bold,
-                                    ),
-                                  );
-                                },
+                              Text(
+                                employee.isNotEmpty
+                                    ? '${employee['chinese_name'] ?? employee['name'] ?? '未知員工'} (${employee['email'] ?? ''})'
+                                    : '未知員工 ($userId)',
+                                style: TextStyle(
+                                  fontSize: 18,
+                                  fontWeight: FontWeight.bold,
+                                ),
                               ),
                               const SizedBox(height: 8),
                               Text('員工ID: $userId'),

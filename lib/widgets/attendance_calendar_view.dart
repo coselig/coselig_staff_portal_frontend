@@ -1,8 +1,6 @@
 import 'package:coselig_staff_portal/utils/time_utils.dart';
 import 'package:coselig_staff_portal/services/holiday_service.dart';
-import 'package:coselig_staff_portal/services/ui_settings_provider.dart';
 import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
 
 /// 月曆視圖元件，顯示一個月的打卡、請假、假日狀態
 typedef OnManualPunch = void Function(int day, dynamic record);
@@ -111,7 +109,6 @@ class _AttendanceCalendarViewState extends State<AttendanceCalendarView> {
 
   @override
   Widget build(BuildContext context) {
-    context.watch<UiSettingsProvider>();
     final firstDayOfMonth = DateTime(widget.month.year, widget.month.month, 1);
     final lastDayOfMonth = DateTime(
       widget.month.year,
@@ -169,18 +166,13 @@ class _AttendanceCalendarViewState extends State<AttendanceCalendarView> {
             Row(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                Builder(
-                  builder: (context) {
-                    final uiSettings = context.watch<UiSettingsProvider>();
-                    return Text(
-                      '${widget.month.year}年 ${widget.month.month}月',
-                      style: TextStyle(
-                        fontSize: 18 * uiSettings.fontSizeScale,
-                        fontWeight: FontWeight.bold,
-                        color: Theme.of(context).colorScheme.primary,
-                      ),
-                    );
-                  },
+                Text(
+                  '${widget.month.year}年 ${widget.month.month}月',
+                  style: TextStyle(
+                    fontSize: 18,
+                    fontWeight: FontWeight.bold,
+                    color: Theme.of(context).colorScheme.primary,
+                  ),
                 ),
               ],
             ),
@@ -192,20 +184,13 @@ class _AttendanceCalendarViewState extends State<AttendanceCalendarView> {
               children: [
                 for (final label in ['日', '一', '二', '三', '四', '五', '六'])
                   Center(
-                    child: Builder(
-                      builder: (context) {
-                        final uiSettings = context.watch<UiSettingsProvider>();
-                        return Text(
-                          label,
-                          style: TextStyle(
-                            fontWeight: FontWeight.bold,
-                            fontSize: 14 * uiSettings.fontSizeScale,
-                            color: Theme.of(
-                              context,
-                            ).colorScheme.onSurfaceVariant,
-                          ),
-                        );
-                      },
+                    child: Text(
+                      label,
+                      style: TextStyle(
+                        fontWeight: FontWeight.bold,
+                        fontSize: 14,
+                        color: Theme.of(context).colorScheme.onSurfaceVariant,
+                      ),
                     ),
                   ),
               ],
@@ -414,34 +399,22 @@ class _AttendanceCalendarViewState extends State<AttendanceCalendarView> {
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              Builder(
-                builder: (context) {
-                  final uiSettings = context.watch<UiSettingsProvider>();
-                  return Text(
-                    '$day',
-                    style: TextStyle(
-                      color: textColor,
-                      fontWeight: FontWeight.bold,
-                      fontSize: 18 * uiSettings.fontSizeScale,
-                    ),
-                  );
-                },
+              Text(
+                '$day',
+                style: TextStyle(
+                  color: textColor,
+                  fontWeight: FontWeight.bold,
+                  fontSize: 18,
+                ),
               ),
               if (status.isNotEmpty)
                 Padding(
                   padding: const EdgeInsets.only(top: 2),
-                  child: Builder(
-                    builder: (context) {
-                      final uiSettings = context.watch<UiSettingsProvider>();
-                      return Text(
-                        status,
-                        style: TextStyle(
-                          color: textColor,
-                          fontSize: 12 * uiSettings.fontSizeScale,
-                        ),
-                        textAlign: TextAlign.center,
-                      );
-                    },
+                  child: Text(
+                    status,
+                    style: TextStyle(color: textColor,
+                      fontSize: 12),
+                    textAlign: TextAlign.center,
                   ),
                 ),
             ],

@@ -22,7 +22,6 @@ class _LoginFrameState extends State<LoginFrame> {
   @override
   Widget build(BuildContext context) {
     final authService = context.watch<AuthService>();
-    final uiSettings = context.watch<UiSettingsProvider>();
     final screenWidth = MediaQuery.of(context).size.width;
     final isSmallScreen = screenWidth < 600;
     final frameWidth = isSmallScreen ? screenWidth * 0.85 : screenWidth * 0.4;
@@ -153,7 +152,7 @@ class _LoginFrameState extends State<LoginFrame> {
                     horizontal: 32,
                   ),
                   textStyle: TextStyle(
-                    fontSize: (20 * uiSettings.fontSizeScale).toDouble(),
+                    fontSize: 20,
                     fontWeight: FontWeight.bold,
                   ),
                   shape: RoundedRectangleBorder(
@@ -185,7 +184,7 @@ class _LoginFrameState extends State<LoginFrame> {
                 child: Text(
                   showPasswordLogin ? '隱藏帳號密碼登入' : '使用帳號密碼登入',
                   style: TextStyle(
-                    fontSize: (16 * uiSettings.fontSizeScale).toDouble(),
+                    fontSize: 16,
                   ),
                 ),
               ),
@@ -234,7 +233,7 @@ class _LoginFrameState extends State<LoginFrame> {
                       horizontal: 32,
                     ),
                     textStyle: TextStyle(
-                      fontSize: (18 * uiSettings.fontSizeScale).toDouble(),
+                      fontSize: 18,
                       fontWeight: FontWeight.bold,
                     ),
                     shape: RoundedRectangleBorder(

@@ -17,16 +17,10 @@ class AppDrawer extends StatelessWidget {
       child: ListView(
         children: [
           DrawerHeader(
-            child: Consumer<UiSettingsProvider>(
-              builder: (context, uiSettings, child) {
-                return Text(
-                  authService.isCustomer ? '光悅顧客系統' : '光悅員工系統',
-                  style: TextStyle(
-                    fontSize: (20 * uiSettings.fontSizeScale).toDouble(),
-                    fontWeight: FontWeight.bold,
-                  ),
-                );
-              },
+            child: Text(
+              authService.isCustomer ? '光悅顧客系統' : '光悅員工系統',
+              style: TextStyle(
+                fontSize: 20, fontWeight: FontWeight.bold),
             ),
           ),
           if (authService.isAdmin) ...[

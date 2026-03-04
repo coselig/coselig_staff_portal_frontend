@@ -122,19 +122,6 @@ class MainApp extends StatelessWidget {
           useMaterial3: true,
         );
 
-        final lightThemeWithScale = baseLightTheme.copyWith(
-          textTheme: baseLightTheme.textTheme.apply(
-            fontSizeFactor: uiSettings.fontSizeScale,
-            fontSizeDelta: 0,
-          ),
-        );
-        final darkThemeWithScale = baseDarkTheme.copyWith(
-          textTheme: baseDarkTheme.textTheme.apply(
-            fontSizeFactor: uiSettings.fontSizeScale,
-            fontSizeDelta: 0,
-          ),
-        );
-
         return Consumer<AuthService>(
           builder: (context, authService, child) {
             return MaterialApp(
@@ -142,9 +129,18 @@ class MainApp extends StatelessWidget {
               color: Colors.orangeAccent[100],
               navigatorKey: navigatorKey,
               scaffoldMessengerKey: scaffoldMessengerKey,
-              theme: lightThemeWithScale,
-              darkTheme: darkThemeWithScale,
+              theme: baseLightTheme,
+              darkTheme: baseDarkTheme,
               themeMode: themeProvider.themeMode,
+              builder: (context, child) {
+                // 全域文字縮放：所有 Text（含硬編碼 fontSize）都會受影響
+                return MediaQuery(
+                  data: MediaQuery.of(context).copyWith(
+                    textScaler: TextScaler.linear(uiSettings.fontSizeScale),
+                  ),
+                  child: child!,
+                );
+              },
               initialRoute: '/',
               onUnknownRoute: (settings) {
                 // 對於未知路由，重定向到 splash，讓它處理

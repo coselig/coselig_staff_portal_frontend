@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:coselig_staff_portal/services/attendance_service.dart';
-import 'package:coselig_staff_portal/services/ui_settings_provider.dart';
 import 'package:intl/intl.dart';
 
 class WorkingStaffCard extends StatefulWidget {
@@ -25,7 +24,6 @@ class _WorkingStaffCardState extends State<WorkingStaffCard> {
   @override
   Widget build(BuildContext context) {
     final attendance = context.watch<AttendanceService>();
-    final uiSettings = context.watch<UiSettingsProvider>();
     final screenWidth = MediaQuery.of(context).size.width;
     final isMobile = screenWidth < 600; // 假設小於600px為手機
 
@@ -43,8 +41,7 @@ class _WorkingStaffCardState extends State<WorkingStaffCard> {
                 Text(
                   '目前正在上班的員工',
                   style: TextStyle(
-                    fontSize: ((isMobile ? 16 : 18) * uiSettings.fontSizeScale)
-                        .toDouble(),
+                    fontSize: (isMobile ? 16 : 18).toDouble(),
                     fontWeight: FontWeight.bold,
                   ),
                 ),
@@ -72,9 +69,7 @@ class _WorkingStaffCardState extends State<WorkingStaffCard> {
                       '目前沒有員工正在上班',
                       style: TextStyle(
                         color: Theme.of(context).colorScheme.onSurface.withAlpha(150),
-                        fontSize:
-                            ((isMobile ? 14 : 16) * uiSettings.fontSizeScale)
-                                .toDouble(),
+                        fontSize: (isMobile ? 14 : 16).toDouble(),
                       ),
                     ),
                   )
@@ -95,19 +90,13 @@ class _WorkingStaffCardState extends State<WorkingStaffCard> {
                         title: Text(
                           displayName,
                           style: TextStyle(
-                            fontSize:
-                                ((isMobile ? 16 : 18) *
-                                        uiSettings.fontSizeScale)
-                                    .toDouble(),
+                            fontSize: (isMobile ? 16 : 18).toDouble(),
                           ),
                         ),
                         subtitle: Text(
                           '上班時間：${formatTime(emp['check_in_time'])}',
                           style: TextStyle(
-                            fontSize:
-                                ((isMobile ? 12 : 14) *
-                                        uiSettings.fontSizeScale)
-                                    .toDouble(),
+                            fontSize: (isMobile ? 12 : 14).toDouble(),
                           ),
                         ),
                         dense: isMobile, // 在手機上使用緊湊模式

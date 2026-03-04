@@ -109,14 +109,14 @@ Widget build(BuildContext context) {
           Text(
             '光悅員工系統',
             style: TextStyle(
-              fontSize: MediaQuery.of(context).textScaler.scale(24),
+              fontSize: 24,
             ),
           ),
           SizedBox(height: 12),
           Text(
             '載入中...',
             style: TextStyle(
-              fontSize: MediaQuery.of(context).textScaler.scale(24),
+              fontSize: 24,
             ),
           ),
         ],

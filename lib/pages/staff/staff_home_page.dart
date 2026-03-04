@@ -10,7 +10,6 @@ import 'package:provider/provider.dart';
 import 'package:coselig_staff_portal/services/auth_service.dart';
 import 'package:coselig_staff_portal/widgets/attendance_punch_card.dart';
 import 'package:coselig_staff_portal/main.dart';
-import 'package:coselig_staff_portal/services/ui_settings_provider.dart';
 
 class StaffHomePage extends StatefulWidget {
   const StaffHomePage({super.key});
