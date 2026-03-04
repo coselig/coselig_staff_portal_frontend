@@ -13,6 +13,7 @@ final moduleConfig = {
       'label': '品牌',
       'type': 'dropdown',
       'options': ['', '郭先生', 'sunwave', 'matter', 'zigbee'],
+      'allowCustom': true,
     },
     {'name': 'channelCount', 'label': '通道數', 'type': 'number'},
     {

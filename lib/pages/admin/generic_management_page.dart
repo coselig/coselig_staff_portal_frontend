@@ -213,6 +213,8 @@ class _GenericEditDialog extends StatefulWidget {
 class _GenericEditDialogState extends State<_GenericEditDialog> {
   final _formKey = GlobalKey<FormState>();
   late Map<String, TextEditingController> _controllers;
+  /// 記錄哪些 dropdown 欄位正處於「自訂輸入」模式
+  final Set<String> _customFields = {};
 
   @override
   void initState() {
@@ -268,6 +270,46 @@ class _GenericEditDialogState extends State<_GenericEditDialog> {
                 final List<String> options = List<String>.from(
                   col['options'] ?? [],
                 );
+                final bool allowCustom = col['allowCustom'] == true;
+                final String fieldName = col['name'] as String;
+                final bool isCustomMode = _customFields.contains(fieldName);
+
+                // 自訂輸入模式：顯示 TextField + 取消按鈕
+                if (allowCustom && isCustomMode) {
+                  return Padding(
+                    padding: const EdgeInsets.symmetric(vertical: 8),
+                    child: Row(
+                      children: [
+                        Expanded(
+                          child: TextFormField(
+                            controller: _controllers[fieldName],
+                            decoration: InputDecoration(
+                              labelText: '輸入新${col['label']}',
+                              border: const OutlineInputBorder(),
+                            ),
+                            autofocus: true,
+                            validator: (v) =>
+                                (v == null || v.trim().isEmpty) ? '必填' : null,
+                          ),
+                        ),
+                        const SizedBox(width: 8),
+                        IconButton(
+                          icon: const Icon(Icons.close),
+                          tooltip: '取消自訂',
+                          onPressed: () {
+                            setState(() {
+                              _customFields.remove(fieldName);
+                              _controllers[fieldName]!.text = options.isNotEmpty
+                                  ? options[0]
+                                  : '';
+                            });
+                          },
+                        ),
+                      ],
+                    ),
+                  );
+                }
+
                 return Padding(
                   padding: const EdgeInsets.symmetric(vertical: 8),
                   child: DropdownButtonFormField<String>(
@@ -275,15 +317,38 @@ class _GenericEditDialogState extends State<_GenericEditDialog> {
                         ? _controllers[col['name']]!.text
                         : (options.isNotEmpty ? options[0] : null),
                     decoration: InputDecoration(labelText: col['label']),
-                    items: options
-                        .map(
-                          (opt) =>
-                              DropdownMenuItem(value: opt, child: Text(opt)),
-                        )
-                        .toList(),
-                    onChanged: (val) => setState(
-                      () => _controllers[col['name']]!.text = val ?? '',
-                    ),
+                    items: [
+                      ...options.map(
+                        (opt) =>
+                            DropdownMenuItem(
+                          value: opt,
+                          child: Text(opt.isEmpty ? '(空白)' : opt),
+                        ),
+                      ),
+                      if (allowCustom)
+                        DropdownMenuItem(
+                          value: '__custom__',
+                          child: Row(
+                            children: const [
+                              Icon(Icons.add, size: 18),
+                              SizedBox(width: 4),
+                              Text('新增自訂...'),
+                            ],
+                          ),
+                        ),
+                    ],
+                    onChanged: (val) {
+                      if (val == '__custom__') {
+                        setState(() {
+                          _customFields.add(fieldName);
+                          _controllers[fieldName]!.text = '';
+                        });
+                      } else {
+                        setState(
+                          () => _controllers[col['name']]!.text = val ?? '',
+                        );
+                      }
+                    },
                     validator: (v) =>
                         (col['required'] ?? true) && (v == null || v.isEmpty)
                         ? '必填'
