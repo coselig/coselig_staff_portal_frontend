@@ -156,62 +156,43 @@ class _SwitchCardWidgetState extends State<SwitchCardWidget> {
           ),
           const SizedBox(height: 4),
           // 迴路選擇區
-          Row(
+          Wrap(
+            spacing: 8,
+            runSpacing: 4,
             children: [
-              Expanded(
-                child: gang.controlledLoopNames.isEmpty
-                    ? Text(
-                        '尚未設定迴路',
-                        style: TextStyle(
-                          color: Theme.of(
-                            context,
-                          ).colorScheme.onSurface.withValues(alpha: 0.5),
-                          fontSize: 13,
-                        ),
-                      )
-                    : Wrap(
-                        spacing: 8,
-                        runSpacing: 4,
-                        children: gang.controlledLoopNames.map((loopName) {
-                          return Chip(
-                            label: Text(
-                              loopName,
-                              style: const TextStyle(fontSize: 13),
-                            ),
-                            deleteIcon: Icon(
-                              Icons.close,
-                              size: context.scaledIconSize(16),
-                            ),
-                            onDeleted: () {
-                              _removeLoopFromGang(gangIndex, loopName);
-                            },
-                            materialTapTargetSize:
-                                MaterialTapTargetSize.shrinkWrap,
-                            visualDensity: VisualDensity.compact,
-                          );
-                        }).toList(),
-                      ),
-              ),
-              const SizedBox(width: 8),
-              // 新增/選擇迴路按鈕
+              ...gang.controlledLoopNames.map((loopName) {
+                return Chip(
+                  label: Text(loopName, style: const TextStyle(fontSize: 13)),
+                  deleteIcon: Icon(
+                    Icons.close,
+                    size: context.scaledIconSize(16),
+                  ),
+                  onDeleted: () {
+                    _removeLoopFromGang(gangIndex, loopName);
+                  },
+                  materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                  visualDensity: VisualDensity.compact,
+                );
+              }),
+              // 新增/替換迴路按鈕（跟在最後一個 Chip 後面）
               if (gang.isScene || gang.controlledLoopNames.isEmpty)
-                IconButton(
-                  icon: Icon(
-                    Icons.add_circle_outline,
-                    size: context.scaledIconSize(20),
+                ActionChip(
+                  avatar: Icon(Icons.add, size: context.scaledIconSize(16)),
+                  label: const Text('新增', style: TextStyle(fontSize: 13),
                   ),
                   tooltip: gang.isScene ? '新增控制迴路' : '選擇控制迴路',
                   onPressed: () =>
                       _showSelectLoopForGangDialog(context, gangIndex, gang),
-                  constraints: const BoxConstraints(),
-                  padding: EdgeInsets.zero,
+                  materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                  visualDensity: VisualDensity.compact,
                 )
               else
-                // 非場景模式且已有一個迴路：顯示替換按鈕
-                IconButton(
-                  icon: Icon(
+                ActionChip(
+                  avatar: Icon(
                     Icons.swap_horiz,
-                    size: context.scaledIconSize(20),
+                    size: context.scaledIconSize(16),
+                  ),
+                  label: const Text('替換', style: TextStyle(fontSize: 13),
                   ),
                   tooltip: '替換控制迴路',
                   onPressed: () => _showSelectLoopForGangDialog(
@@ -220,8 +201,8 @@ class _SwitchCardWidgetState extends State<SwitchCardWidget> {
                     gang,
                     replaceSingle: true,
                   ),
-                  constraints: const BoxConstraints(),
-                  padding: EdgeInsets.zero,
+                  materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                  visualDensity: VisualDensity.compact,
                 ),
             ],
           ),
