@@ -111,6 +111,10 @@ class _LoginFrameState extends State<LoginFrame> {
                       if (success) {
                         if (mounted) {
                           context
+                              .read<UiSettingsProvider>().bindAuthService(
+                            authService,
+                          );
+                          context
                               .read<AttendanceService>()
                               .fetchAndCacheWorkingStaff();
                           navigatorKey.currentState!.pushReplacementNamed(
@@ -210,6 +214,10 @@ class _LoginFrameState extends State<LoginFrame> {
                     );
                     if (success) {
                       if (mounted) {
+                        context
+                            .read<UiSettingsProvider>().bindAuthService(
+                          authService,
+                        );
                         context
                             .read<AttendanceService>()
                             .fetchAndCacheWorkingStaff();

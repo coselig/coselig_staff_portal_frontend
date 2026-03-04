@@ -1,6 +1,7 @@
 import 'package:universal_html/html.dart' as html;
 import 'package:coselig_staff_portal/constants/app_constants.dart';
 import 'package:coselig_staff_portal/services/attendance_service.dart';
+import 'package:coselig_staff_portal/services/ui_settings_provider.dart';
 import 'package:coselig_staff_portal/widgets/app_drawer.dart';
 import 'package:coselig_staff_portal/widgets/working_staff_card.dart';
 import 'package:coselig_staff_portal/widgets/attendance_viewer.dart';
@@ -37,6 +38,9 @@ class _StaffHomePageState extends State<StaffHomePage> {
     final attendance = context.read<AttendanceService>();
     await authService.tryAutoLogin();
     if (authService.userId != null) {
+      if (mounted) {
+        context.read<UiSettingsProvider>().bindAuthService(authService);
+      }
       await attendance.getTodayAttendance(authService.userId!);
       attendance.updateDynamicPeriods();
       // await attendance.fetchAndCacheMonthAttendance(

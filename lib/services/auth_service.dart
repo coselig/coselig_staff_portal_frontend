@@ -18,7 +18,9 @@ class AuthService extends ChangeNotifier {
   String? email;
   String? role;
   String? userId;
-  String? themeMode; // 新增主題模式欄位
+  String? themeMode; // 主題模式欄位
+  double? fontSizeScale; // 字體大小縮放
+  bool? showWorkingStaffCard; // 顯示目前工作員工
   bool isLoading = false;
   String message = '';
 
@@ -89,7 +91,11 @@ class AuthService extends ChangeNotifier {
         email = data['user']['email'];
         role = data['user']['role'];
         userId = data['user']['id']?.toString();
-        themeMode = data['user']['theme_mode']; // 新增主題模式
+        themeMode = data['user']['theme_mode']; // 主題模式
+        fontSizeScale = (data['user']['font_size_scale'] as num?)?.toDouble();
+        showWorkingStaffCard =
+            data['user']['show_working_staff_card'] == 1 ||
+            data['user']['show_working_staff_card'] == true;
         message = '自動登入成功';
       } else {
         // 401 或其他非 200 狀態碼都表示未登入
@@ -140,6 +146,11 @@ class AuthService extends ChangeNotifier {
         this.email = data['user']['email'];
         role = data['user']['role'];
         userId = data['user']['id']?.toString();
+        themeMode = data['user']['theme_mode'];
+        fontSizeScale = (data['user']['font_size_scale'] as num?)?.toDouble();
+        showWorkingStaffCard =
+            data['user']['show_working_staff_card'] == 1 ||
+            data['user']['show_working_staff_card'] == true;
         message = '登入成功';
         isLoading = false;
         notifyListeners();
@@ -285,6 +296,10 @@ class AuthService extends ChangeNotifier {
         role = data['user']['role'];
         userId = data['user']['id']?.toString();
         themeMode = data['user']['theme_mode'];
+        fontSizeScale = (data['user']['font_size_scale'] as num?)?.toDouble();
+        showWorkingStaffCard =
+            data['user']['show_working_staff_card'] == 1 ||
+            data['user']['show_working_staff_card'] == true;
         message = 'Google 登入成功';
         isLoading = false;
         notifyListeners();
@@ -338,6 +353,42 @@ class AuthService extends ChangeNotifier {
   }
 
   /* =========
+   * 更新 UI 偏好設定（字體大小、顯示工作員工卡片）
+   * ========= */
+  Future<bool> updateUiPreferences({
+    double? fontSizeScale,
+    bool? showWorkingStaffCard,
+  }) async {
+    try {
+      final body = <String, dynamic>{};
+      if (fontSizeScale != null) body['font_size_scale'] = fontSizeScale;
+      if (showWorkingStaffCard != null)
+        body['show_working_staff_card'] = showWorkingStaffCard;
+      if (body.isEmpty) return true;
+
+      final res = await _client
+          .put(
+            Uri.parse('$baseUrl/api/users/ui-preferences'),
+            headers: {'Content-Type': 'application/json'},
+            body: jsonEncode(body),
+          )
+          .timeout(const Duration(seconds: 10));
+
+      if (res.statusCode == 200) {
+        if (fontSizeScale != null) this.fontSizeScale = fontSizeScale;
+        if (showWorkingStaffCard != null)
+          this.showWorkingStaffCard = showWorkingStaffCard;
+        return true;
+      } else {
+        return false;
+      }
+    } catch (e) {
+      print('更新 UI 偏好失敗: $e');
+      return false;
+    }
+  }
+
+  /* =========
    * 工具
    * ========= */
   void _clearUser() {
@@ -346,7 +397,9 @@ class AuthService extends ChangeNotifier {
     email = null;
     role = null;
     userId = null;
-    themeMode = null; // 新增清除主題模式
+    themeMode = null; // 清除主題模式
+    fontSizeScale = null;
+    showWorkingStaffCard = null;
   }
 
   @override
