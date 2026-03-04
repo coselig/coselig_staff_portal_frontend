@@ -22,6 +22,7 @@ class _CustomerProfilePageState extends State<CustomerProfilePage> {
   final _bankAccountController = TextEditingController();
 
   final _companyController = TextEditingController();
+  final _taxIdController = TextEditingController();
   final _contactPersonController = TextEditingController();
   final _notesController = TextEditingController();
 
@@ -53,6 +54,7 @@ class _CustomerProfilePageState extends State<CustomerProfilePage> {
         final c = customers.firstWhere((c) => c.userId.toString() == auth.userId, orElse: () => customers.first);
         _customerId = c.id;
         _companyController.text = c.company ?? '';
+        _taxIdController.text = c.taxId ?? '';
         _contactPersonController.text = c.contactPerson ?? '';
         _notesController.text = c.notes ?? '';
         _isActive = c.isActive;
@@ -80,6 +82,7 @@ class _CustomerProfilePageState extends State<CustomerProfilePage> {
         final customerService = Provider.of<CustomerService>(context, listen: false);
         final success = await customerService.updateCustomer(_customerId!, {
           'company': _companyController.text.trim(),
+          'tax_id': _taxIdController.text.trim(),
           'contact_person': _contactPersonController.text.trim(),
           'notes': _notesController.text.trim(),
           'is_active': _isActive,
@@ -104,6 +107,7 @@ class _CustomerProfilePageState extends State<CustomerProfilePage> {
     _addressController.dispose();
     _bankAccountController.dispose();
     _companyController.dispose();
+    _taxIdController.dispose();
     _contactPersonController.dispose();
     _notesController.dispose();
     super.dispose();
@@ -152,6 +156,10 @@ class _CustomerProfilePageState extends State<CustomerProfilePage> {
                     TextFormField(
                       controller: _companyController,
                       decoration: const InputDecoration(labelText: '公司'),
+                    ),
+                    TextFormField(
+                      controller: _taxIdController,
+                      decoration: const InputDecoration(labelText: '統一編號'),
                     ),
                     TextFormField(
                       controller: _contactPersonController,

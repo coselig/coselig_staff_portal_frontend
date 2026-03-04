@@ -8,6 +8,7 @@ class Customer {
   final String name;
   final String? chineseName;
   final String? company;
+  final String? taxId;
   final String? email;
   final String? phone;
   final String? address;
@@ -25,6 +26,7 @@ class Customer {
     required this.name,
     this.chineseName,
     this.company,
+    this.taxId,
     this.email,
     this.phone,
     this.address,
@@ -44,6 +46,7 @@ class Customer {
       name: json['name'] ?? '',
       chineseName: json['chinese_name'],
       company: json['company'],
+      taxId: json['tax_id'],
       email: json['email'],
       phone: json['phone'],
       address: json['address'],
@@ -64,6 +67,7 @@ class Customer {
       'name': name,
       'chinese_name': chineseName,
       'company': company,
+      'tax_id': taxId,
       'email': email,
       'phone': phone,
       'address': address,
@@ -83,6 +87,7 @@ class Customer {
     String? name,
     String? chineseName,
     String? company,
+    String? taxId,
     String? email,
     String? phone,
     String? address,
@@ -100,6 +105,7 @@ class Customer {
       name: name ?? this.name,
       chineseName: chineseName ?? this.chineseName,
       company: company ?? this.company,
+      taxId: taxId ?? this.taxId,
       email: email ?? this.email,
       phone: phone ?? this.phone,
       address: address ?? this.address,
