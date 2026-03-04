@@ -7,6 +7,7 @@ import 'package:coselig_staff_portal/widgets/attendance_calendar_view.dart';
 import 'package:coselig_staff_portal/services/attendance_excel_export_service.dart';
 import 'package:coselig_staff_portal/main.dart';
 import 'package:coselig_staff_portal/widgets/manual_punch_dialog.dart';
+import 'package:coselig_staff_portal/utils/icon_utils.dart';
 
 class AttendanceViewer extends StatefulWidget {
   final bool isAdminMode;
@@ -476,13 +477,17 @@ class _AttendanceViewerState extends State<AttendanceViewer> {
             child: _isLoading
                 ? const Center(child: CircularProgressIndicator())
                 : _allEmployeesRecords.isEmpty
-                ? const Center(
+                ? Center(
                     child: Column(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
-                        Icon(Icons.search, size: 64, color: Colors.grey),
-                        SizedBox(height: 16),
-                        Text(
+                        Icon(
+                          Icons.search,
+                          size: context.scaledIconSize(64),
+                          color: Colors.grey,
+                        ),
+                        const SizedBox(height: 16),
+                        const Text(
                           '請選擇員工並點擊查詢',
                           style: TextStyle(color: Colors.grey),
                         ),

@@ -3,6 +3,7 @@ import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import 'package:coselig_staff_portal/models/quote/quote_models.dart';
 import 'package:coselig_staff_portal/services/quote_service.dart';
+import 'package:coselig_staff_portal/utils/icon_utils.dart';
 
 const String _customFixtureType = '自訂燈具';
 
@@ -286,7 +287,7 @@ class _EditFixtureDialogState extends State<EditFixtureDialog> {
                         children: [
                           Icon(
                             Icons.info_outline,
-                            size: 16,
+                            size: context.scaledIconSize(16),
                             color: Theme.of(
                               context,
                             ).colorScheme.onSurfaceVariant,

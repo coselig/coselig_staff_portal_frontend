@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:coselig_staff_portal/models/quote/quote_models.dart';
+import 'package:coselig_staff_portal/utils/icon_utils.dart';
 import 'loop_card_widget.dart';
 import 'switch_card_widget.dart';
 
@@ -229,7 +230,7 @@ class _StepLoopSwitchWidgetState extends State<StepLoopSwitchWidget> {
               const Spacer(),
               OutlinedButton.icon(
                 onPressed: _showAddSpaceDialog,
-                icon: const Icon(Icons.room, size: 18),
+                icon: Icon(Icons.room, size: context.scaledIconSize(18)),
                 label: const Text('新增空間'),
               ),
               const SizedBox(width: 8),
@@ -335,13 +336,13 @@ class _StepLoopSwitchWidgetState extends State<StepLoopSwitchWidget> {
                                   isCollapsed
                                       ? Icons.expand_more
                                       : Icons.expand_less,
-                                  size: 20,
+                                  size: context.scaledIconSize(20),
                                   color: Theme.of(context).colorScheme.primary,
                                 ),
                                 const SizedBox(width: 4),
                                 Icon(
                                   Icons.room,
-                                  size: 18,
+                                  size: context.scaledIconSize(18),
                                   color: Theme.of(context).colorScheme.primary,
                                 ),
                                 const SizedBox(width: 6),
@@ -383,7 +384,7 @@ class _StepLoopSwitchWidgetState extends State<StepLoopSwitchWidget> {
                                   IconButton(
                                     icon: Icon(
                                       Icons.edit,
-                                      size: 18,
+                                      size: context.scaledIconSize(18),
                                       color: Theme.of(
                                         context,
                                       ).colorScheme.primary,
@@ -397,7 +398,7 @@ class _StepLoopSwitchWidgetState extends State<StepLoopSwitchWidget> {
                                   IconButton(
                                     icon: Icon(
                                       Icons.delete_outline,
-                                      size: 18,
+                                      size: context.scaledIconSize(18),
                                       color: Theme.of(
                                         context,
                                       ).colorScheme.error,
@@ -647,7 +648,7 @@ class _StepLoopSwitchWidgetState extends State<StepLoopSwitchWidget> {
                   children: [
                     Icon(
                       Icons.room,
-                      size: 18,
+                      size: context.scaledIconSize(18),
                       color: Theme.of(context).colorScheme.secondary,
                     ),
                     const SizedBox(width: 6),

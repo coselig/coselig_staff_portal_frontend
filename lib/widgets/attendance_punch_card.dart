@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:coselig_staff_portal/utils/time_utils.dart';
+import 'package:coselig_staff_portal/utils/icon_utils.dart';
 
 /// 打卡卡片元件
 /// 顯示單一時段的打卡狀態和操作按鈕
@@ -48,7 +49,7 @@ class AttendancePunchCard extends StatelessWidget {
                 ),
                 if (onEditName != null)
                   IconButton(
-                    icon: Icon(Icons.edit, size: 20),
+                    icon: Icon(Icons.edit, size: context.scaledIconSize(20)),
                     tooltip: '編輯時段名稱',
                     onPressed: onEditName,
                   ),
@@ -130,7 +131,10 @@ class AttendancePunchCard extends StatelessWidget {
         ),
         SizedBox(width: isMobile ? 8 : 16),
         ElevatedButton.icon(
-          icon: Icon(Icons.logout, size: isMobile ? 16 : 20),
+          icon: Icon(
+            Icons.logout,
+            size: context.scaledIconSize(isMobile ? 16 : 20),
+          ),
           label: Text(
             '下班打卡',
             style: TextStyle(

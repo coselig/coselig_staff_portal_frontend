@@ -8,6 +8,7 @@ import 'package:coselig_staff_portal/services/customer_service.dart';
 import 'package:coselig_staff_portal/services/auth_service.dart';
 import 'package:coselig_staff_portal/models/quote/quote_models.dart';
 import 'package:provider/provider.dart';
+import 'package:coselig_staff_portal/utils/icon_utils.dart';
 import 'widgets/step_loop_switch_widget.dart';
 import 'widgets/step_module_widget.dart';
 import 'widgets/step_material_widget.dart';
@@ -382,7 +383,7 @@ class _CustomerHomePageState extends State<CustomerHomePage> {
                   children: [
                     Icon(
                       Icons.person,
-                      size: 18,
+                      size: context.scaledIconSize(18),
                       color: Theme.of(context).colorScheme.primary,
                     ),
                     const SizedBox(width: 4),
@@ -400,7 +401,7 @@ class _CustomerHomePageState extends State<CustomerHomePage> {
                       children: [
                         Icon(
                           Icons.person,
-                          size: 18,
+                          size: context.scaledIconSize(18),
                           color: Theme.of(context).colorScheme.primary,
                         ),
                         const SizedBox(width: 4),
@@ -422,7 +423,7 @@ class _CustomerHomePageState extends State<CustomerHomePage> {
                       children: [
                         Icon(
                           Icons.person_off,
-                          size: 18,
+                          size: context.scaledIconSize(18),
                           color: Theme.of(context).colorScheme.primary,
                         ),
                         const SizedBox(width: 4),
@@ -519,7 +520,7 @@ class _CustomerHomePageState extends State<CustomerHomePage> {
                             children: [
                               Icon(
                                 Icons.folder_open,
-                                size: 18,
+                                size: context.scaledIconSize(18),
                                 color: Theme.of(context).colorScheme.primary,
                               ),
                               const SizedBox(width: 4),
@@ -537,7 +538,7 @@ class _CustomerHomePageState extends State<CustomerHomePage> {
                                 children: [
                                   Icon(
                                     Icons.folder_open,
-                                    size: 18,
+                                    size: context.scaledIconSize(18),
                                     color: Theme.of(
                                       context,
                                     ).colorScheme.primary,
@@ -593,6 +594,7 @@ class _CustomerHomePageState extends State<CustomerHomePage> {
 
             //新建配置按鈕
             IconButton(
+              iconSize: context.scaledIconSize(24),
               icon: Icon(
                 Icons.add,
                 color: Theme.of(context).colorScheme.primary,
@@ -603,6 +605,7 @@ class _CustomerHomePageState extends State<CustomerHomePage> {
 
             //儲存配置按鈕
             IconButton(
+              iconSize: context.scaledIconSize(24),
               icon: Icon(
                 Icons.save,
                 color: Theme.of(context).colorScheme.primary,
@@ -613,6 +616,7 @@ class _CustomerHomePageState extends State<CustomerHomePage> {
 
             //刪除配置按鈕
             IconButton(
+              iconSize: context.scaledIconSize(24),
               icon: Icon(
                 Icons.delete,
                 color: _selectedConfigurationName != null

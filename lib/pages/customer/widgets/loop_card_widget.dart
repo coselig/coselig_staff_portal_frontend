@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:coselig_staff_portal/models/quote/quote_models.dart';
+import 'package:coselig_staff_portal/utils/icon_utils.dart';
 
 class LoopCardWidget extends StatefulWidget {
   final int index;
@@ -112,7 +113,7 @@ class _LoopCardWidgetState extends State<LoopCardWidget> {
                           const SizedBox(width: 4),
                           Icon(
                             Icons.edit,
-                            size: 14,
+                            size: context.scaledIconSize(14),
                             color: Theme.of(context)
                                 .colorScheme
                                 .onSurfaceVariant
@@ -342,7 +343,7 @@ class _LoopCardWidgetState extends State<LoopCardWidget> {
                                   children: [
                                     Icon(
                                       Icons.straighten,
-                                      size: 14,
+                                      size: context.scaledIconSize(14),
                                       color: Theme.of(
                                         context,
                                       ).colorScheme.onSurfaceVariant,
@@ -368,7 +369,7 @@ class _LoopCardWidgetState extends State<LoopCardWidget> {
                                     children: [
                                       Icon(
                                         Icons.bolt,
-                                        size: 14,
+                                    size: context.scaledIconSize(14),
                                         color: Theme.of(
                                           context,
                                         ).colorScheme.primary,
@@ -391,7 +392,7 @@ class _LoopCardWidgetState extends State<LoopCardWidget> {
                                     children: [
                                       Icon(
                                         Icons.electrical_services,
-                                        size: 14,
+                                    size: context.scaledIconSize(14),
                                         color: Theme.of(
                                           context,
                                         ).colorScheme.tertiary,
@@ -415,7 +416,7 @@ class _LoopCardWidgetState extends State<LoopCardWidget> {
                                       children: [
                                         Icon(
                                           Icons.attach_money,
-                                          size: 14,
+                                      size: context.scaledIconSize(14),
                                           color: Theme.of(
                                             context,
                                           ).colorScheme.secondary,
@@ -444,7 +445,10 @@ class _LoopCardWidgetState extends State<LoopCardWidget> {
                             IconButton(
                               onPressed: () =>
                               widget.onEditFixture(index, fixtureIndex),
-                              icon: const Icon(Icons.edit, size: 20),
+                          icon: Icon(
+                            Icons.edit,
+                            size: context.scaledIconSize(20),
+                          ),
                               color: Theme.of(context).colorScheme.primary,
                               tooltip: '修改燈具',
                               constraints: const BoxConstraints(
@@ -456,8 +460,10 @@ class _LoopCardWidgetState extends State<LoopCardWidget> {
                             IconButton(
                               onPressed: () =>
                               widget.onRemoveFixture(index, fixtureIndex),
-                              icon: const Icon(Icons.remove_circle,
-                                size: 22),
+                          icon: Icon(
+                            Icons.remove_circle,
+                            size: context.scaledIconSize(22),
+                          ),
                               color: Theme.of(context).colorScheme.error,
                               tooltip: '移除燈具',
                               constraints: const BoxConstraints(

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:coselig_staff_portal/models/quote/quote_models.dart';
+import 'package:coselig_staff_portal/utils/icon_utils.dart';
 
 class SwitchCardWidget extends StatefulWidget {
   final int index;
@@ -177,7 +178,10 @@ class _SwitchCardWidgetState extends State<SwitchCardWidget> {
                               loopName,
                               style: const TextStyle(fontSize: 13),
                             ),
-                            deleteIcon: const Icon(Icons.close, size: 16),
+                            deleteIcon: Icon(
+                              Icons.close,
+                              size: context.scaledIconSize(16),
+                            ),
                             onDeleted: () {
                               _removeLoopFromGang(gangIndex, loopName);
                             },
@@ -192,7 +196,10 @@ class _SwitchCardWidgetState extends State<SwitchCardWidget> {
               // 新增/選擇迴路按鈕
               if (gang.isScene || gang.controlledLoopNames.isEmpty)
                 IconButton(
-                  icon: const Icon(Icons.add_circle_outline, size: 20),
+                  icon: Icon(
+                    Icons.add_circle_outline,
+                    size: context.scaledIconSize(20),
+                  ),
                   tooltip: gang.isScene ? '新增控制迴路' : '選擇控制迴路',
                   onPressed: () =>
                       _showSelectLoopForGangDialog(context, gangIndex, gang),
@@ -202,7 +209,10 @@ class _SwitchCardWidgetState extends State<SwitchCardWidget> {
               else
                 // 非場景模式且已有一個迴路：顯示替換按鈕
                 IconButton(
-                  icon: const Icon(Icons.swap_horiz, size: 20),
+                  icon: Icon(
+                    Icons.swap_horiz,
+                    size: context.scaledIconSize(20),
+                  ),
                   tooltip: '替換控制迴路',
                   onPressed: () => _showSelectLoopForGangDialog(
                     context,

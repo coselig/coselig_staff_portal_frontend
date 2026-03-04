@@ -133,12 +133,16 @@ class MainApp extends StatelessWidget {
               darkTheme: baseDarkTheme,
               themeMode: themeProvider.themeMode,
               builder: (context, child) {
+                final scale = uiSettings.fontSizeScale;
                 // 全域文字縮放：所有 Text（含硬編碼 fontSize）都會受影響
+                // 同時縮放 Icon 大小
                 return MediaQuery(
                   data: MediaQuery.of(context).copyWith(
-                    textScaler: TextScaler.linear(uiSettings.fontSizeScale),
+                    textScaler: TextScaler.linear(scale)),
+                  child: IconTheme(
+                    data: IconTheme.of(context).copyWith(size: 24.0 * scale),
+                    child: child!,
                   ),
-                  child: child!,
                 );
               },
               initialRoute: '/',

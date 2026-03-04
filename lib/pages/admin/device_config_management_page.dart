@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:coselig_staff_portal/services/discovery_service.dart';
+import 'package:coselig_staff_portal/utils/icon_utils.dart';
 
 class DeviceConfigManagementPage extends StatefulWidget {
   const DeviceConfigManagementPage({super.key});
@@ -523,7 +524,7 @@ class _DeviceConfigEditDialogState extends State<_DeviceConfigEditDialog> {
                                 ),
                               ),
                             ),
-                            const Icon(Icons.edit, size: 14),
+                          Icon(Icons.edit, size: context.scaledIconSize(14)),
                           ],
                         ),
                       ),
@@ -540,7 +541,7 @@ class _DeviceConfigEditDialogState extends State<_DeviceConfigEditDialog> {
                   const SizedBox(width: 8),
                   IconButton(
                     onPressed: _editChannelMap,
-                    icon: const Icon(Icons.edit, size: 18),
+                    icon: Icon(Icons.edit, size: context.scaledIconSize(18)),
                     tooltip: '編輯通道映射',
                   ),
                 ],

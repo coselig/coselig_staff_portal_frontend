@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:coselig_staff_portal/models/quote/quote_models.dart';
+import 'package:coselig_staff_portal/utils/icon_utils.dart';
 
 class ModuleCardWidget extends StatefulWidget {
   final int index;
@@ -269,11 +270,19 @@ class _ModuleCardWidgetState extends State<ModuleCardWidget> {
                             ),
                             if (showWarning) ...[
                               const SizedBox(width: 4),
-                              Icon(Icons.warning, size: 16, color: Colors.orange.shade800),
+                          Icon(
+                            Icons.warning,
+                            size: context.scaledIconSize(16),
+                            color: Colors.orange.shade800,
+                          ),
                             ],
                             if (isBlocked) ...[
                               const SizedBox(width: 4),
-                              Icon(Icons.block, size: 16, color: Colors.red.shade800),
+                          Icon(
+                            Icons.block,
+                            size: context.scaledIconSize(16),
+                            color: Colors.red.shade800,
+                          ),
                             ],
                           ],
                         ),

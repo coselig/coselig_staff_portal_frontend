@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:coselig_staff_portal/widgets/app_drawer.dart';
 import 'package:coselig_staff_portal/services/discovery_service.dart';
+import 'package:coselig_staff_portal/utils/icon_utils.dart';
 
 
 class DiscoveryGeneratePage extends StatefulWidget {
@@ -616,7 +617,7 @@ class _DiscoveryGeneratePageState extends State<DiscoveryGeneratePage> {
             width: 40,
             child: Icon(
               Icons.drag_handle,
-              size: 20,
+              size: context.scaledIconSize(20),
               color: Theme.of(context).colorScheme.onSurfaceVariant,
             ),
           ),
@@ -687,7 +688,7 @@ class _DiscoveryGeneratePageState extends State<DiscoveryGeneratePage> {
                   width: 40,
                   child: Icon(
                     Icons.drag_handle,
-                    size: 20,
+                    size: context.scaledIconSize(20),
                     color: Theme.of(context).colorScheme.onSurfaceVariant,
                   ),
                 ),
@@ -704,7 +705,10 @@ class _DiscoveryGeneratePageState extends State<DiscoveryGeneratePage> {
                     mainAxisSize: MainAxisSize.min,
                     children: [
                       IconButton(
-                        icon: const Icon(Icons.edit, size: 18),
+                        icon: Icon(
+                          Icons.edit,
+                          size: context.scaledIconSize(18),
+                        ),
                         onPressed: () => editDevice(device),
                         tooltip: '編輯',
                         padding: EdgeInsets.zero,
@@ -712,7 +716,7 @@ class _DiscoveryGeneratePageState extends State<DiscoveryGeneratePage> {
                       ),
                       const SizedBox(width: 8),
                       IconButton(
-                        icon: const Icon(Icons.delete, size: 18),
+                        icon: Icon(Icons.delete, size: context.scaledIconSize(18)),
                         onPressed: () => removeDevice(device.id!),
                         tooltip: '刪除',
                         padding: EdgeInsets.zero,

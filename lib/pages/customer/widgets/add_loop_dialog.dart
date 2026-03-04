@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:coselig_staff_portal/utils/icon_utils.dart';
 
 class AddLoopDialog extends StatefulWidget {
   final Function(String name, String space) onAddLoop;
@@ -64,7 +65,7 @@ class _AddLoopDialogState extends State<AddLoopDialog> {
                 onPressed: () {
                   setState(() => _isCreatingNewSpace = true);
                 },
-                icon: const Icon(Icons.add, size: 16),
+                icon: Icon(Icons.add, size: context.scaledIconSize(16)),
                 label: const Text('新增空間'),
               ),
             ),
@@ -85,7 +86,7 @@ class _AddLoopDialogState extends State<AddLoopDialog> {
                 onPressed: () {
                   setState(() => _isCreatingNewSpace = false);
                 },
-                icon: const Icon(Icons.arrow_back, size: 16),
+                icon: Icon(Icons.arrow_back, size: context.scaledIconSize(16)),
                 label: const Text('選擇既有空間'),
               ),
             ),

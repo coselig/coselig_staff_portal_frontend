@@ -158,8 +158,7 @@ class AppDrawer extends StatelessWidget {
           ],
           ListTile(
             leading: Icon(Icons.text_fields),
-            title: Text('字體大小'),
-            subtitle: Consumer<UiSettingsProvider>(
+            title: Consumer<UiSettingsProvider>(
               builder: (context, uiSettings, child) {
                 return Slider(
                   value: uiSettings.fontSizeScale,
