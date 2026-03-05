@@ -362,8 +362,9 @@ class AuthService extends ChangeNotifier {
     try {
       final body = <String, dynamic>{};
       if (fontSizeScale != null) body['font_size_scale'] = fontSizeScale;
-      if (showWorkingStaffCard != null)
+      if (showWorkingStaffCard != null) {
         body['show_working_staff_card'] = showWorkingStaffCard;
+      }
       if (body.isEmpty) return true;
 
       final res = await _client
@@ -376,8 +377,9 @@ class AuthService extends ChangeNotifier {
 
       if (res.statusCode == 200) {
         if (fontSizeScale != null) this.fontSizeScale = fontSizeScale;
-        if (showWorkingStaffCard != null)
+        if (showWorkingStaffCard != null) {
           this.showWorkingStaffCard = showWorkingStaffCard;
+        }
         return true;
       } else {
         return false;

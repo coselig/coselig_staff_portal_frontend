@@ -46,7 +46,7 @@ class _AddLoopDialogState extends State<AddLoopDialog> {
           // 空間選擇
           if (!_isCreatingNewSpace) ...[
             DropdownButtonFormField<String>(
-              value: _selectedSpace,
+              initialValue: _selectedSpace,
               decoration: const InputDecoration(
                 labelText: '所屬空間',
                 border: OutlineInputBorder(),

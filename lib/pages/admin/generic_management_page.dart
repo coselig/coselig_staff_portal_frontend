@@ -237,10 +237,15 @@ class _GenericEditDialogState extends State<_GenericEditDialog> {
       if (options.contains(str)) return str;
       // 布林 / 0,1 → 是,否
       if (options.contains('是') && options.contains('否')) {
-        if (rawValue == true || rawValue == 1 || str == 'true' || str == '1')
+        if (rawValue == true || rawValue == 1 || str == 'true' || str == '1') {
           return '是';
-        if (rawValue == false || rawValue == 0 || str == 'false' || str == '0')
+        }
+        if (rawValue == false ||
+            rawValue == 0 ||
+            str == 'false' ||
+            str == '0') {
           return '否';
+        }
       }
       // fallback: 第一個選項
       return options.isNotEmpty ? options[0] : '';
@@ -313,7 +318,7 @@ class _GenericEditDialogState extends State<_GenericEditDialog> {
                 return Padding(
                   padding: const EdgeInsets.symmetric(vertical: 8),
                   child: DropdownButtonFormField<String>(
-                    value: _controllers[col['name']]!.text.isNotEmpty
+                    initialValue: _controllers[col['name']]!.text.isNotEmpty
                         ? _controllers[col['name']]!.text
                         : (options.isNotEmpty ? options[0] : null),
                     decoration: InputDecoration(labelText: col['label']),
