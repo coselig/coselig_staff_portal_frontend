@@ -381,22 +381,7 @@ class _SwitchCardWidgetState extends State<SwitchCardWidget> {
 
   void _showEditSwitchDialog(BuildContext context) {
     final nameController = TextEditingController(text: widget.switchModel.name);
-    final countController = TextEditingController(
-      text: widget.switchModel.count.toString(),
-    );
-    final priceController = TextEditingController(
-      text: widget.switchModel.price.toString(),
-    );
-    String fireType = widget.switchModel.fireType.isNotEmpty
-        ? widget.switchModel.fireType
-        : '單火';
-    String protocol = widget.switchModel.protocol.isNotEmpty
-        ? widget.switchModel.protocol
-        : '無';
     String space = widget.switchModel.space;
-    final colorController = TextEditingController(
-      text: widget.switchModel.color,
-    );
 
     showDialog(
       context: context,
@@ -419,36 +404,6 @@ class _SwitchCardWidgetState extends State<SwitchCardWidget> {
                   controller: nameController,
                   decoration: const InputDecoration(labelText: '名稱'),
                 ),
-                TextField(
-                  controller: countController,
-                  decoration: const InputDecoration(labelText: '數量'),
-                  keyboardType: TextInputType.number,
-                ),
-                TextField(
-                  controller: priceController,
-                  decoration: const InputDecoration(labelText: '價格'),
-                  keyboardType: TextInputType.number,
-                ),
-                DropdownButtonFormField<String>(
-                  initialValue: fireType,
-                  decoration: const InputDecoration(labelText: '單火/零火'),
-                  items: ['單火', '零火']
-                      .map((v) => DropdownMenuItem(value: v, child: Text(v)))
-                      .toList(),
-                  onChanged: (v) => setState(() => fireType = v ?? '單火'),
-                ),
-                DropdownButtonFormField<String>(
-                  initialValue: protocol,
-                  decoration: const InputDecoration(labelText: '協定類型'),
-                  items: ['無', 'MQTT', 'zigbee', '藍芽', 'matter']
-                      .map((v) => DropdownMenuItem(value: v, child: Text(v)))
-                      .toList(),
-                  onChanged: (v) => setState(() => protocol = v ?? '無'),
-                ),
-                TextField(
-                  controller: colorController,
-                  decoration: const InputDecoration(labelText: '顏色'),
-                ),
               ],
             ),
           ),
@@ -461,15 +416,6 @@ class _SwitchCardWidgetState extends State<SwitchCardWidget> {
               onPressed: () {
                 final updated = widget.switchModel.copyWith(
                   name: nameController.text,
-                  count:
-                      int.tryParse(countController.text) ??
-                      widget.switchModel.count,
-                  price:
-                      double.tryParse(priceController.text) ??
-                      widget.switchModel.price,
-                  fireType: fireType,
-                  protocol: protocol,
-                  color: colorController.text,
                   space: space,
                 );
                 widget.onUpdateSwitch(widget.index, updated);
