@@ -1,11 +1,11 @@
 {
-    "name": "光悅員工系統",
-    "short_name": "光悅員工",
+    "name": "Coselig 員工系統",
+    "short_name": "Coselig 員工",
     "start_url": ".",
     "display": "standalone",
     "background_color": "#CD8A62",
     "theme_color": "#CD8A62",
-    "description": "光悅科技員工入口系統",
+    "description": "Coselig 員工系統 - 員工入口平台",
     "orientation": "portrait-primary",
     "prefer_related_applications": false,
     "icons": [

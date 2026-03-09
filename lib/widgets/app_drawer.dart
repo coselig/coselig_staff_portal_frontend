@@ -18,7 +18,7 @@ class AppDrawer extends StatelessWidget {
         children: [
           DrawerHeader(
             child: Text(
-              authService.isCustomer ? '光悅顧客系統' : '光悅員工系統',
+              authService.isCustomer ? 'Coselig 顧客系統' : 'Coselig 員工系統',
               style: TextStyle(
                 fontSize: 20, fontWeight: FontWeight.bold),
             ),

@@ -18,7 +18,7 @@ class _AuthPageState extends State<AuthPage> {
   @override
   void initState() {
     super.initState();
-    html.document.title = '光悅員工系統';
+    html.document.title = 'Coselig 員工系統';
   }
 
   @override
@@ -29,7 +29,7 @@ class _AuthPageState extends State<AuthPage> {
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('光悅員工系統'),
+        title: const Text('Coselig 員工系統'),
         actions: [
           ThemeToggleSwitch(),
         ],
@@ -45,31 +45,41 @@ class _AuthPageState extends State<AuthPage> {
               decoration: BoxDecoration(
                 borderRadius: BorderRadius.circular(8.0),
               ),
-              child: const Column(
+              child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(
+                  const Text(
                     '應用程式用途',
                     style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
                   ),
-                  SizedBox(height: 8),
-                  Text(
-                    '光悅員工系統是一款專為光悅科技員工設計的內部管理平台，提供以下功能：',
+                  const SizedBox(height: 8),
+                  const Text(
+                    'Coselig 員工系統是一款專為 Coselig 員工設計的內部管理平台，提供以下功能：',
                     style: TextStyle(fontSize: 14),
                   ),
-                  SizedBox(height: 8),
-                  Text('• 員工考勤記錄和管理', style: TextStyle(fontSize: 14)),
-                  Text('• 員工個人資料管理', style: TextStyle(fontSize: 14)),
-                  Text('• 公司公告和通知系統', style: TextStyle(fontSize: 14)),
-                  Text('• 員工發現和建議功能', style: TextStyle(fontSize: 14)),
-                  Text(
+                  const SizedBox(height: 8),
+                  const Text('• 員工考勤記錄和管理', style: TextStyle(fontSize: 14)),
+                  const Text('• 員工個人資料管理', style: TextStyle(fontSize: 14)),
+                  const Text('• 公司公告和通知系統', style: TextStyle(fontSize: 14)),
+                  const Text('• 員工發現和建議功能', style: TextStyle(fontSize: 14)),
+                  const Text(
                     '• 管理員功能（員工列表管理、BLE 設備管理等）',
                     style: TextStyle(fontSize: 14),
                   ),
-                  SizedBox(height: 8),
-                  Text(
+                  const SizedBox(height: 8),
+                  const Text(
                     '本應用程式僅限 @coselig.com 域名下的 Google 帳號使用，旨在提高公司內部管理效率和員工工作體驗。',
                     style: TextStyle(fontSize: 14, fontStyle: FontStyle.italic),
+                  ),
+                  const SizedBox(height: 12),
+                  Align(
+                    alignment: Alignment.centerLeft,
+                    child: TextButton(
+                      onPressed: () {
+                        Navigator.of(context).pushNamed('/privacy');
+                      },
+                      child: const Text('隱私權政策／Privacy Policy'),
+                    ),
                   ),
                 ],
               ),

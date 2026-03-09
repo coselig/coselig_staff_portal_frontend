@@ -70,7 +70,7 @@ class PrivacyPolicyPage extends StatelessWidget {
 
             _buildDefinitionItem('帳戶', '為您創建的唯一帳戶，用於訪問我們的服務或服務的部分。'),
             _buildDefinitionItem('關聯公司', '控制一方、受一方控制或與一方共同控制的實體，其中"控制"意味著擁有有權選舉董事或其他管理機構的50%或更多股份、股權利益或其他證券。'),
-            _buildDefinitionItem('應用程式', '光悅員工系統，由公司提供的軟體程式。'),
+            _buildDefinitionItem('應用程式', 'Coselig 員工系統，由公司提供的軟體程式。'),
             _buildDefinitionItem('公司', '（在本隱私權政策中稱為"公司"、"我們"、"我們"或"我們的"）指光悅科技股份有限公司，后庄七街215號。'),
             _buildDefinitionItem('Cookie', '網站放置在您的電腦、移動設備或其他任何設備上的小文件，包含您在該網站上的瀏覽歷史記錄等詳細信息。'),
             _buildDefinitionItem('國家', '指：台灣'),
@@ -79,7 +79,10 @@ class PrivacyPolicyPage extends StatelessWidget {
             _buildDefinitionItem('服務', '指應用程式或網站或兩者。'),
             _buildDefinitionItem('服務提供商', '代表公司處理數據的任何自然人或法人。它指公司僱用的第三方公司或個人，以促進服務、代表公司提供服務、執行與服務相關的服務，或協助公司分析服務的使用方式。'),
             _buildDefinitionItem('使用數據', '自動收集的數據，由服務的使用產生，或來自服務基礎設施本身（例如，頁面訪問的持續時間）。'),
-            _buildDefinitionItem('網站', '光悅員工系統，可從 https://employeeservice.coseligtest.workers.dev 訪問。'),
+            _buildDefinitionItem(
+              '網站',
+              'Coselig 員工系統，可從 https://employeeservice.coseligtest.workers.dev 訪問。',
+            ),
             _buildDefinitionItem('您', '訪問或使用服務的個人，或代表該個人訪問或使用服務的公司或其他法律實體（如適用）。'),
 
             const SizedBox(height: 24),
@@ -90,7 +93,7 @@ class PrivacyPolicyPage extends StatelessWidget {
               style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
             ),
             const SizedBox(height: 16),
-            const Text('光悅員工系統是一款專為光悅科技員工設計的內部管理平台。應用程式的主要用途包括：'),
+            const Text('Coselig 員工系統是一款專為 Coselig 員工設計的內部管理平台。應用程式的主要用途包括：'),
             const SizedBox(height: 8),
             const Text('• 員工考勤記錄和管理'),
             const Text('• 員工個人資料管理'),

@@ -298,7 +298,9 @@ class _CustomerHomePageState extends State<CustomerHomePage> {
   void initState() {
     super.initState();
     final authService = Provider.of<AuthService>(context, listen: false);
-    html.document.title = authService.isCustomer ? '光悅顧客系統' : '光悅員工系統 - 估價系統';
+    html.document.title = authService.isCustomer
+        ? 'Coselig 顧客系統'
+        : 'Coselig 員工系統 - 估價系統';
     _quoteService = Provider.of<QuoteService>(context, listen: false);
     _customerService = Provider.of<CustomerService>(context, listen: false);
     _loadConfigurations();
