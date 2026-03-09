@@ -100,6 +100,13 @@ class _SplashScreenState extends State<SplashScreen> {
             ),
             const SizedBox(height: 16),
             const ThemeToggleSwitch(),
+            const SizedBox(height: 12),
+            TextButton(
+              onPressed: () {
+                html.window.location.href = '/privacy.html';
+              },
+              child: const Text('隱私權政策 / Privacy Policy'),
+            ),
           ],
         ),
       ),
