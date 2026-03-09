@@ -12,7 +12,7 @@ import 'package:coselig_staff_portal/pages/general/ble_page.dart';
 import 'package:coselig_staff_portal/pages/general/privacy_policy_page.dart';
 import 'package:coselig_staff_portal/pages/staff/discovery_generate_page.dart';
 import 'package:coselig_staff_portal/pages/general/register_page.dart';
-import 'package:coselig_staff_portal/pages/general/splash_screen.dart';
+import 'package:coselig_staff_portal/pages/general/splash_page.dart';
 import 'package:coselig_staff_portal/pages/staff/staff_home_page.dart';
 import 'package:coselig_staff_portal/pages/customer/customer_home_page.dart';
 import 'package:coselig_staff_portal/pages/customer/profile_page.dart';
