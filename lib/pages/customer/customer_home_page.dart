@@ -2363,6 +2363,9 @@ class _CustomerHomePageState extends State<CustomerHomePage> {
                           .toString(),
                     ) ??
                     110,
+                supportsBothInputs:
+                    item['supportsBothInputs'] == true ||
+                    item['supports_both_inputs'] == 1,
                 price: (item['price'] ?? 0).toDouble(),
               ),
             )
@@ -2507,7 +2510,8 @@ class _CustomerHomePageState extends State<CustomerHomePage> {
             .where(
               (option) =>
                   option.type.toUpperCase() == selectedType.toUpperCase() &&
-                  allowedInputs.contains(option.inputVoltage),
+                  (option.supportsBothInputs ||
+                      allowedInputs.contains(option.inputVoltage)),
             )
             .toList()
           ..sort((a, b) {
@@ -2538,6 +2542,7 @@ class _CustomerHomePageState extends State<CustomerHomePage> {
             wattage: option.wattage,
             type: option.type,
             inputVoltage: option.inputVoltage,
+            supportsBothInputs: option.supportsBothInputs,
             price: option.price,
           );
           break;
@@ -2572,7 +2577,7 @@ class _CustomerHomePageState extends State<CustomerHomePage> {
                 final module = pair['module'] as Module;
                 final supply = pair['supply'] as PowerSupply;
                 return Text(
-                  '• ${module.model} → ${supply.name} (${supply.type}, ${supply.inputVoltage}V, ${supply.wattage.toStringAsFixed(0)}W)',
+                  '• ${module.model} → ${supply.name} (${supply.type}, ${supply.inputVoltageLabel}, ${supply.wattage.toStringAsFixed(0)}W)',
                 );
               }),
               if (unassignedModules.isNotEmpty) ...[

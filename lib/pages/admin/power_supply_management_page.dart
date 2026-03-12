@@ -19,18 +19,32 @@ final powerSupplyConfig = {
       'name': 'inputVoltage',
       'label': '輸入電壓',
       'type': 'dropdown',
-      'options': ['110', '220'],
+      'options': ['110', '220', '110/220'],
     },
     {'name': 'price', 'label': '價格', 'type': 'number'},
   ],
-  'fetch': (QuoteService service) => service.fetchAllPowerSupplyOptions(),
+  'fetch': (QuoteService service) async {
+    final raw = await service.fetchAllPowerSupplyOptions();
+    return raw.map((item) {
+      final supportsBoth =
+          item['supportsBothInputs'] == true ||
+          item['supports_both_inputs'] == 1;
+      return {
+        ...item,
+        'inputVoltage': supportsBoth
+            ? '110/220'
+            : (item['inputVoltage'] ?? item['input_voltage']).toString(),
+      };
+    }).toList();
+  },
   'add': (QuoteService service, Map<String, dynamic> data) =>
       service.addPowerSupplyOption(
         PowerSupply(
           name: data['name'],
           wattage: data['wattage'],
           type: data['type'].toString().toUpperCase(),
-          inputVoltage: int.parse(data['inputVoltage'].toString()),
+          inputVoltage: data['inputVoltage'].toString() == '220' ? 220 : 110,
+          supportsBothInputs: data['inputVoltage'].toString() == '110/220',
           price: data['price'],
         ),
       ),
@@ -39,7 +53,8 @@ final powerSupplyConfig = {
         'name': data['name'],
         'wattage': data['wattage'],
         'type': data['type'].toString().toUpperCase(),
-        'inputVoltage': int.parse(data['inputVoltage'].toString()),
+        'inputVoltage': data['inputVoltage'].toString() == '220' ? 220 : 110,
+        'supportsBothInputs': data['inputVoltage'].toString() == '110/220',
         'price': data['price'],
       }),
   'delete': (QuoteService service, int id) =>

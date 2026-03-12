@@ -28,6 +28,7 @@ class _PowerSupplyListWidgetState extends State<PowerSupplyListWidget> {
           wattage: e.wattage,
           type: e.type,
           inputVoltage: e.inputVoltage,
+          supportsBothInputs: e.supportsBothInputs,
           price: e.price,
         ),
       ),
@@ -35,7 +36,7 @@ class _PowerSupplyListWidgetState extends State<PowerSupplyListWidget> {
   }
 
   String _optionKey(PowerSupply option) {
-    return '${option.name}|${option.type}|${option.inputVoltage}|${option.wattage}|${option.price}';
+    return '${option.name}|${option.type}|${option.inputVoltage}|${option.supportsBothInputs ? 1 : 0}|${option.wattage}|${option.price}';
   }
 
   PowerSupply _copyOption(PowerSupply option) {
@@ -44,6 +45,7 @@ class _PowerSupplyListWidgetState extends State<PowerSupplyListWidget> {
       wattage: option.wattage,
       type: option.type,
       inputVoltage: option.inputVoltage,
+      supportsBothInputs: option.supportsBothInputs,
       price: option.price,
     );
   }
@@ -54,6 +56,7 @@ class _PowerSupplyListWidgetState extends State<PowerSupplyListWidget> {
       if (option.name == item.name &&
           option.type == item.type &&
           option.inputVoltage == item.inputVoltage &&
+          option.supportsBothInputs == item.supportsBothInputs &&
           option.wattage == item.wattage) {
         return _optionKey(option);
       }
@@ -131,7 +134,7 @@ class _PowerSupplyListWidgetState extends State<PowerSupplyListWidget> {
                             (option) => DropdownMenuItem<String>(
                               value: _optionKey(option),
                               child: Text(
-                                '${option.name} (${option.type} / ${option.inputVoltage}V / ${option.wattage.toStringAsFixed(0)}W)',
+                                '${option.name} (${option.type} / ${option.inputVoltageLabel}V / ${option.wattage.toStringAsFixed(0)}W)',
                                 overflow: TextOverflow.ellipsis,
                               ),
                             ),
@@ -150,7 +153,7 @@ class _PowerSupplyListWidgetState extends State<PowerSupplyListWidget> {
                     ),
                     const SizedBox(height: 6),
                     Text(
-                      '類型: ${item.type}    輸入: ${item.inputVoltage}V    瓦數: ${item.wattage.toStringAsFixed(0)}W    價格: ${item.price.toStringAsFixed(0)}',
+                      '類型: ${item.type}    輸入: ${item.inputVoltageLabel}V    瓦數: ${item.wattage.toStringAsFixed(0)}W    價格: ${item.price.toStringAsFixed(0)}',
                       style: TextStyle(
                         fontSize: 12,
                         color: Theme.of(

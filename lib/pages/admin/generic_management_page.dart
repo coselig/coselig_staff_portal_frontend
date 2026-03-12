@@ -44,7 +44,9 @@ class _GenericManagementPageState extends State<GenericManagementPage> {
       _error = null;
     });
     try {
-      final fetchFn = widget.config['fetch'] as Future<List<dynamic>> Function(QuoteService);
+      final fetchFn =
+          widget.config['fetch']
+              as Future<List<dynamic>> Function(QuoteService);
       final items = await fetchFn(_quoteService);
       setState(() {
         _items = items;
@@ -61,12 +63,15 @@ class _GenericManagementPageState extends State<GenericManagementPage> {
   Future<void> _addItem() async {
     final result = await showDialog<Map<String, dynamic>>(
       context: context,
-      builder: (context) => _GenericEditDialog(columns: widget.config['columns']),
+      builder: (context) =>
+          _GenericEditDialog(columns: widget.config['columns']),
     );
     if (result != null) {
       setState(() => _isLoading = true);
       try {
-        final addFn = widget.config['add'] as Future<void> Function(QuoteService, Map<String, dynamic>);
+        final addFn =
+            widget.config['add']
+                as Future<void> Function(QuoteService, Map<String, dynamic>);
         await addFn(_quoteService, result);
         await _loadItems();
       } catch (e) {
@@ -90,7 +95,13 @@ class _GenericManagementPageState extends State<GenericManagementPage> {
     if (result != null) {
       setState(() => _isLoading = true);
       try {
-        final updateFn = widget.config['update'] as Future<void> Function(QuoteService, int, Map<String, dynamic>);
+        final updateFn =
+            widget.config['update']
+                as Future<void> Function(
+                  QuoteService,
+                  int,
+                  Map<String, dynamic>,
+                );
         final id = itemMap['id'];
         await updateFn(_quoteService, id, result);
         await _loadItems();
@@ -123,7 +134,8 @@ class _GenericManagementPageState extends State<GenericManagementPage> {
     if (confirmed == true) {
       setState(() => _isLoading = true);
       try {
-        final deleteFn = widget.config['delete'] as Future<void> Function(QuoteService, int);
+        final deleteFn =
+            widget.config['delete'] as Future<void> Function(QuoteService, int);
         final itemMap = item is Map<String, dynamic>
             ? item
             : item.toJson() as Map<String, dynamic>;
@@ -157,46 +169,54 @@ class _GenericManagementPageState extends State<GenericManagementPage> {
       body: _isLoading
           ? const Center(child: CircularProgressIndicator())
           : _error != null
-              ? Center(child: Text('載入失敗: $_error'))
-              : _items.isEmpty
-                  ? const Center(child: Text('沒有資料'))
-                  : ListView.builder(
-                      itemCount: _items.length,
-                      itemBuilder: (context, index) {
-                        final item = _items[index] is Map<String, dynamic>
-                            ? _items[index]
-                            : _items[index].toJson();
-                        return Card(
-                          margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                          child: ListTile(
-                            title: Text(item[widget.config['columns'][0]['name']].toString(), style: const TextStyle(fontWeight: FontWeight.bold)),
-                            subtitle: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: widget.config['columns'].skip(1).map<Widget>((col) {
-                                final value = item[col['name']];
-                                return Text('${col['label']}: $value');
-                              }).toList(),
-                            ),
-                            trailing: Row(
-                              mainAxisSize: MainAxisSize.min,
-                              children: [
-                                IconButton(
-                                  icon: const Icon(Icons.edit),
-                                  onPressed: () => _editItem(index),
-                                  tooltip: '編輯',
-                                ),
-                                IconButton(
-                                  icon: const Icon(Icons.delete),
-                                  color: Colors.red,
-                                  onPressed: () => _deleteItem(index),
-                                  tooltip: '刪除',
-                                ),
-                              ],
-                            ),
-                          ),
-                        );
-                      },
+          ? Center(child: Text('載入失敗: $_error'))
+          : _items.isEmpty
+          ? const Center(child: Text('沒有資料'))
+          : ListView.builder(
+              itemCount: _items.length,
+              itemBuilder: (context, index) {
+                final item = _items[index] is Map<String, dynamic>
+                    ? _items[index]
+                    : _items[index].toJson();
+                return Card(
+                  margin: const EdgeInsets.symmetric(
+                    horizontal: 16,
+                    vertical: 8,
+                  ),
+                  child: ListTile(
+                    title: Text(
+                      item[widget.config['columns'][0]['name']].toString(),
+                      style: const TextStyle(fontWeight: FontWeight.bold),
                     ),
+                    subtitle: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: widget.config['columns'].skip(1).map<Widget>((
+                        col,
+                      ) {
+                        final value = item[col['name']];
+                        return Text('${col['label']}: $value');
+                      }).toList(),
+                    ),
+                    trailing: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        IconButton(
+                          icon: const Icon(Icons.edit),
+                          onPressed: () => _editItem(index),
+                          tooltip: '編輯',
+                        ),
+                        IconButton(
+                          icon: const Icon(Icons.delete),
+                          color: Colors.red,
+                          onPressed: () => _deleteItem(index),
+                          tooltip: '刪除',
+                        ),
+                      ],
+                    ),
+                  ),
+                );
+              },
+            ),
     );
   }
 }
@@ -213,6 +233,7 @@ class _GenericEditDialog extends StatefulWidget {
 class _GenericEditDialogState extends State<_GenericEditDialog> {
   final _formKey = GlobalKey<FormState>();
   late Map<String, TextEditingController> _controllers;
+
   /// 記錄哪些 dropdown 欄位正處於「自訂輸入」模式
   final Set<String> _customFields = {};
 
@@ -229,9 +250,11 @@ class _GenericEditDialogState extends State<_GenericEditDialog> {
 
   /// 將布林/數值轉為下拉選單對應的文字
   String _resolveInitialValue(Map<String, dynamic> col, dynamic rawValue) {
-    if (rawValue == null) return '';
     if (col['type'] == 'dropdown') {
       final options = List<String>.from(col['options'] ?? []);
+      if (rawValue == null) {
+        return options.isNotEmpty ? options[0] : '';
+      }
       final str = rawValue.toString();
       // 已經是選項之一，直接用
       if (options.contains(str)) return str;
@@ -250,6 +273,7 @@ class _GenericEditDialogState extends State<_GenericEditDialog> {
       // fallback: 第一個選項
       return options.isNotEmpty ? options[0] : '';
     }
+    if (rawValue == null) return '';
     return rawValue.toString();
   }
 
@@ -324,8 +348,7 @@ class _GenericEditDialogState extends State<_GenericEditDialog> {
                     decoration: InputDecoration(labelText: col['label']),
                     items: [
                       ...options.map(
-                        (opt) =>
-                            DropdownMenuItem(
+                        (opt) => DropdownMenuItem(
                           value: opt,
                           child: Text(opt.isEmpty ? '(空白)' : opt),
                         ),

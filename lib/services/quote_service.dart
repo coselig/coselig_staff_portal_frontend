@@ -493,6 +493,7 @@ class QuoteService extends ChangeNotifier {
           'wattage': option.wattage,
           'type': option.type,
           'inputVoltage': option.inputVoltage,
+          'supportsBothInputs': option.supportsBothInputs,
           'price': option.price,
         }),
       );
