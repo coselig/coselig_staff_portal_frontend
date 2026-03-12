@@ -19,8 +19,7 @@ class AppDrawer extends StatelessWidget {
           DrawerHeader(
             child: Text(
               authService.isCustomer ? 'Coselig 顧客系統' : 'Coselig 員工系統',
-              style: TextStyle(
-                fontSize: 20, fontWeight: FontWeight.bold),
+              style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
             ),
           ),
           if (authService.isAdmin) ...[
@@ -59,6 +58,15 @@ class AppDrawer extends StatelessWidget {
               title: Text('開關管理'),
               onTap: () {
                 navigatorKey.currentState!.pushNamed('/switch_management');
+              },
+            ),
+            ListTile(
+              leading: Icon(Icons.bolt),
+              title: Text('電源供應器管理'),
+              onTap: () {
+                navigatorKey.currentState!.pushNamed(
+                  '/power_supply_management',
+                );
               },
             ),
             ListTile(

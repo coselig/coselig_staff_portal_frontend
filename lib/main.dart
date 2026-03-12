@@ -3,6 +3,7 @@ import 'dart:js_interop';
 import 'package:coselig_staff_portal/constants/app_constants.dart';
 import 'package:coselig_staff_portal/pages/admin/attendance_view_page.dart';
 import 'package:coselig_staff_portal/pages/admin/switch_management_page.dart';
+import 'package:coselig_staff_portal/pages/admin/power_supply_management_page.dart';
 import 'package:coselig_staff_portal/pages/admin/device_config_management_page.dart';
 import 'package:coselig_staff_portal/pages/admin/user_data_view_page.dart';
 import 'package:coselig_staff_portal/pages/admin/module_management_page.dart';
@@ -40,7 +41,6 @@ void main() async {
 
   // 顯示版本信息
   final currentTime = DateTime.now().toIso8601String();
-
 
   console.log('=== Coselig 員工系統啟動 ==='.toJS);
   console.log('版本: ${AppConstants.appVersion}'.toJS);
@@ -137,8 +137,9 @@ class MainApp extends StatelessWidget {
                 // 全域文字縮放：所有 Text（含硬編碼 fontSize）都會受影響
                 // 同時縮放 Icon 大小
                 return MediaQuery(
-                  data: MediaQuery.of(context).copyWith(
-                    textScaler: TextScaler.linear(scale)),
+                  data: MediaQuery.of(
+                    context,
+                  ).copyWith(textScaler: TextScaler.linear(scale)),
                   child: IconTheme(
                     data: IconTheme.of(context).copyWith(size: 24.0 * scale),
                     child: child!,
@@ -165,12 +166,13 @@ class MainApp extends StatelessWidget {
                     const DiscoveryGeneratePage(),
                 '/ble': (context) => const BlePage(),
                 '/user_data': (context) => const StaffDataPage(),
-                '/admin_user_preview': (context) =>
-                  const UserDataViewPage(),
+                '/admin_user_preview': (context) => const UserDataViewPage(),
                 '/module_management': (context) => const ModuleManagementPage(),
                 '/fixture_type_management': (context) =>
                     const FixtureTypeManagementPage(),
                 '/switch_management': (context) => const SwitchManagementPage(),
+                '/power_supply_management': (context) =>
+                    const PowerSupplyManagementPage(),
                 '/device_config_management': (context) =>
                     const DeviceConfigManagementPage(),
                 '/privacy': (context) => const PrivacyPolicyPage(),

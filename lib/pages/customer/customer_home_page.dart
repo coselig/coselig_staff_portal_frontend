@@ -284,6 +284,7 @@ class _CustomerHomePageState extends State<CustomerHomePage> {
 
   // 第四步：電源供應器與材料配置
   List<PowerSupply> _powerSupplies = [];
+  List<PowerSupply> _powerSupplyOptions = [];
   List<MaterialItem> _boardMaterials = [];
   List<MaterialItem> _wiringItems = [];
 
@@ -1106,6 +1107,8 @@ class _CustomerHomePageState extends State<CustomerHomePage> {
                     ),
                     child: StepPowerSupplyWidget(
                       powerSupplies: _powerSupplies,
+                      availableOptions: _powerSupplyOptions,
+                      moduleCount: _modules.length,
                       onChanged: (list) {
                         setState(() {
                           _powerSupplies.clear();
@@ -1113,6 +1116,7 @@ class _CustomerHomePageState extends State<CustomerHomePage> {
                         });
                         _autoSave();
                       },
+                      onAutoAssign: _showAutoAssignPowerSuppliesDialog,
                     ),
                   ),
                   isActive: _currentStep >= 3,
@@ -2343,12 +2347,259 @@ class _CustomerHomePageState extends State<CustomerHomePage> {
     try {
       await _quoteService.fetchConfigurations();
       await _quoteService.fetchModuleOptions();
+      final rawPowerSupplyOptions = await _quoteService
+          .fetchAllPowerSupplyOptions();
       await _quoteService.fetchFixtureTypeOptions();
-      setState(() {});
+      setState(() {
+        _powerSupplyOptions = rawPowerSupplyOptions
+            .map(
+              (item) => PowerSupply(
+                name: item['name']?.toString() ?? '',
+                wattage: (item['wattage'] ?? 0).toDouble(),
+                type: item['type']?.toString() ?? 'UHP',
+                inputVoltage:
+                    int.tryParse(
+                      (item['inputVoltage'] ?? item['input_voltage'] ?? 110)
+                          .toString(),
+                    ) ??
+                    110,
+                price: (item['price'] ?? 0).toDouble(),
+              ),
+            )
+            .toList();
+      });
     } catch (e) {
       // 静默处理错误，用户可以稍後重试
       print('載入配置列表失敗: $e');
     }
+  }
+
+  double _calculateModuleRequiredWatt(Module module) {
+    double total = 0;
+
+    for (final allocation in module.loopAllocations) {
+      final count = allocation.allocatedCount <= 0
+          ? 1
+          : allocation.allocatedCount;
+      total += allocation.loop.totalWatt * count;
+    }
+
+    if (total <= 0) {
+      for (final allocation in module.allocations) {
+        total += allocation.fixture.watt * allocation.allocatedCount;
+      }
+    }
+
+    return total;
+  }
+
+  void _showAutoAssignPowerSuppliesDialog() {
+    if (_modules.isEmpty) {
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('沒有模組可分配，請先完成模組配置')));
+      return;
+    }
+
+    if (_powerSupplyOptions.isEmpty) {
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('沒有可用電源選項，請聯繫管理員建立')));
+      return;
+    }
+
+    showDialog(
+      context: context,
+      builder: (context) {
+        String selectedType = 'UHP';
+        bool allow110 = true;
+        bool allow220 = false;
+
+        return StatefulBuilder(
+          builder: (context, setDialogState) {
+            return AlertDialog(
+              title: const Text('自動分配電源供應器'),
+              content: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Text('每個模組將自動分配 1 個最小可用瓦數的電源供應器'),
+                  const SizedBox(height: 12),
+                  DropdownButtonFormField<String>(
+                    initialValue: selectedType,
+                    decoration: const InputDecoration(
+                      labelText: '電源類型',
+                      border: OutlineInputBorder(),
+                    ),
+                    items: const [
+                      DropdownMenuItem(value: 'UHP', child: Text('UHP (預設)')),
+                      DropdownMenuItem(value: 'HLG', child: Text('HLG')),
+                    ],
+                    onChanged: (value) {
+                      setDialogState(() {
+                        selectedType = value ?? 'UHP';
+                      });
+                    },
+                  ),
+                  const SizedBox(height: 12),
+                  const Text('交流電電供（可複選）：'),
+                  CheckboxListTile(
+                    contentPadding: EdgeInsets.zero,
+                    value: allow110,
+                    title: const Text('110V'),
+                    onChanged: (value) {
+                      setDialogState(() {
+                        allow110 = value ?? false;
+                      });
+                    },
+                  ),
+                  CheckboxListTile(
+                    contentPadding: EdgeInsets.zero,
+                    value: allow220,
+                    title: const Text('220V'),
+                    onChanged: (value) {
+                      setDialogState(() {
+                        allow220 = value ?? false;
+                      });
+                    },
+                  ),
+                ],
+              ),
+              actions: [
+                TextButton(
+                  onPressed: () => Navigator.of(context).pop(),
+                  child: const Text('取消'),
+                ),
+                ElevatedButton(
+                  onPressed: () {
+                    if (!allow110 && !allow220) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(content: Text('請至少勾選一種輸入電壓（110 或 220）')),
+                      );
+                      return;
+                    }
+                    Navigator.of(context).pop();
+                    _autoAssignPowerSupplies(
+                      selectedType: selectedType,
+                      allow110: allow110,
+                      allow220: allow220,
+                    );
+                  },
+                  child: const Text('開始分配'),
+                ),
+              ],
+            );
+          },
+        );
+      },
+    );
+  }
+
+  void _autoAssignPowerSupplies({
+    required String selectedType,
+    required bool allow110,
+    required bool allow220,
+  }) {
+    final allowedInputs = <int>{if (allow110) 110, if (allow220) 220};
+
+    final candidates =
+        _powerSupplyOptions
+            .where(
+              (option) =>
+                  option.type.toUpperCase() == selectedType.toUpperCase() &&
+                  allowedInputs.contains(option.inputVoltage),
+            )
+            .toList()
+          ..sort((a, b) {
+            final wattCompare = a.wattage.compareTo(b.wattage);
+            if (wattCompare != 0) return wattCompare;
+            return a.price.compareTo(b.price);
+          });
+
+    if (candidates.isEmpty) {
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('找不到符合條件的 $selectedType 電源選項')));
+      return;
+    }
+
+    final assigned = <PowerSupply>[];
+    final assignmentPairs = <Map<String, dynamic>>[];
+    final unassignedModules = <Map<String, dynamic>>[];
+
+    for (final module in _modules) {
+      final requiredWatt = _calculateModuleRequiredWatt(module);
+      PowerSupply? chosen;
+
+      for (final option in candidates) {
+        if (option.wattage >= requiredWatt) {
+          chosen = PowerSupply(
+            name: option.name,
+            wattage: option.wattage,
+            type: option.type,
+            inputVoltage: option.inputVoltage,
+            price: option.price,
+          );
+          break;
+        }
+      }
+
+      if (chosen != null) {
+        assigned.add(chosen);
+        assignmentPairs.add({'module': module, 'supply': chosen});
+      } else {
+        unassignedModules.add({'module': module, 'requiredWatt': requiredWatt});
+      }
+    }
+
+    setState(() {
+      _powerSupplies = assigned;
+    });
+    _autoSave();
+
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('電源自動分配結果'),
+        content: SingleChildScrollView(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text('已成功分配 ${assigned.length}/${_modules.length} 個模組'),
+              const SizedBox(height: 8),
+              ...assignmentPairs.map((pair) {
+                final module = pair['module'] as Module;
+                final supply = pair['supply'] as PowerSupply;
+                return Text(
+                  '• ${module.model} → ${supply.name} (${supply.type}, ${supply.inputVoltage}V, ${supply.wattage.toStringAsFixed(0)}W)',
+                );
+              }),
+              if (unassignedModules.isNotEmpty) ...[
+                const SizedBox(height: 12),
+                Text(
+                  '以下模組未分配成功：',
+                  style: TextStyle(color: Theme.of(context).colorScheme.error),
+                ),
+                ...unassignedModules.map((item) {
+                  final module = item['module'] as Module;
+                  final requiredWatt = item['requiredWatt'] as double;
+                  return Text(
+                    '• ${module.model} 需要 ${requiredWatt.toStringAsFixed(0)}W',
+                  );
+                }),
+              ],
+            ],
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(),
+            child: const Text('確定'),
+          ),
+        ],
+      ),
+    );
   }
 
   void _loadCustomers() async {

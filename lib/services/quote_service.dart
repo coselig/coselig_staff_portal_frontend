@@ -55,6 +55,7 @@ class QuoteConfiguration {
     );
   }
 }
+
 class QuoteData {
   final List<Loop> loops;
   final List<Module> modules;
@@ -107,8 +108,11 @@ class QuoteData {
     }
 
     return QuoteData(
-      loops: (json['loops'] as List?)?.map((l) => Loop.fromJson(l)).toList() ?? [],
-      modules: (json['modules'] as List?)?.map((m) => Module.fromJson(m)).toList() ?? [],
+      loops:
+          (json['loops'] as List?)?.map((l) => Loop.fromJson(l)).toList() ?? [],
+      modules:
+          (json['modules'] as List?)?.map((m) => Module.fromJson(m)).toList() ??
+          [],
       switchCount: json['switchCount'] ?? '',
       otherDevices: parseOtherDevices(json['otherDevices']),
       powerSupplies:
@@ -155,7 +159,8 @@ class QuoteService extends ChangeNotifier {
   bool _isLoading = false;
   String? _error;
 
-  List<QuoteConfiguration> get configurations => List.unmodifiable(_configurations);
+  List<QuoteConfiguration> get configurations =>
+      List.unmodifiable(_configurations);
   List<ModuleOption> get moduleOptions => List.unmodifiable(_moduleOptions);
   List<FixtureTypeData> get fixtureTypeOptions => _fixtureTypeOptions.isNotEmpty
       ? List.unmodifiable(_fixtureTypeOptions)
@@ -447,6 +452,105 @@ class QuoteService extends ChangeNotifier {
       } else {
         final error = jsonDecode(response.body);
         throw Exception(error['error'] ?? 'Failed to delete module option');
+      }
+    } catch (e) {
+      throw Exception('Network error: $e');
+    }
+  }
+
+  // ===== 電源供應器選項 =====
+
+  Future<List<Map<String, dynamic>>> fetchAllPowerSupplyOptions() async {
+    try {
+      final response = await _client.get(
+        Uri.parse('$baseUrl/api/power-supply-options'),
+      );
+
+      if (response.statusCode == 200) {
+        final data = jsonDecode(response.body);
+        return List<Map<String, dynamic>>.from(data['powerSupplyOptions']);
+      } else if (response.statusCode == 401) {
+        navigatorKey.currentState?.pushReplacementNamed('/login');
+        throw Exception('Unauthorized');
+      } else {
+        final error = jsonDecode(response.body);
+        throw Exception(
+          error['error'] ?? 'Failed to fetch power supply options',
+        );
+      }
+    } catch (e) {
+      throw Exception('Network error: $e');
+    }
+  }
+
+  Future<void> addPowerSupplyOption(PowerSupply option) async {
+    try {
+      final response = await _client.post(
+        Uri.parse('$baseUrl/api/power-supply-options'),
+        headers: {'Content-Type': 'application/json'},
+        body: jsonEncode({
+          'name': option.name,
+          'wattage': option.wattage,
+          'type': option.type,
+          'inputVoltage': option.inputVoltage,
+          'price': option.price,
+        }),
+      );
+
+      if (response.statusCode != 201) {
+        if (response.statusCode == 401) {
+          navigatorKey.currentState?.pushReplacementNamed('/login');
+          throw Exception('Unauthorized');
+        }
+        final error = jsonDecode(response.body);
+        throw Exception(error['error'] ?? 'Failed to add power supply option');
+      }
+    } catch (e) {
+      throw Exception('Network error: $e');
+    }
+  }
+
+  Future<void> updatePowerSupplyOption(
+    int id,
+    Map<String, dynamic> updates,
+  ) async {
+    try {
+      final response = await _client.put(
+        Uri.parse('$baseUrl/api/power-supply-options?id=$id'),
+        headers: {'Content-Type': 'application/json'},
+        body: jsonEncode(updates),
+      );
+
+      if (response.statusCode != 200) {
+        if (response.statusCode == 401) {
+          navigatorKey.currentState?.pushReplacementNamed('/login');
+          throw Exception('Unauthorized');
+        }
+        final error = jsonDecode(response.body);
+        throw Exception(
+          error['error'] ?? 'Failed to update power supply option',
+        );
+      }
+    } catch (e) {
+      throw Exception('Network error: $e');
+    }
+  }
+
+  Future<void> deletePowerSupplyOption(int id) async {
+    try {
+      final response = await _client.delete(
+        Uri.parse('$baseUrl/api/power-supply-options?id=$id'),
+      );
+
+      if (response.statusCode != 200) {
+        if (response.statusCode == 401) {
+          navigatorKey.currentState?.pushReplacementNamed('/login');
+          throw Exception('Unauthorized');
+        }
+        final error = jsonDecode(response.body);
+        throw Exception(
+          error['error'] ?? 'Failed to delete power supply option',
+        );
       }
     } catch (e) {
       throw Exception('Network error: $e');

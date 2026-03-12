@@ -4,12 +4,18 @@ import 'package:flutter/material.dart';
 
 class StepPowerSupplyWidget extends StatefulWidget {
   final List<PowerSupply> powerSupplies;
+  final List<PowerSupply> availableOptions;
+  final int moduleCount;
   final ValueChanged<List<PowerSupply>> onChanged;
+  final VoidCallback onAutoAssign;
 
   const StepPowerSupplyWidget({
     super.key,
     required this.powerSupplies,
+    required this.availableOptions,
+    required this.moduleCount,
     required this.onChanged,
+    required this.onAutoAssign,
   });
 
   @override
@@ -65,6 +71,15 @@ class _StepPowerSupplyWidgetState extends State<StepPowerSupplyWidget> {
                   fontWeight: FontWeight.bold,
                 ),
               ),
+              const Spacer(),
+              OutlinedButton.icon(
+                onPressed:
+                    widget.moduleCount > 0 && widget.availableOptions.isNotEmpty
+                    ? widget.onAutoAssign
+                    : null,
+                icon: const Icon(Icons.auto_fix_high),
+                label: const Text('自動分配'),
+              ),
             ],
           ),
         ),
@@ -72,7 +87,21 @@ class _StepPowerSupplyWidgetState extends State<StepPowerSupplyWidget> {
         if (_powerSuppliesExpanded)
           PowerSupplyListWidget(
             powerSupplies: widget.powerSupplies,
+            availableOptions: widget.availableOptions,
             onChanged: widget.onChanged,
+          ),
+        if (widget.moduleCount > 0)
+          Padding(
+            padding: const EdgeInsets.only(top: 8),
+            child: Text(
+              '目前共有 ${widget.moduleCount} 個模組，自動分配會嘗試一模組對應一個電源。',
+              style: TextStyle(
+                fontSize: 12,
+                color: Theme.of(
+                  context,
+                ).colorScheme.onSurface.withValues(alpha: 0.7),
+              ),
+            ),
           ),
         if (widget.powerSupplies.isNotEmpty) ...[
           const SizedBox(height: 16),
