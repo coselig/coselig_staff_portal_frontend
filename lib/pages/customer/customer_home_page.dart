@@ -2396,6 +2396,10 @@ class _CustomerHomePageState extends State<CustomerHomePage> {
     return total;
   }
 
+  String _defaultPowerSupplyTypeByLoopCount() {
+    return _loops.length > 30 ? 'HLG' : 'UHP';
+  }
+
   void _showAutoAssignPowerSuppliesDialog() {
     if (_modules.isEmpty) {
       ScaffoldMessenger.of(
@@ -2414,7 +2418,8 @@ class _CustomerHomePageState extends State<CustomerHomePage> {
     showDialog(
       context: context,
       builder: (context) {
-        String selectedType = 'UHP';
+        final defaultType = _defaultPowerSupplyTypeByLoopCount();
+        String selectedType = defaultType;
         bool allow110 = true;
         bool allow220 = false;
 
@@ -2435,8 +2440,14 @@ class _CustomerHomePageState extends State<CustomerHomePage> {
                       border: OutlineInputBorder(),
                     ),
                     items: const [
-                      DropdownMenuItem(value: 'UHP', child: Text('UHP (預設)')),
-                      DropdownMenuItem(value: 'HLG', child: Text('HLG')),
+                      DropdownMenuItem(
+                        value: 'UHP',
+                        child: Text('UHP (30迴路以內預設)'),
+                      ),
+                      DropdownMenuItem(
+                        value: 'HLG',
+                        child: Text('HLG (超過30迴路預設)'),
+                      ),
                     ],
                     onChanged: (value) {
                       setDialogState(() {
