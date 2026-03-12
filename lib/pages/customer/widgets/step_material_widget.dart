@@ -1,12 +1,8 @@
 import 'package:flutter/material.dart';
-import 'package:coselig_staff_portal/models/quote/power_supply.dart';
 import 'package:coselig_staff_portal/models/quote/material_item.dart';
-import 'package:coselig_staff_portal/pages/customer/widgets/power_supply_list_widget.dart';
 import 'package:coselig_staff_portal/pages/customer/widgets/item_list_widget.dart';
 
 class StepMaterialWidget extends StatelessWidget {
-  final List<PowerSupply> powerSupplies;
-  final Function(List<PowerSupply>) onPowerSuppliesChanged;
   final List<MaterialItem> boardMaterials;
   final Function(List<MaterialItem>) onBoardMaterialsChanged;
   final List<MaterialItem> wiringItems;
@@ -14,8 +10,6 @@ class StepMaterialWidget extends StatelessWidget {
 
   const StepMaterialWidget({
     super.key,
-    required this.powerSupplies,
-    required this.onPowerSuppliesChanged,
     required this.boardMaterials,
     required this.onBoardMaterialsChanged,
     required this.wiringItems,
@@ -30,11 +24,6 @@ class StepMaterialWidget extends StatelessWidget {
         const Text(
           '材料配置',
           style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-        ),
-        const SizedBox(height: 16),
-        PowerSupplyListWidget(
-          powerSupplies: powerSupplies,
-          onChanged: onPowerSuppliesChanged,
         ),
         const SizedBox(height: 16),
         ItemListWidget(

@@ -11,6 +11,7 @@ import 'package:provider/provider.dart';
 import 'package:coselig_staff_portal/utils/icon_utils.dart';
 import 'widgets/step_loop_switch_widget.dart';
 import 'widgets/step_module_widget.dart';
+import 'widgets/step_power_supply_widget.dart';
 import 'widgets/step_material_widget.dart';
 import 'widgets/add_loop_dialog.dart';
 import 'widgets/add_switch_dialog.dart';
@@ -221,6 +222,7 @@ class _CustomerHomePageState extends State<CustomerHomePage> {
     });
     _autoSave();
   }
+
   // 開關管理方法
   void _showAddSwitchDialog() async {
     try {
@@ -280,7 +282,7 @@ class _CustomerHomePageState extends State<CustomerHomePage> {
   // 第二步：模組配置
   final List<Module> _modules = [];
 
-  // 第三步：材料配置
+  // 第四步：電源供應器與材料配置
   List<PowerSupply> _powerSupplies = [];
   List<MaterialItem> _boardMaterials = [];
   List<MaterialItem> _wiringItems = [];
@@ -697,8 +699,7 @@ class _CustomerHomePageState extends State<CustomerHomePage> {
             child: Stepper(
               currentStep: _currentStep,
               onStepContinue: () {
-                // we now have four steps (0..3) so the last index is 3
-                if (_currentStep < 3) {
+                if (_currentStep < 4) {
                   setState(() {
                     _currentStep += 1;
                   });
@@ -757,12 +758,16 @@ class _CustomerHomePageState extends State<CustomerHomePage> {
                                       ),
                                     ),
                                   ),
-                                if (_currentStep > 0 && _currentStep < 3)
+                                if (_currentStep > 0 && _currentStep < 4)
                                   const SizedBox(height: 16),
                                 ElevatedButton.icon(
                                   onPressed: details.onStepContinue,
-                                  icon: const Icon(Icons.arrow_forward),
-                                  label: Text('下一步'),
+                                  icon: _currentStep < 4
+                                      ? const Icon(Icons.arrow_forward)
+                                      : const Icon(Icons.calculate),
+                                  label: Text(
+                                    _currentStep < 4 ? '下一步' : '生成報價',
+                                  ),
                                   style: ElevatedButton.styleFrom(
                                     padding: const EdgeInsets.symmetric(
                                       horizontal: 24,
@@ -796,16 +801,16 @@ class _CustomerHomePageState extends State<CustomerHomePage> {
                                       ),
                                     ),
                                   ),
-                                if (_currentStep > 0 && _currentStep < 3)
+                                if (_currentStep > 0 && _currentStep < 4)
                                   const SizedBox(width: 16),
                                 Expanded(
                                   child: ElevatedButton.icon(
                                     onPressed: details.onStepContinue,
-                                    icon: _currentStep < 3
+                                    icon: _currentStep < 4
                                         ? const Icon(Icons.arrow_forward)
                                         : const Icon(Icons.calculate),
                                     label: Text(
-                                      _currentStep < 3 ? '下一步' : '生成報價',
+                                      _currentStep < 4 ? '下一步' : '生成報價',
                                     ),
                                     style: ElevatedButton.styleFrom(
                                       padding: const EdgeInsets.symmetric(
@@ -1079,6 +1084,72 @@ class _CustomerHomePageState extends State<CustomerHomePage> {
                       ),
                       const SizedBox(width: 12),
                       const Text(
+                        '電源供應器配置',
+                        style: TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
+                    ],
+                  ),
+                  content: Container(
+                    margin: const EdgeInsets.only(top: 8),
+                    padding: const EdgeInsets.all(16),
+                    decoration: BoxDecoration(
+                      color: Theme.of(context).colorScheme.surface,
+                      borderRadius: BorderRadius.circular(12),
+                      border: Border.all(
+                        color: Theme.of(
+                          context,
+                        ).colorScheme.outline.withValues(alpha: 0.2),
+                      ),
+                    ),
+                    child: StepPowerSupplyWidget(
+                      powerSupplies: _powerSupplies,
+                      onChanged: (list) {
+                        setState(() {
+                          _powerSupplies.clear();
+                          _powerSupplies.addAll(list);
+                        });
+                        _autoSave();
+                      },
+                    ),
+                  ),
+                  isActive: _currentStep >= 3,
+                  state: _currentStep > 3
+                      ? StepState.complete
+                      : (_currentStep == 3
+                            ? StepState.editing
+                            : StepState.indexed),
+                ),
+                Step(
+                  title: Row(
+                    children: [
+                      Container(
+                        width: 32,
+                        height: 32,
+                        decoration: BoxDecoration(
+                          color: _currentStep >= 4
+                              ? Theme.of(context).colorScheme.primary
+                              : Theme.of(context).colorScheme.outline,
+                          shape: BoxShape.circle,
+                        ),
+                        child: Center(
+                          child: Text(
+                            '5',
+                            style: TextStyle(
+                              color: _currentStep >= 4
+                                  ? Theme.of(context).colorScheme.onPrimary
+                                  : Theme.of(
+                                      context,
+                                    ).colorScheme.onSurfaceVariant,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      const Text(
                         '材料配置',
                         style: TextStyle(
                           fontSize: 16,
@@ -1100,14 +1171,6 @@ class _CustomerHomePageState extends State<CustomerHomePage> {
                       ),
                     ),
                     child: StepMaterialWidget(
-                      powerSupplies: _powerSupplies,
-                      onPowerSuppliesChanged: (list) {
-                        setState(() {
-                          _powerSupplies.clear();
-                          _powerSupplies.addAll(list);
-                        });
-                        _autoSave();
-                      },
                       boardMaterials: _boardMaterials,
                       onBoardMaterialsChanged: (list) {
                         setState(() {
@@ -1126,8 +1189,8 @@ class _CustomerHomePageState extends State<CustomerHomePage> {
                       },
                     ),
                   ),
-                  isActive: _currentStep >= 3,
-                  state: _currentStep == 3
+                  isActive: _currentStep >= 4,
+                  state: _currentStep == 4
                       ? StepState.editing
                       : StepState.indexed,
                 ),
@@ -1236,9 +1299,7 @@ class _CustomerHomePageState extends State<CustomerHomePage> {
         onAddFixture: (fixture) {
           setState(() {
             final loop = _loops[loopIndex];
-            final updatedFixtures = List<LoopFixture>.from(
-              loop.fixtures,
-            )
+            final updatedFixtures = List<LoopFixture>.from(loop.fixtures)
               ..add(fixture);
             _loops[loopIndex] = loop.copyWith(fixtures: updatedFixtures);
           });
