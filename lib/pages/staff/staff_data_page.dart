@@ -2,6 +2,7 @@ import 'package:universal_html/html.dart' as html;
 import 'package:flutter/material.dart';
 import 'package:coselig_staff_portal/services/user_data_service.dart';
 import 'package:coselig_staff_portal/widgets/app_drawer.dart';
+import 'package:coselig_staff_portal/widgets/profile_ui_settings_section.dart';
 
 class StaffDataPage extends StatefulWidget {
   const StaffDataPage({super.key});
@@ -109,9 +110,7 @@ class _StaffDataPageState extends State<StaffDataPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('我的資料'),
-      ),
+      appBar: AppBar(title: const Text('我的資料')),
       drawer: const AppDrawer(),
       body: _isLoading
           ? const Center(child: CircularProgressIndicator())
@@ -265,6 +264,22 @@ class _StaffDataPageState extends State<StaffDataPage> {
                                 ),
                               ],
                             ),
+                          ),
+                        ),
+                      ),
+                      const SizedBox(height: 16),
+                      Card(
+                        child: Padding(
+                          padding: const EdgeInsets.all(16.0),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              ProfileUiSettingsSection(
+                                titleStyle: Theme.of(
+                                  context,
+                                ).textTheme.titleLarge,
+                              ),
+                            ],
                           ),
                         ),
                       ),

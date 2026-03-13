@@ -1,8 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:coselig_staff_portal/services/auth_service.dart';
-import 'package:coselig_staff_portal/services/ui_settings_provider.dart';
-import 'package:coselig_staff_portal/widgets/theme_toggle_switch.dart';
 import 'package:coselig_staff_portal/main.dart';
 import 'package:url_launcher/url_launcher.dart';
 
@@ -127,24 +125,6 @@ class AppDrawer extends StatelessWidget {
                 navigatorKey.currentState!.pushNamed('/user_data');
               },
             ),
-            if (authService.isAdmin ||
-                authService.isManager ||
-                authService.isStaff) ...[
-              ListTile(
-                leading: Icon(Icons.work),
-                title: Text('顯示目前工作的員工'),
-                trailing: Consumer<UiSettingsProvider>(
-                  builder: (context, uiSettings, child) {
-                    return Switch(
-                      value: uiSettings.showWorkingStaffCard,
-                      onChanged: (bool value) {
-                        uiSettings.setShowWorkingStaffCard(value);
-                      },
-                    );
-                  },
-                ),
-              ),
-            ],
             // 估價系統 - 員工和顧客都可以使用
             ListTile(
               leading: Icon(Icons.calculate),
@@ -164,27 +144,6 @@ class AppDrawer extends StatelessWidget {
             ),
             // 已移除：商店、訂單記錄（未實作）
           ],
-          ListTile(
-            leading: Icon(Icons.text_fields),
-            title: Consumer<UiSettingsProvider>(
-              builder: (context, uiSettings, child) {
-                return Slider(
-                  value: uiSettings.fontSizeScale,
-                  min: 0.5,
-                  max: 2.0,
-                  divisions: 15,
-                  label: '${(uiSettings.fontSizeScale * 100).round()}%',
-                  onChanged: (double value) {
-                    uiSettings.setFontSizeScale(value);
-                  },
-                );
-              },
-            ),
-          ),
-          ListTile(
-            leading: Icon(Icons.brightness_6),
-            title: ThemeToggleSwitch(),
-          ),
           const Divider(),
           ListTile(
             leading: Icon(Icons.logout),

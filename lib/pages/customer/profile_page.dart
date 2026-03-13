@@ -1,6 +1,7 @@
 import 'package:coselig_staff_portal/services/user_data_service.dart';
 import 'package:coselig_staff_portal/services/customer_service.dart';
 import 'package:coselig_staff_portal/services/auth_service.dart';
+import 'package:coselig_staff_portal/widgets/profile_ui_settings_section.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
@@ -39,7 +40,10 @@ class _CustomerProfilePageState extends State<CustomerProfilePage> {
   Future<void> _loadData() async {
     try {
       final auth = Provider.of<AuthService>(context, listen: false);
-      final customerService = Provider.of<CustomerService>(context, listen: false);
+      final customerService = Provider.of<CustomerService>(
+        context,
+        listen: false,
+      );
 
       final user = await _userService.getCurrentUserData();
       _chineseNameController.text = user['chinese_name'] ?? '';
@@ -51,7 +55,10 @@ class _CustomerProfilePageState extends State<CustomerProfilePage> {
       await customerService.fetchCustomers();
       final customers = customerService.customers;
       if (customers.isNotEmpty) {
-        final c = customers.firstWhere((c) => c.userId.toString() == auth.userId, orElse: () => customers.first);
+        final c = customers.firstWhere(
+          (c) => c.userId.toString() == auth.userId,
+          orElse: () => customers.first,
+        );
         _customerId = c.id;
         _companyController.text = c.company ?? '';
         _taxIdController.text = c.taxId ?? '';
@@ -60,7 +67,9 @@ class _CustomerProfilePageState extends State<CustomerProfilePage> {
         _isActive = c.isActive;
       }
     } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('載入個人資料失敗: $e')));
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('載入個人資料失敗: $e')));
     } finally {
       setState(() => _loading = false);
     }
@@ -79,7 +88,10 @@ class _CustomerProfilePageState extends State<CustomerProfilePage> {
       });
 
       if (_customerId != null) {
-        final customerService = Provider.of<CustomerService>(context, listen: false);
+        final customerService = Provider.of<CustomerService>(
+          context,
+          listen: false,
+        );
         final success = await customerService.updateCustomer(_customerId!, {
           'company': _companyController.text.trim(),
           'tax_id': _taxIdController.text.trim(),
@@ -90,10 +102,14 @@ class _CustomerProfilePageState extends State<CustomerProfilePage> {
         if (!success) throw Exception('更新客戶資料失敗');
       }
 
-      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('個人資料已儲存')));
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('個人資料已儲存')));
       Navigator.of(context).pop();
     } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('儲存失敗: $e')));
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('儲存失敗: $e')));
     } finally {
       setState(() => _loading = false);
     }
@@ -116,9 +132,7 @@ class _CustomerProfilePageState extends State<CustomerProfilePage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('個人資料設定'),
-      ),
+      appBar: AppBar(title: const Text('個人資料設定')),
       body: _loading
           ? const Center(child: CircularProgressIndicator())
           : SingleChildScrollView(
@@ -128,7 +142,10 @@ class _CustomerProfilePageState extends State<CustomerProfilePage> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
-                    const Text('個人資訊', style: TextStyle(fontWeight: FontWeight.bold)),
+                    const Text(
+                      '個人資訊',
+                      style: TextStyle(fontWeight: FontWeight.bold),
+                    ),
                     const SizedBox(height: 8),
                     TextFormField(
                       controller: _chineseNameController,
@@ -151,7 +168,10 @@ class _CustomerProfilePageState extends State<CustomerProfilePage> {
                       decoration: const InputDecoration(labelText: '銀行帳號'),
                     ),
                     const SizedBox(height: 16),
-                    const Text('公司 / 客戶欄位', style: TextStyle(fontWeight: FontWeight.bold)),
+                    const Text(
+                      '公司 / 客戶欄位',
+                      style: TextStyle(fontWeight: FontWeight.bold),
+                    ),
                     const SizedBox(height: 8),
                     TextFormField(
                       controller: _companyController,
@@ -180,6 +200,8 @@ class _CustomerProfilePageState extends State<CustomerProfilePage> {
                         ),
                       ],
                     ),
+                    const SizedBox(height: 16),
+                    const ProfileUiSettingsSection(),
                     const SizedBox(height: 16),
                     ElevatedButton(
                       onPressed: _loading ? null : _save,
