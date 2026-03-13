@@ -1280,9 +1280,31 @@ class _CustomerHomePageState extends State<CustomerHomePage> {
   }
 
   // 更新迴路
+  /// 將所有模組中對 [oldLoop]（以名稱為識別）的參照，替換為 [newLoop]。
+  /// 每次用 copyWith 產生新的 Loop 物件時都必須呼叫，確保模組的 loopAllocations 不持有過期資料。
+  void _syncLoopInModules(Loop oldLoop, Loop newLoop) {
+    final oldName = oldLoop.name;
+    for (int mi = 0; mi < _modules.length; mi++) {
+      final module = _modules[mi];
+      bool changed = false;
+      final newAllocations = module.loopAllocations.map((a) {
+        if (a.loop.name == oldName) {
+          changed = true;
+          return a.copyWith(loop: newLoop);
+        }
+        return a;
+      }).toList();
+      if (changed) {
+        _modules[mi] = module.copyWith(loopAllocations: newAllocations);
+      }
+    }
+  }
+
   void _updateLoop(int index, Loop updatedLoop) {
     setState(() {
+      final oldLoop = _loops[index];
       _loops[index] = updatedLoop;
+      _syncLoopInModules(oldLoop, updatedLoop);
     });
     _autoSave();
   }
@@ -1302,10 +1324,12 @@ class _CustomerHomePageState extends State<CustomerHomePage> {
       builder: (context) => AddFixtureDialog(
         onAddFixture: (fixture) {
           setState(() {
-            final loop = _loops[loopIndex];
-            final updatedFixtures = List<LoopFixture>.from(loop.fixtures)
-              ..add(fixture);
-            _loops[loopIndex] = loop.copyWith(fixtures: updatedFixtures);
+            final oldLoop = _loops[loopIndex];
+            final newLoop = oldLoop.copyWith(
+              fixtures: List<LoopFixture>.from(oldLoop.fixtures)..add(fixture),
+            );
+            _loops[loopIndex] = newLoop;
+            _syncLoopInModules(oldLoop, newLoop);
           });
           _autoSave();
         },
@@ -1322,10 +1346,12 @@ class _CustomerHomePageState extends State<CustomerHomePage> {
         fixture: fixture,
         onUpdateFixture: (updatedFixture) {
           setState(() {
-            final loop = _loops[loopIndex];
-            final updatedFixtures = List<LoopFixture>.from(loop.fixtures);
+            final oldLoop = _loops[loopIndex];
+            final updatedFixtures = List<LoopFixture>.from(oldLoop.fixtures);
             updatedFixtures[fixtureIndex] = updatedFixture;
-            _loops[loopIndex] = loop.copyWith(fixtures: updatedFixtures);
+            final newLoop = oldLoop.copyWith(fixtures: updatedFixtures);
+            _loops[loopIndex] = newLoop;
+            _syncLoopInModules(oldLoop, newLoop);
           });
           _autoSave();
         },
@@ -1336,10 +1362,12 @@ class _CustomerHomePageState extends State<CustomerHomePage> {
   // 從迴路移除燈具
   void _removeFixtureFromLoop(int loopIndex, int fixtureIndex) {
     setState(() {
-      final loop = _loops[loopIndex];
-      final updatedFixtures = List<LoopFixture>.from(loop.fixtures)
-        ..removeAt(fixtureIndex);
-      _loops[loopIndex] = loop.copyWith(fixtures: updatedFixtures);
+      final oldLoop = _loops[loopIndex];
+      final newLoop = oldLoop.copyWith(
+        fixtures: List<LoopFixture>.from(oldLoop.fixtures)..removeAt(fixtureIndex),
+      );
+      _loops[loopIndex] = newLoop;
+      _syncLoopInModules(oldLoop, newLoop);
     });
     _autoSave();
   }
