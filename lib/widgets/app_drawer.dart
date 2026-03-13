@@ -14,10 +14,10 @@ class AppDrawer extends StatelessWidget {
     return Drawer(
       child: ListView(
         children: [
-          DrawerHeader(
-            child: Text(
+          ListTile(
+            title: Text(
               authService.isCustomer ? 'Coselig 顧客系統' : 'Coselig 員工系統',
-              style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+              style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
             ),
           ),
           if (authService.isAdmin) ...[
@@ -35,37 +35,48 @@ class AppDrawer extends StatelessWidget {
                 navigatorKey.currentState!.pushNamed('/admin_user_preview');
               },
             ),
-            ListTile(
-              leading: Icon(Icons.settings),
-              title: Text('模組管理'),
-              onTap: () {
-                navigatorKey.currentState!.pushNamed('/module_management');
-              },
-            ),
-            ListTile(
-              leading: Icon(Icons.lightbulb_outline),
-              title: Text('燈具類型管理'),
-              onTap: () {
-                navigatorKey.currentState!.pushNamed(
-                  '/fixture_type_management',
-                );
-              },
-            ),
-            ListTile(
-              leading: Icon(Icons.toggle_on),
-              title: Text('開關管理'),
-              onTap: () {
-                navigatorKey.currentState!.pushNamed('/switch_management');
-              },
-            ),
-            ListTile(
-              leading: Icon(Icons.bolt),
-              title: Text('電源供應器管理'),
-              onTap: () {
-                navigatorKey.currentState!.pushNamed(
-                  '/power_supply_management',
-                );
-              },
+            ExpansionTile(
+              initiallyExpanded: false,
+              leading: Icon(Icons.tune),
+              title: Text('估價系統管理項'),
+              children: [
+                ListTile(
+                  contentPadding: const EdgeInsets.only(left: 72, right: 16),
+                  leading: Icon(Icons.settings),
+                  title: Text('模組管理'),
+                  onTap: () {
+                    navigatorKey.currentState!.pushNamed('/module_management');
+                  },
+                ),
+                ListTile(
+                  contentPadding: const EdgeInsets.only(left: 72, right: 16),
+                  leading: Icon(Icons.lightbulb_outline),
+                  title: Text('燈具類型管理'),
+                  onTap: () {
+                    navigatorKey.currentState!.pushNamed(
+                      '/fixture_type_management',
+                    );
+                  },
+                ),
+                ListTile(
+                  contentPadding: const EdgeInsets.only(left: 72, right: 16),
+                  leading: Icon(Icons.toggle_on),
+                  title: Text('開關管理'),
+                  onTap: () {
+                    navigatorKey.currentState!.pushNamed('/switch_management');
+                  },
+                ),
+                ListTile(
+                  contentPadding: const EdgeInsets.only(left: 72, right: 16),
+                  leading: Icon(Icons.bolt),
+                  title: Text('電源供應器管理'),
+                  onTap: () {
+                    navigatorKey.currentState!.pushNamed(
+                      '/power_supply_management',
+                    );
+                  },
+                ),
+              ],
             ),
             ListTile(
               leading: Icon(Icons.device_hub),
