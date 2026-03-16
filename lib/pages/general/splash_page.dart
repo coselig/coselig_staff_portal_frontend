@@ -66,7 +66,8 @@ class _SplashScreenState extends State<SplashScreen> {
             currentPath == '/module_management' ||
             currentPath == '/fixture_type_management' ||
             currentPath == '/switch_management' ||
-            currentPath == '/power_supply_management') {
+            currentPath == '/power_supply_management' ||
+            currentPath == '/device_config_management') {
           targetRoute = currentPath!;
         } else {
           // 根據角色導航到不同主頁面
