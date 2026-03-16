@@ -2,117 +2,10 @@ import 'package:flutter/material.dart';
 import 'package:http/browser_client.dart';
 import 'dart:convert';
 import 'package:coselig_staff_portal/main.dart';
+import 'package:coselig_staff_portal/models/device_config.dart';
 
-class DeviceConfiguration {
-  final int id;
-  final int userId;
-  final String name;
-  final String chineseName;
-  final String userName;
-  final String createdAt;
-  final String updatedAt;
-  final List<Device>? devices;
-
-  DeviceConfiguration({
-    required this.id,
-    required this.userId,
-    required this.name,
-    required this.chineseName,
-    required this.userName,
-    required this.createdAt,
-    required this.updatedAt,
-    this.devices,
-  });
-
-  factory DeviceConfiguration.fromJson(Map<String, dynamic> json) {
-    return DeviceConfiguration(
-      id: json['id'] ?? 0,
-      userId: json['user_id'] ?? 0,
-      name: json['name'] ?? '',
-      chineseName: json['chinese_name'] ?? json['user_name'] ?? 'Unknown',
-      userName: json['user_name'] ?? '',
-      createdAt: json['created_at'] ?? '',
-      updatedAt: json['updated_at'] ?? '',
-      devices: json['devices'] != null
-          ? (jsonDecode(json['devices']) as List)
-                .map((d) => Device.fromJson(d))
-                .toList()
-          : null,
-    );
-  }
-}
-
-class Device {
-  String? id; // 數據庫ID，對於新裝置為 null
-  String brand;
-  String model;
-  String type;
-  String moduleId;
-  String channel;
-  String name;
-  String tcp;
-  int? brightMinimum;
-  int? colortempMinimum;
-  int? colortempMaximum;
-
-  Device({
-    this.id,
-    required this.brand,
-    required this.model,
-    required this.type,
-    required this.moduleId,
-    required this.channel,
-    required this.name,
-    required this.tcp,
-    this.brightMinimum,
-    this.colortempMinimum,
-    this.colortempMaximum,
-  });
-
-  factory Device.fromJson(Map<String, dynamic> json) {
-    int? parseInt(dynamic v) {
-      if (v == null) return null;
-      if (v is int) return v;
-      if (v is String) return int.tryParse(v);
-      return null;
-    }
-
-    final type = json['type'] as String? ?? '';
-    final parsedBright = parseInt(json['bright_minimum']) ?? 2;
-    final parsedCtMin = parseInt(json['colortemp_minimum']);
-    final parsedCtMax = parseInt(json['colortemp_maximum']);
-
-    return Device(
-      id: json['id']?.toString(),
-      brand: json['brand'],
-      model: json['model'],
-      type: type,
-      moduleId: json['module_id'],
-      channel: json['channel'],
-      name: json['name'],
-      tcp: json['tcp'] ?? '',
-      brightMinimum: parsedBright,
-      colortempMinimum: type == 'dual' ? (parsedCtMin ?? 2200) : parsedCtMin,
-      colortempMaximum: type == 'dual' ? (parsedCtMax ?? 5700) : parsedCtMax,
-    );
-  }
-
-  Map<String, dynamic> toJson() {
-    return {
-      'id': id,
-      'brand': brand,
-      'model': model,
-      'type': type,
-      'module_id': moduleId,
-      'channel': channel,
-      'name': name,
-      'tcp': tcp,
-      if (brightMinimum != null) 'bright_minimum': brightMinimum,
-      if (colortempMinimum != null) 'colortemp_minimum': colortempMinimum,
-      if (colortempMaximum != null) 'colortemp_maximum': colortempMaximum,
-    };
-  }
-}
+// Device, DeviceConfiguration, DeviceConfigOption are moved to
+// lib/models/device_config.dart and imported above.
 
 class DiscoveryService extends ChangeNotifier {
   final String baseUrl =
@@ -631,6 +524,17 @@ class DiscoveryService extends ChangeNotifier {
   Future<List<DeviceConfigOption>> fetchAllDeviceConfigOptions() async {
     await fetchDeviceConfigOptions();
     return List.unmodifiable(_deviceConfigOptions);
+  }
+
+  /// Export assembled `deviceConfigs` as compact JSON string.
+  String exportDeviceConfigsJson() {
+    return jsonEncode(deviceConfigs);
+  }
+
+  /// Export a JSON Schema describing brand->model->{types,channels,channel_map}.
+  String exportDeviceConfigsJsonSchema() {
+    final schema = deviceConfigsJsonSchema();
+    return jsonEncode(schema);
   }
 
   Future<void> addDeviceConfigOption(DeviceConfigOption option) async {

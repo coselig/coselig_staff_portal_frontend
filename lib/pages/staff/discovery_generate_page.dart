@@ -1,3 +1,4 @@
+import 'package:coselig_staff_portal/models/device_config.dart';
 import 'package:universal_html/html.dart' as html;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -303,6 +304,38 @@ class _DiscoveryGeneratePageState extends State<DiscoveryGeneratePage> {
           context,
         ).showSnackBar(const SnackBar(content: Text('YAML 配置已生成並複製到剪貼簿')));
       }
+    }
+  }
+
+  void exportDeviceConfigsFile() {
+    try {
+      final json = _service.exportDeviceConfigsJson();
+      final blob = html.Blob([json], 'application/json');
+      final url = html.Url.createObjectUrlFromBlob(blob);
+      final filename = '${_service.currentConfigurationName.replaceAll(' ', '_')}_device_configs.json';
+      final _ = html.AnchorElement(href: url)
+        ..setAttribute('download', filename)
+        ..click();
+      html.Url.revokeObjectUrl(url);
+      if (mounted) ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('已下載 deviceConfigs JSON')));
+    } catch (e) {
+      if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('匯出失敗: $e')));
+    }
+  }
+
+  void exportDeviceConfigsSchemaFile() {
+    try {
+      final schema = _service.exportDeviceConfigsJsonSchema();
+      final blob = html.Blob([schema], 'application/json');
+      final url = html.Url.createObjectUrlFromBlob(blob);
+      final filename = 'device_configs.schema.json';
+      final _ = html.AnchorElement(href: url)
+        ..setAttribute('download', filename)
+        ..click();
+      html.Url.revokeObjectUrl(url);
+      if (mounted) ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('已下載 deviceConfigs JSON Schema')));
+    } catch (e) {
+      if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('匯出 Schema 失敗: $e')));
     }
   }
 
@@ -1000,6 +1033,30 @@ class _DiscoveryGeneratePageState extends State<DiscoveryGeneratePage> {
                   padding: const EdgeInsets.symmetric(
                     horizontal: 24,
                     vertical: 20,
+                  ),
+                ),
+              ),
+              const SizedBox(width: 8),
+              ElevatedButton.icon(
+                onPressed: exportDeviceConfigsFile,
+                icon: const Icon(Icons.download),
+                label: const Text('匯出 deviceConfigs JSON'),
+                style: ElevatedButton.styleFrom(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 16,
+                    vertical: 18,
+                  ),
+                ),
+              ),
+              const SizedBox(width: 8),
+              ElevatedButton.icon(
+                onPressed: exportDeviceConfigsSchemaFile,
+                icon: const Icon(Icons.download_outlined),
+                label: const Text('匯出 JSON Schema'),
+                style: ElevatedButton.styleFrom(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 16,
+                    vertical: 18,
                   ),
                 ),
               ),
