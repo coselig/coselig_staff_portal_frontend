@@ -76,6 +76,8 @@ class AppDrawer extends StatelessWidget {
                 }
               },
             ),
+
+            const Divider(),
             ListTile(
               leading: Icon(Icons.build),
               title: Text('裝置註冊表生成器'),
@@ -87,9 +89,12 @@ class AppDrawer extends StatelessWidget {
               leading: Icon(Icons.device_hub),
               title: Text('裝置設定管理'),
               onTap: () {
-                navigatorKey.currentState!.pushNamed('/device_config_management');
+                navigatorKey.currentState!.pushNamed(
+                  '/device_config_management',
+                );
               },
             ),
+            const Divider(),
             // 估價系統 - 員工和顧客都可以使用
             ListTile(
               leading: Icon(Icons.calculate),
@@ -150,7 +155,13 @@ class AppDrawer extends StatelessWidget {
                 navigatorKey.currentState!.pushNamed('/customer_profile');
               },
             ),
-            // 已移除：商店、訂單記錄（未實作）
+            ListTile(
+              leading: Icon(Icons.calculate),
+              title: Text('估價系統'),
+              onTap: () {
+                navigatorKey.currentState!.pushNamed('/customer_home');
+              },
+            ),
           ],
           const Divider(),
           ListTile(
