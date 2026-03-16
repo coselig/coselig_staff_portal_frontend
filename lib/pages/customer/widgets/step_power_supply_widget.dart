@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 class StepPowerSupplyWidget extends StatefulWidget {
   final List<PowerSupply> powerSupplies;
   final List<PowerSupply> availableOptions;
+  final List<double> assignedLoads;
   final int moduleCount;
   final ValueChanged<List<PowerSupply>> onChanged;
   final VoidCallback onAutoAssign;
@@ -13,6 +14,7 @@ class StepPowerSupplyWidget extends StatefulWidget {
     super.key,
     required this.powerSupplies,
     required this.availableOptions,
+    this.assignedLoads = const [],
     required this.moduleCount,
     required this.onChanged,
     required this.onAutoAssign,
@@ -88,6 +90,7 @@ class _StepPowerSupplyWidgetState extends State<StepPowerSupplyWidget> {
           PowerSupplyListWidget(
             powerSupplies: widget.powerSupplies,
             availableOptions: widget.availableOptions,
+            assignedLoads: widget.assignedLoads,
             onChanged: widget.onChanged,
           ),
         if (widget.moduleCount > 0)

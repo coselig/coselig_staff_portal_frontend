@@ -54,11 +54,11 @@ class _EditLoopDialogState extends State<EditLoopDialog> {
                 border: OutlineInputBorder(),
               ),
               items: const [
-                DropdownMenuItem(value: 220, child: Text('220V')),
-                DropdownMenuItem(value: 110, child: Text('110V')),
-                DropdownMenuItem(value: 36, child: Text('36V')),
-                DropdownMenuItem(value: 24, child: Text('24V')),
                 DropdownMenuItem(value: 12, child: Text('12V')),
+                DropdownMenuItem(value: 24, child: Text('24V')),
+                DropdownMenuItem(value: 36, child: Text('36V')),
+                DropdownMenuItem(value: 110, child: Text('110V')),
+                DropdownMenuItem(value: 220, child: Text('220V')),
               ],
               onChanged: (value) {
                 setState(() {
@@ -74,11 +74,11 @@ class _EditLoopDialogState extends State<EditLoopDialog> {
                 border: OutlineInputBorder(),
               ),
               items: const [
-                DropdownMenuItem(value: 'WRGB', child: Text('WRGB')),
-                DropdownMenuItem(value: 'RGB', child: Text('RGB')),
-                DropdownMenuItem(value: '雙色溫', child: Text('雙色溫')),
                 DropdownMenuItem(value: '單色溫', child: Text('單色溫')),
                 DropdownMenuItem(value: '繼電器', child: Text('繼電器')),
+                DropdownMenuItem(value: '雙色溫', child: Text('雙色溫')),
+                DropdownMenuItem(value: 'RGB', child: Text('RGB')),
+                DropdownMenuItem(value: 'WRGB', child: Text('WRGB')),
               ],
               onChanged: (value) {
                 setState(() {

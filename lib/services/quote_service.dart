@@ -724,7 +724,9 @@ class QuoteService extends ChangeNotifier {
         headers: {'Content-Type': 'application/json'},
         body: jsonEncode(model.toJson()),
       );
-      if (response.statusCode != 200) {
+      if (response.statusCode >= 200 && response.statusCode < 300) {
+        return;
+      } else {
         final error = jsonDecode(response.body);
         throw Exception(error['error'] ?? 'Failed to add switch option');
       }
@@ -740,7 +742,9 @@ class QuoteService extends ChangeNotifier {
         headers: {'Content-Type': 'application/json'},
         body: jsonEncode({'id': id, ...model.toJson()}),
       );
-      if (response.statusCode != 200) {
+      if (response.statusCode >= 200 && response.statusCode < 300) {
+        return;
+      } else {
         final error = jsonDecode(response.body);
         throw Exception(error['error'] ?? 'Failed to update switch option');
       }
@@ -754,7 +758,9 @@ class QuoteService extends ChangeNotifier {
       final response = await _client.delete(
         Uri.parse('$baseUrl/api/switch-options?id=$id'),
       );
-      if (response.statusCode != 200) {
+      if (response.statusCode >= 200 && response.statusCode < 300) {
+        return;
+      } else {
         final error = jsonDecode(response.body);
         throw Exception(error['error'] ?? 'Failed to delete switch option');
       }

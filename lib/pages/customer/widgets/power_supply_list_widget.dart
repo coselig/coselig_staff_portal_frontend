@@ -5,12 +5,14 @@ class PowerSupplyListWidget extends StatefulWidget {
   final List<PowerSupply> powerSupplies;
   final List<PowerSupply> availableOptions;
   final Function(List<PowerSupply>) onChanged;
+  final List<double>? assignedLoads;
 
   const PowerSupplyListWidget({
     super.key,
     required this.powerSupplies,
     required this.availableOptions,
     required this.onChanged,
+    this.assignedLoads,
   });
 
   @override
@@ -118,6 +120,10 @@ class _PowerSupplyListWidgetState extends State<PowerSupplyListWidget> {
           final idx = entry.key;
           final item = entry.value;
           final selectedKey = _resolveSelectedKey(item);
+          final load = (widget.assignedLoads != null && idx < widget.assignedLoads!.length)
+              ? widget.assignedLoads![idx]
+              : 0.0;
+          final loadPercent = item.wattage > 0 ? (load / item.wattage) * 100.0 : 0.0;
           return Row(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
@@ -152,14 +158,48 @@ class _PowerSupplyListWidgetState extends State<PowerSupplyListWidget> {
                       },
                     ),
                     const SizedBox(height: 6),
-                    Text(
-                      '類型: ${item.type}    輸入: ${item.inputVoltageLabel}V    瓦數: ${item.wattage.toStringAsFixed(0)}W    價格: ${item.price.toStringAsFixed(0)}',
-                      style: TextStyle(
-                        fontSize: 12,
-                        color: Theme.of(
-                          context,
-                        ).colorScheme.onSurface.withValues(alpha: 0.7),
-                      ),
+                    Row(
+                      children: [
+                        Expanded(
+                          child: Text(
+                            '類型: ${item.type}    輸入: ${item.inputVoltageLabel}V    瓦數: ${item.wattage.toStringAsFixed(0)}W    價格: ${item.price.toStringAsFixed(0)}',
+                            style: TextStyle(
+                              fontSize: 12,
+                              color: Theme.of(
+                                context,
+                              ).colorScheme.onSurface.withValues(alpha: 0.7),
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 6),
+                    // show load percent and warning if >80%
+                    Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        LinearProgressIndicator(
+                          value: (loadPercent / 100).clamp(0.0, 1.0),
+                          minHeight: 6,
+                          color: loadPercent > 80
+                              ? Theme.of(context).colorScheme.error
+                              : Theme.of(context).colorScheme.primary,
+                          backgroundColor: Theme.of(context)
+                              .colorScheme
+                              .onSurface
+                              .withValues(alpha: 0.06),
+                        ),
+                        const SizedBox(height: 4),
+                        Text(
+                          '負載: ${load.toStringAsFixed(0)}W (${loadPercent.toStringAsFixed(0)}%)${loadPercent > 80 ? ' — 超過 80%（建議換更大瓦數）' : ''}',
+                          style: TextStyle(
+                            fontSize: 12,
+                            color: loadPercent > 80
+                                ? Theme.of(context).colorScheme.error
+                                : Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.7),
+                          ),
+                        ),
+                      ],
                     ),
                   ],
                 ),

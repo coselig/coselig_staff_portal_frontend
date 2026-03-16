@@ -284,6 +284,7 @@ class _CustomerHomePageState extends State<CustomerHomePage> {
 
   // 第四步：電源供應器與材料配置
   List<PowerSupply> _powerSupplies = [];
+  List<double> _powerSupplyLoads = [];
   List<PowerSupply> _powerSupplyOptions = [];
   List<MaterialItem> _boardMaterials = [];
   List<MaterialItem> _wiringItems = [];
@@ -1108,11 +1109,21 @@ class _CustomerHomePageState extends State<CustomerHomePage> {
                     child: StepPowerSupplyWidget(
                       powerSupplies: _powerSupplies,
                       availableOptions: _powerSupplyOptions,
+                      assignedLoads: _powerSupplyLoads,
                       moduleCount: _modules.length,
                       onChanged: (list) {
                         setState(() {
                           _powerSupplies.clear();
                           _powerSupplies.addAll(list);
+                          // keep loads aligned: trim or extend with zeros
+                          if (_powerSupplyLoads.length > _powerSupplies.length) {
+                            _powerSupplyLoads = _powerSupplyLoads.sublist(0, _powerSupplies.length);
+                          } else if (_powerSupplyLoads.length < _powerSupplies.length) {
+                            _powerSupplyLoads = [
+                              ..._powerSupplyLoads,
+                              ...List<double>.filled(_powerSupplies.length - _powerSupplyLoads.length, 0.0)
+                            ];
+                          }
                         });
                         _autoSave();
                       },
@@ -2237,6 +2248,7 @@ class _CustomerHomePageState extends State<CustomerHomePage> {
                 // 重置所有數據
                 _loops.clear();
                 _modules.clear();
+                _switches.clear();
                 _switchCountController.clear();
                 _otherDevices.clear();
                 _powerSupplies.clear();
@@ -2569,13 +2581,15 @@ class _CustomerHomePageState extends State<CustomerHomePage> {
     final assigned = <PowerSupply>[];
     final assignmentPairs = <Map<String, dynamic>>[];
     final unassignedModules = <Map<String, dynamic>>[];
+    final assignedLoads = <double>[];
 
     for (final module in _modules) {
       final requiredWatt = _calculateModuleRequiredWatt(module);
       PowerSupply? chosen;
 
+      // 優先選擇在 80% 使用率以下的最小瓦數電源
       for (final option in candidates) {
-        if (option.wattage >= requiredWatt) {
+        if ((option.wattage * 0.8) >= requiredWatt) {
           chosen = PowerSupply(
             name: option.name,
             wattage: option.wattage,
@@ -2588,17 +2602,36 @@ class _CustomerHomePageState extends State<CustomerHomePage> {
         }
       }
 
-      if (chosen != null) {
-        assigned.add(chosen);
-        assignmentPairs.add({'module': module, 'supply': chosen});
+      // 若沒有任何電源能在 80% 內供應，回退為最小能滿足 requiredWatt 的電源（避免分配不足）
+      if (chosen == null) {
+        for (final option in candidates) {
+          if (option.wattage >= requiredWatt) {
+            chosen = PowerSupply(
+              name: option.name,
+              wattage: option.wattage,
+              type: option.type,
+              inputVoltage: option.inputVoltage,
+              supportsBothInputs: option.supportsBothInputs,
+              price: option.price,
+            );
+            break;
+          }
+        }
+      }
+
+        if (chosen != null) {
+          assigned.add(chosen);
+          assignmentPairs.add({'module': module, 'supply': chosen});
+          assignedLoads.add(requiredWatt);
       } else {
         unassignedModules.add({'module': module, 'requiredWatt': requiredWatt});
       }
     }
 
-    setState(() {
-      _powerSupplies = assigned;
-    });
+      setState(() {
+        _powerSupplies = assigned;
+        _powerSupplyLoads = assignedLoads;
+      });
     _autoSave();
 
     showDialog(

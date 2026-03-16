@@ -11,7 +11,7 @@ class Loop {
     required this.name,
     this.space = '未分類',
     this.voltage = 12,
-    this.dimmingType = 'WRGB',
+    this.dimmingType = '單色溫',
     this.fixtures = const [],
   });
 
@@ -50,7 +50,7 @@ class Loop {
       name: json['name'] ?? '',
       space: json['space'] ?? '未分類',
       voltage: json['voltage'] ?? 12,
-      dimmingType: json['dimmingType'] ?? 'WRGB',
+      dimmingType: json['dimmingType'] ?? '單色溫',
       fixtures: (json['fixtures'] as List?)?.map((f) => LoopFixture.fromJson(f)).toList() ?? [],
     );
   }
