@@ -2252,6 +2252,7 @@ class _CustomerHomePageState extends State<CustomerHomePage> {
                 _switchCountController.clear();
                 _otherDevices.clear();
                 _powerSupplies.clear();
+                _powerSupplyLoads.clear();
                 _boardMaterials.clear();
                 _wiringItems.clear();
                 _spaces.clear();
@@ -2701,6 +2702,8 @@ class _CustomerHomePageState extends State<CustomerHomePage> {
           _switchCountController.text = quoteData.switchCount;
           _otherDevices = List<OtherDevice>.from(quoteData.otherDevices);
           _powerSupplies = List<PowerSupply>.from(quoteData.powerSupplies);
+          // initialize per-supply loads to zero for loaded configurations
+          _powerSupplyLoads = List<double>.filled(_powerSupplies.length, 0.0);
           _boardMaterials = List<MaterialItem>.from(quoteData.boardMaterials);
           _wiringItems = List<MaterialItem>.from(quoteData.wiring);
           // restore new style options
