@@ -2466,7 +2466,7 @@ class _CustomerHomePageState extends State<CustomerHomePage> {
       });
     } catch (e) {
       // 静默处理错误，用户可以稍後重试
-      print('載入配置列表失敗: $e');
+      debugPrint('載入配置列表失敗: $e');
     }
   }
 
@@ -2736,7 +2736,7 @@ class _CustomerHomePageState extends State<CustomerHomePage> {
     try {
       await _customerService.fetchCustomers();
     } catch (e) {
-      print('載入客戶列表失敗: $e');
+      debugPrint('載入客戶列表失敗: $e');
     }
   }
 

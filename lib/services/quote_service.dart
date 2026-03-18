@@ -589,7 +589,7 @@ class QuoteService extends ChangeNotifier {
       }
     } catch (e) {
       // 靜默失敗，使用預設值
-      print('載入燈具類型失敗: $e');
+      debugPrint('載入燈具類型失敗: $e');
     }
   }
 

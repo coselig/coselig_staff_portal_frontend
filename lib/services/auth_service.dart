@@ -57,7 +57,7 @@ class AuthService extends ChangeNotifier {
         throw Exception('獲取員工列表失敗: ${res.body}');
       }
     } catch (e) {
-      print('獲取員工列表錯誤: $e');
+      debugPrint('獲取員工列表錯誤: $e');
       rethrow;
     }
   }
@@ -344,9 +344,9 @@ class AuthService extends ChangeNotifier {
       }
     } catch (e) {
       if (e is TimeoutException) {
-        print('更新主題模式超時: $e');
+        debugPrint('更新主題模式超時: $e');
       } else {
-        print('更新主題模式失敗: $e');
+        debugPrint('更新主題模式失敗: $e');
       }
       return false;
     }
@@ -385,7 +385,7 @@ class AuthService extends ChangeNotifier {
         return false;
       }
     } catch (e) {
-      print('更新 UI 偏好失敗: $e');
+      debugPrint('更新 UI 偏好失敗: $e');
       return false;
     }
   }

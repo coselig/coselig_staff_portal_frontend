@@ -302,7 +302,7 @@ class _LoopCardWidgetState extends State<LoopCardWidget> {
                     style: TextStyle(
                       color: Theme.of(
                         context,
-                      ).colorScheme.onSurface.withOpacity(0.6),
+                      ).colorScheme.onSurface.withAlpha(153),
                     ),
                   ),
                 ),

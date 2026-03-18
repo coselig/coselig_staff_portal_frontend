@@ -81,7 +81,7 @@ class AttendanceService extends ChangeNotifier {
         throw Exception('獲取正在工作的員工列表失敗: ${res.body}');
       }
     } catch (e) {
-      print('獲取正在工作的員工列表錯誤: $e');
+      debugPrint('獲取正在工作的員工列表錯誤: $e');
       rethrow;
     }
   }
@@ -105,7 +105,7 @@ class AttendanceService extends ChangeNotifier {
           .toList();
     } catch (e) {
       workingStaffList = [];
-      print('獲取正在上班員工失敗: $e');
+      debugPrint('獲取正在上班員工失敗: $e');
     } finally {
       isLoadingWorkingStaff = false;
       notifyListeners();

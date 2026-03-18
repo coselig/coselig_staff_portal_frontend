@@ -1279,7 +1279,7 @@ class _DiscoveryGeneratePageState extends State<DiscoveryGeneratePage> {
                   SizedBox(
                     width: w('module'),
                     child: DropdownButtonFormField<String>(
-                      value: moduleIdValue,
+                      initialValue: moduleIdValue,
                       decoration: const InputDecoration(
                         labelText: 'Module ID',
                         border: OutlineInputBorder(),
@@ -1360,7 +1360,7 @@ class _DiscoveryGeneratePageState extends State<DiscoveryGeneratePage> {
                   SizedBox(
                     width: w('tcp'),
                     child: DropdownButtonFormField<String>(
-                      value: tcpValue,
+                      initialValue: tcpValue,
                       decoration: const InputDecoration(
                         labelText: 'TCP',
                         border: OutlineInputBorder(),
@@ -1393,7 +1393,7 @@ class _DiscoveryGeneratePageState extends State<DiscoveryGeneratePage> {
                   SizedBox(
                     width: w('area'),
                     child: DropdownButtonFormField<String>(
-                      value: areaValue,
+                      initialValue: areaValue,
                       decoration: const InputDecoration(
                         labelText: 'Area',
                         border: OutlineInputBorder(),
