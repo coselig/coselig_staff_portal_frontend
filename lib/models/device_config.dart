@@ -48,6 +48,7 @@ class Device {
   String channel;
   String name;
   String tcp;
+  String? area;
   int? brightMinimum;
   int? colortempMinimum;
   int? colortempMaximum;
@@ -61,6 +62,7 @@ class Device {
     required this.channel,
     required this.name,
     required this.tcp,
+    this.area,
     this.brightMinimum,
     this.colortempMinimum,
     this.colortempMaximum,
@@ -89,6 +91,7 @@ class Device {
       name: json['name'] ?? '',
       tcp: json['tcp'] ?? '',
       brightMinimum: parsedBright,
+      area: json['area'] as String?,
       colortempMinimum: type == 'dual' ? (parsedCtMin ?? 2200) : parsedCtMin,
       colortempMaximum: type == 'dual' ? (parsedCtMax ?? 5700) : parsedCtMax,
     );
@@ -104,6 +107,7 @@ class Device {
       'channel': channel,
       'name': name,
       'tcp': tcp,
+      if (area != null && area!.isNotEmpty) 'area': area,
       if (brightMinimum != null) 'bright_minimum': brightMinimum,
       if (colortempMinimum != null) 'colortemp_minimum': colortempMinimum,
       if (colortempMaximum != null) 'colortemp_maximum': colortempMaximum,

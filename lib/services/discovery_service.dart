@@ -185,6 +185,7 @@ class DiscoveryService extends ChangeNotifier {
       channel: device.channel,
       name: device.name,
       tcp: device.tcp,
+      area: device.area,
       brightMinimum: device.brightMinimum ?? 2,
       colortempMinimum: device.type == 'dual'
           ? (device.colortempMinimum ?? 2200)
@@ -255,6 +256,10 @@ class DiscoveryService extends ChangeNotifier {
         'tcp: "${device.tcp}"',
         'bright_minimum: ${device.brightMinimum ?? 2}',
       ];
+
+      if (device.area != null && device.area!.isNotEmpty) {
+        parts.add('area: "${device.area}"');
+      }
 
       if (device.type == 'dual') {
         int minTemp = device.colortempMinimum ?? 2200;

@@ -61,6 +61,7 @@ class _DiscoveryGeneratePageState extends State<DiscoveryGeneratePage> {
     moduleIdController.dispose();
     nameController.dispose();
     tcpController.dispose();
+    areaController.dispose();
     brightController.dispose();
     ctMinController.dispose();
     ctMaxController.dispose();
@@ -79,6 +80,7 @@ class _DiscoveryGeneratePageState extends State<DiscoveryGeneratePage> {
   final TextEditingController moduleIdController = TextEditingController();
   final TextEditingController nameController = TextEditingController();
   final TextEditingController tcpController = TextEditingController();
+  final TextEditingController areaController = TextEditingController();
   final TextEditingController brightController = TextEditingController();
   final TextEditingController ctMinController = TextEditingController();
   final TextEditingController ctMaxController = TextEditingController();
@@ -114,6 +116,7 @@ class _DiscoveryGeneratePageState extends State<DiscoveryGeneratePage> {
         channel: selectedChannel,
         name: deviceName,
         tcp: tcpController.text.isNotEmpty ? tcpController.text : "1",
+        area: areaController.text.isNotEmpty ? areaController.text : null,
         brightMinimum: bright,
         colortempMinimum: ctMin,
         colortempMaximum: ctMax,
@@ -136,6 +139,7 @@ class _DiscoveryGeneratePageState extends State<DiscoveryGeneratePage> {
       moduleIdController.clear();
       nameController.clear();
       tcpController.clear();
+      areaController.clear();
       brightController.clear();
       ctMinController.clear();
       ctMaxController.clear();
@@ -155,6 +159,7 @@ class _DiscoveryGeneratePageState extends State<DiscoveryGeneratePage> {
     // 創建臨時控制器
     final nameController = TextEditingController(text: device.name);
     final tcpController = TextEditingController(text: device.tcp);
+    final areaController = TextEditingController(text: device.area ?? '');
     final brightController = TextEditingController(
       text: device.brightMinimum?.toString() ?? '',
     );
@@ -180,6 +185,11 @@ class _DiscoveryGeneratePageState extends State<DiscoveryGeneratePage> {
               TextField(
                 controller: tcpController,
                 decoration: const InputDecoration(labelText: 'TCP'),
+              ),
+              const SizedBox(height: 8),
+              TextField(
+                controller: areaController,
+                decoration: const InputDecoration(labelText: 'Area'),
               ),
               const SizedBox(height: 8),
               TextField(
@@ -227,6 +237,7 @@ class _DiscoveryGeneratePageState extends State<DiscoveryGeneratePage> {
                       ? nameController.text
                       : "${device.model} ${device.moduleId} - ${device.channel}",
                   tcp: tcpController.text.isNotEmpty ? tcpController.text : "1",
+                  area: areaController.text.isNotEmpty ? areaController.text : null,
                   brightMinimum: int.tryParse(brightController.text),
                   colortempMinimum: device.type == 'dual'
                       ? int.tryParse(ctMinController.text)
@@ -689,6 +700,10 @@ class _DiscoveryGeneratePageState extends State<DiscoveryGeneratePage> {
           ),
           const SizedBox(
             width: 100,
+            child: Text('Area', style: TextStyle(fontWeight: FontWeight.bold)),
+          ),
+          const SizedBox(
+            width: 100,
             child: Text('操作', style: TextStyle(fontWeight: FontWeight.bold)),
           ),
         ],
@@ -732,6 +747,7 @@ class _DiscoveryGeneratePageState extends State<DiscoveryGeneratePage> {
                 SizedBox(width: 60, child: Text(device.channel)),
                 Expanded(child: Text(device.name)),
                 SizedBox(width: 80, child: Text(device.tcp)),
+                SizedBox(width: 100, child: Text(device.area ?? '')),
                 SizedBox(
                   width: 100,
                   child: Row(
@@ -961,6 +977,18 @@ class _DiscoveryGeneratePageState extends State<DiscoveryGeneratePage> {
               ),
               const SizedBox(width: 8),
               SizedBox(
+                width: 150,
+                child: TextField(
+                  controller: areaController,
+                  decoration: const InputDecoration(
+                    labelText: 'Area',
+                    border: OutlineInputBorder(),
+                    isDense: true,
+                  ),
+                ),
+              ),
+              const SizedBox(width: 8),
+              SizedBox(
                 width: 120,
                 child: TextField(
                   controller: brightController,
@@ -1017,18 +1045,6 @@ class _DiscoveryGeneratePageState extends State<DiscoveryGeneratePage> {
                 onPressed: generateAndCopyOutput,
                 icon: const Icon(Icons.copy),
                 label: const Text('生成裝置設定'),
-                style: ElevatedButton.styleFrom(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 24,
-                    vertical: 20,
-                  ),
-                ),
-              ),
-              const SizedBox(width: 8),
-              ElevatedButton.icon(
-                onPressed: generateAndCopyYamlOutput,
-                icon: const Icon(Icons.content_copy),
-                label: const Text('生成UIYAML配置'),
                 style: ElevatedButton.styleFrom(
                   padding: const EdgeInsets.symmetric(
                     horizontal: 24,
