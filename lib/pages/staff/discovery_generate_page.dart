@@ -23,19 +23,35 @@ class _DiscoveryGeneratePageState extends State<DiscoveryGeneratePage> {
   List<String> get brands => _service.brands;
   Map<String, List<String>> get models => _service.models;
 
+  String selectedBrand = 'sunwave';
+  String selectedModel = 'p404';
+  String selectedType = 'single';
+  String selectedChannel = '1';
+  final TextEditingController moduleIdController = TextEditingController();
+  final TextEditingController nameController = TextEditingController();
+  final TextEditingController tcpController = TextEditingController();
+  final TextEditingController areaController = TextEditingController();
+  final TextEditingController brightController = TextEditingController();
+  final TextEditingController ctMinController = TextEditingController();
+  final TextEditingController ctMaxController = TextEditingController();
+
+  // Configuration management
+  String? _selectedConfiguration = '新配置';
+
+  // 用於跟踪Module ID輸入的狀態
+  String _currentModuleId = '';
+
   @override
   void initState() {
     super.initState();
     html.document.title = '裝置註冊表生成器';
     _service.addListener(_update);
 
-    // 檢查是否已登入
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      _service.fetchConfigurations(); // 加載所有配置列表
-      _service.fetchDeviceConfigOptions(); // 加載裝置設定選項
+      _service.fetchConfigurations();
+      _service.fetchDeviceConfigOptions();
     });
 
-    // 監聽Module ID輸入變化
     moduleIdController.addListener(() {
       setState(() {
         _currentModuleId = moduleIdController.text;
@@ -76,24 +92,6 @@ class _DiscoveryGeneratePageState extends State<DiscoveryGeneratePage> {
   void _update() {
     setState(() {});
   }
-
-  String selectedBrand = 'sunwave';
-  String selectedModel = 'p404';
-  String selectedType = 'single';
-  String selectedChannel = '1';
-  final TextEditingController moduleIdController = TextEditingController();
-  final TextEditingController nameController = TextEditingController();
-  final TextEditingController tcpController = TextEditingController();
-  final TextEditingController areaController = TextEditingController();
-  final TextEditingController brightController = TextEditingController();
-  final TextEditingController ctMinController = TextEditingController();
-  final TextEditingController ctMaxController = TextEditingController();
-
-  // Configuration management
-  String? _selectedConfiguration = '新配置';
-
-  // 用於跟踪Module ID輸入的狀態
-  String _currentModuleId = '';
 
   List<String> getAvailableChannels(String brand, String model, String type) {
     return _service.getAvailableChannels(brand, model, type);
@@ -167,39 +165,6 @@ class _DiscoveryGeneratePageState extends State<DiscoveryGeneratePage> {
     );
   }
 
-  Future<String?> _showModuleIdInputDialog(String initialValue) async {
-    final controller = TextEditingController(text: initialValue);
-    return showDialog<String>(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('新增 Module ID'),
-        content: TextField(
-          controller: controller,
-          decoration: const InputDecoration(
-            labelText: 'Module ID',
-            hintText: '請輸入 Module ID',
-          ),
-          autofocus: true,
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('取消'),
-          ),
-          TextButton(
-            onPressed: () {
-              final moduleId = controller.text.trim();
-              if (moduleId.isNotEmpty) {
-                Navigator.pop(context, moduleId);
-              }
-            },
-            child: const Text('確認'),
-          ),
-        ],
-      ),
-    );
-  }
-
   Future<String?> _showTcpInputDialog(String initialValue) async {
     final controller = TextEditingController(text: initialValue);
     return showDialog<String>(
@@ -224,6 +189,39 @@ class _DiscoveryGeneratePageState extends State<DiscoveryGeneratePage> {
               final tcp = controller.text.trim();
               if (tcp.isNotEmpty) {
                 Navigator.pop(context, tcp);
+              }
+            },
+            child: const Text('確認'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Future<String?> _showModuleIdInputDialog(String initialValue) async {
+    final controller = TextEditingController(text: initialValue);
+    return showDialog<String>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('新增 Module ID'),
+        content: TextField(
+          controller: controller,
+          decoration: const InputDecoration(
+            labelText: 'Module ID',
+            hintText: '請輸入 Module ID',
+          ),
+          autofocus: true,
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('取消'),
+          ),
+          TextButton(
+            onPressed: () {
+              final moduleId = controller.text.trim();
+              if (moduleId.isNotEmpty) {
+                Navigator.pop(context, moduleId);
               }
             },
             child: const Text('確認'),
@@ -259,24 +257,6 @@ class _DiscoveryGeneratePageState extends State<DiscoveryGeneratePage> {
     }
   }
 
-  Future<void> _handleModuleIdSelection(String? newValue) async {
-    if (newValue == _customModuleIdOption) {
-      final newModuleId = await _showModuleIdInputDialog(moduleIdController.text);
-      if (newModuleId != null && newModuleId.isNotEmpty) {
-        moduleIdController.text = newModuleId;
-        if (mounted) {
-          setState(() {});
-        }
-      }
-      return;
-    }
-
-    moduleIdController.text = newValue ?? '';
-    if (mounted) {
-      setState(() {});
-    }
-  }
-
   Future<void> _handleTcpSelection(
     String? newValue,
     TextEditingController controller, {
@@ -299,6 +279,24 @@ class _DiscoveryGeneratePageState extends State<DiscoveryGeneratePage> {
     if (refresh != null) {
       refresh();
     } else if (mounted) {
+      setState(() {});
+    }
+  }
+
+  Future<void> _handleModuleIdSelection(String? newValue) async {
+    if (newValue == _customModuleIdOption) {
+      final newModuleId = await _showModuleIdInputDialog(moduleIdController.text);
+      if (newModuleId != null && newModuleId.isNotEmpty) {
+        moduleIdController.text = newModuleId;
+        if (mounted) {
+          setState(() {});
+        }
+      }
+      return;
+    }
+
+    moduleIdController.text = newValue ?? '';
+    if (mounted) {
       setState(() {});
     }
   }
@@ -326,7 +324,6 @@ class _DiscoveryGeneratePageState extends State<DiscoveryGeneratePage> {
         colortempMaximum: ctMax,
       );
 
-      // 檢查是否可以添加裝置
       if (!_service.canAddDevice(newDevice)) {
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
@@ -348,19 +345,16 @@ class _DiscoveryGeneratePageState extends State<DiscoveryGeneratePage> {
       ctMinController.clear();
       ctMaxController.clear();
 
-      // 自動儲存配置
       _autoSaveConfiguration();
     }
   }
 
   void removeDevice(String deviceId) {
     _service.removeDevice(deviceId);
-    // 自動儲存配置
     _autoSaveConfiguration();
   }
 
   void editDevice(Device device) {
-    // 創建臨時控制器
     final nameController = TextEditingController(text: device.name);
     final tcpController = TextEditingController(text: device.tcp);
     final areaController = TextEditingController(text: device.area ?? '');
@@ -525,7 +519,6 @@ class _DiscoveryGeneratePageState extends State<DiscoveryGeneratePage> {
                     );
                     _service.updateDevice(updatedDevice);
                     Navigator.of(context).pop();
-                    // 自動儲存配置
                     _autoSaveConfiguration();
                   },
                   child: const Text('保存'),
@@ -925,6 +918,32 @@ class _DiscoveryGeneratePageState extends State<DiscoveryGeneratePage> {
     );
   }
 
+  Widget _buildHeaderLabel(String text) {
+    return Align(
+      alignment: Alignment.centerLeft,
+      child: FittedBox(
+        fit: BoxFit.scaleDown,
+        alignment: Alignment.centerLeft,
+        child: Text(
+          text,
+          maxLines: 1,
+          softWrap: false,
+          overflow: TextOverflow.visible,
+          style: const TextStyle(fontWeight: FontWeight.bold),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildRowText(String text) {
+    return Text(
+      text,
+      maxLines: 1,
+      overflow: TextOverflow.ellipsis,
+      softWrap: false,
+    );
+  }
+
   Widget _buildDeviceListHeader() {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
@@ -944,46 +963,41 @@ class _DiscoveryGeneratePageState extends State<DiscoveryGeneratePage> {
               color: Theme.of(context).colorScheme.onSurfaceVariant,
             ),
           ),
-          const SizedBox(
-            width: 80,
-            child: Text('Brand', style: TextStyle(fontWeight: FontWeight.bold)),
+          Expanded(
+            flex: 2,
+            child: _buildHeaderLabel('Brand'),
           ),
-          const SizedBox(
-            width: 80,
-            child: Text('Model', style: TextStyle(fontWeight: FontWeight.bold)),
+          Expanded(
+            flex: 2,
+            child: _buildHeaderLabel('Model'),
           ),
-          const SizedBox(
-            width: 80,
-            child: Text('Type', style: TextStyle(fontWeight: FontWeight.bold)),
+          Expanded(
+            flex: 2,
+            child: _buildHeaderLabel('Type'),
           ),
-          const SizedBox(
-            width: 120,
-            child: Text(
-              'Module ID',
-              style: TextStyle(fontWeight: FontWeight.bold),
-            ),
+          Expanded(
+            flex: 3,
+            child: _buildHeaderLabel('Module ID'),
           ),
-          const SizedBox(
-            width: 60,
-            child: Text(
-              'Channel',
-              style: TextStyle(fontWeight: FontWeight.bold),
-            ),
+          Expanded(
+            flex: 2,
+            child: _buildHeaderLabel('Channel'),
           ),
-          const Expanded(
-            child: Text('Name', style: TextStyle(fontWeight: FontWeight.bold)),
+          Expanded(
+            flex: 3,
+            child: _buildHeaderLabel('Name'),
           ),
-          const SizedBox(
-            width: 80,
-            child: Text('TCP', style: TextStyle(fontWeight: FontWeight.bold)),
+          Expanded(
+            flex: 2,
+            child: _buildHeaderLabel('TCP'),
           ),
-          const SizedBox(
+          Expanded(
+            flex: 2,
+            child: _buildHeaderLabel('Area'),
+          ),
+          SizedBox(
             width: 100,
-            child: Text('Area', style: TextStyle(fontWeight: FontWeight.bold)),
-          ),
-          const SizedBox(
-            width: 100,
-            child: Text('操作', style: TextStyle(fontWeight: FontWeight.bold)),
+            child: _buildHeaderLabel('操作'),
           ),
         ],
       ),
@@ -1019,14 +1033,14 @@ class _DiscoveryGeneratePageState extends State<DiscoveryGeneratePage> {
                     color: Theme.of(context).colorScheme.onSurfaceVariant,
                   ),
                 ),
-                SizedBox(width: 80, child: Text(device.brand)),
-                SizedBox(width: 80, child: Text(device.model)),
-                SizedBox(width: 80, child: Text(device.type)),
-                SizedBox(width: 120, child: Text(device.moduleId)),
-                SizedBox(width: 60, child: Text(device.channel)),
-                Expanded(child: Text(device.name)),
-                SizedBox(width: 80, child: Text(device.tcp)),
-                SizedBox(width: 100, child: Text(device.area ?? '')),
+                Expanded(flex: 2, child: _buildRowText(device.brand)),
+                Expanded(flex: 2, child: _buildRowText(device.model)),
+                Expanded(flex: 2, child: _buildRowText(device.type)),
+                Expanded(flex: 3, child: _buildRowText(device.moduleId)),
+                Expanded(flex: 2, child: _buildRowText(device.channel)),
+                Expanded(flex: 3, child: _buildRowText(device.name)),
+                Expanded(flex: 2, child: _buildRowText(device.tcp)),
+                Expanded(flex: 2, child: _buildRowText(device.area ?? '')),
                 SizedBox(
                   width: 100,
                   child: Row(
@@ -1088,325 +1102,397 @@ class _DiscoveryGeneratePageState extends State<DiscoveryGeneratePage> {
               fontSize: 16, fontWeight: FontWeight.bold),
           ),
           const SizedBox(height: 16),
-          Row(
-            children: [
-              Expanded(
-                child: DropdownButtonFormField<String>(
-                  decoration: const InputDecoration(
-                    labelText: 'Brand',
-                    border: OutlineInputBorder(),
-                    isDense: true,
-                  ),
-                  initialValue: selectedBrand,
-                  onChanged: (String? newValue) {
-                    setState(() {
-                      selectedBrand = newValue!;
-                      selectedModel = models[selectedBrand]!.first;
-                      List<String> availableTypes = getAvailableTypes(
-                        selectedBrand,
-                        selectedModel,
-                      );
-                      if (!availableTypes.contains(selectedType)) {
-                        selectedType = availableTypes.first;
-                      }
-                      selectedChannel = getAvailableChannels(
-                        selectedBrand,
-                        selectedModel,
-                        selectedType,
-                      ).first;
-                    });
-                  },
-                  items: brands.map<DropdownMenuItem<String>>((String value) {
-                    return DropdownMenuItem<String>(
-                      value: value,
-                      child: Text(value),
-                    );
-                  }).toList(),
-                ),
-              ),
-              const SizedBox(width: 8),
-              Expanded(
-                child: DropdownButtonFormField<String>(
-                  decoration: const InputDecoration(
-                    labelText: 'Model',
-                    border: OutlineInputBorder(),
-                    isDense: true,
-                  ),
-                  initialValue: selectedModel,
-                  onChanged: (String? newValue) {
-                    setState(() {
-                      selectedModel = newValue!;
-                      List<String> availableTypes = getAvailableTypes(
-                        selectedBrand,
-                        selectedModel,
-                      );
-                      if (!availableTypes.contains(selectedType)) {
-                        selectedType = availableTypes.first;
-                      }
-                      selectedChannel = getAvailableChannels(
-                        selectedBrand,
-                        selectedModel,
-                        selectedType,
-                      ).first;
-                    });
-                  },
-                  items: models[selectedBrand]!.map<DropdownMenuItem<String>>((
-                    String value,
-                  ) {
-                    return DropdownMenuItem<String>(
-                      value: value,
-                      child: Text(value),
-                    );
-                  }).toList(),
-                ),
-              ),
-              const SizedBox(width: 8),
-              Expanded(
-                child: DropdownButtonFormField<String>(
-                  decoration: const InputDecoration(
-                    labelText: 'Type',
-                    border: OutlineInputBorder(),
-                    isDense: true,
-                  ),
-                  initialValue: selectedType,
-                  onChanged: (String? newValue) {
-                    setState(() {
-                      selectedType = newValue!;
-                      selectedChannel = getAvailableChannels(
-                        selectedBrand,
-                        selectedModel,
-                        selectedType,
-                      ).first;
-                    });
-                  },
-                  items: getAvailableTypes(selectedBrand, selectedModel)
-                      .map<DropdownMenuItem<String>>((String value) {
+          LayoutBuilder(
+            builder: (context, constraints) {
+              const spacing = 8.0;
+              final includeDual = selectedType == 'dual';
+
+              final baseWidths = <String, double>{
+                'brand': 140,
+                'model': 140,
+                'type': 90,
+                'module': 140,
+                'channel': 80,
+                'name': 150,
+                'tcp': 90,
+                'area': 100,
+                'bright': 90,
+                'ctMin': 90,
+                'ctMax': 90,
+                'addBtn': 120,
+                'genBtn': 150,
+              };
+
+              final minWidths = <String, double>{
+                'brand': 120,
+                'model': 120,
+                'type': 90,
+                'module': 180,
+                'channel': 85,
+                'name': 160,
+                'tcp': 130,
+                'area': 140,
+                'bright': 110,
+                'ctMin': 110,
+                'ctMax': 110,
+                'addBtn': 130,
+                'genBtn': 150,
+              };
+
+              final keys = <String>[
+                'brand',
+                'model',
+                'type',
+                'module',
+                'channel',
+                'name',
+                'tcp',
+                'area',
+                'bright',
+                if (includeDual) 'ctMin',
+                if (includeDual) 'ctMax',
+                'addBtn',
+                'genBtn',
+              ];
+
+              final totalBaseWidth = keys
+                  .map((k) => baseWidths[k] ?? 0)
+                  .fold<double>(0, (sum, w) => sum + w);
+              final totalSpacing = spacing * (keys.length - 1);
+              final availableForWidgets = constraints.maxWidth - totalSpacing;
+              final shouldScale = constraints.maxWidth >= 1100;
+              final scale = shouldScale
+                  ? (availableForWidgets / totalBaseWidth).clamp(0.72, 1.0)
+                  : 1.0;
+
+              double w(String key) {
+                final base = baseWidths[key] ?? 120;
+                final min = minWidths[key] ?? base;
+                final scaled = base * scale;
+                return scaled < min ? min : scaled;
+              }
+
+              return Wrap(
+                spacing: spacing,
+                runSpacing: spacing,
+                crossAxisAlignment: WrapCrossAlignment.center,
+                children: [
+                  SizedBox(
+                    width: w('brand'),
+                    child: DropdownButtonFormField<String>(
+                      decoration: const InputDecoration(
+                        labelText: 'Brand',
+                        border: OutlineInputBorder(),
+                        isDense: true,
+                      ),
+                      initialValue: selectedBrand,
+                      onChanged: (String? newValue) {
+                        setState(() {
+                          selectedBrand = newValue!;
+                          selectedModel = models[selectedBrand]!.first;
+                          List<String> availableTypes = getAvailableTypes(
+                            selectedBrand,
+                            selectedModel,
+                          );
+                          if (!availableTypes.contains(selectedType)) {
+                            selectedType = availableTypes.first;
+                          }
+                          selectedChannel = getAvailableChannels(
+                            selectedBrand,
+                            selectedModel,
+                            selectedType,
+                          ).first;
+                        });
+                      },
+                      items: brands
+                          .map<DropdownMenuItem<String>>((String value) {
                         return DropdownMenuItem<String>(
                           value: value,
                           child: Text(value),
                         );
-                      })
-                      .toList(),
-                ),
-              ),
-              const SizedBox(width: 8),
-              Expanded(
-                flex: 1,
-                child: DropdownButtonFormField<String>(
-                  value: moduleIdValue,
-                  decoration: const InputDecoration(
-                    labelText: 'Module ID',
-                    border: OutlineInputBorder(),
-                    isDense: true,
-                  ),
-                  hint: const Text('選擇 Module ID'),
-                  onChanged: (String? newValue) {
-                    _handleModuleIdSelection(newValue);
-                  },
-                  items: [
-                    ...availableModuleIds.map<DropdownMenuItem<String>>((value) {
-                      return DropdownMenuItem<String>(
-                        value: value,
-                        child: Text(value),
-                      );
-                    }),
-                    if (currentModuleId.isNotEmpty &&
-                        !availableModuleIds.contains(currentModuleId))
-                      DropdownMenuItem<String>(
-                        value: currentModuleId,
-                        child: Text(currentModuleId),
-                      ),
-                    const DropdownMenuItem<String>(
-                      value: _customModuleIdOption,
-                      child: Text('＋新增 Module ID'),
+                      }).toList(),
                     ),
-                  ],
-                ),
-              ),
-              const SizedBox(width: 8),
-              Expanded(
-                child: DropdownButtonFormField<String>(
-                  decoration: const InputDecoration(
-                    labelText: 'Channel',
-                    border: OutlineInputBorder(),
-                    isDense: true,
                   ),
-                  initialValue: selectedChannel,
-                  onChanged: (String? newValue) {
-                    setState(() {
-                      selectedChannel = newValue!;
-                    });
-                  },
-                  items:
-                      (_currentModuleId.isNotEmpty
-                              ? _service.getSelectableChannelsForModule(
-                                  selectedBrand,
-                                  selectedModel,
-                                  selectedType,
-                                  _currentModuleId,
-                                )
-                              : getAvailableChannels(
-                                  selectedBrand,
-                                  selectedModel,
-                                  selectedType,
-                                ))
+                  SizedBox(
+                    width: w('model'),
+                    child: DropdownButtonFormField<String>(
+                      decoration: const InputDecoration(
+                        labelText: 'Model',
+                        border: OutlineInputBorder(),
+                        isDense: true,
+                      ),
+                      initialValue: selectedModel,
+                      onChanged: (String? newValue) {
+                        setState(() {
+                          selectedModel = newValue!;
+                          List<String> availableTypes = getAvailableTypes(
+                            selectedBrand,
+                            selectedModel,
+                          );
+                          if (!availableTypes.contains(selectedType)) {
+                            selectedType = availableTypes.first;
+                          }
+                          selectedChannel = getAvailableChannels(
+                            selectedBrand,
+                            selectedModel,
+                            selectedType,
+                          ).first;
+                        });
+                      },
+                      items: models[selectedBrand]!
                           .map<DropdownMenuItem<String>>((String value) {
-                            return DropdownMenuItem<String>(
-                              value: value,
-                              child: Text(value),
-                            );
-                          })
-                          .toList(),
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 8),
-          Row(
-            children: [
-              Expanded(
-                flex: 3,
-                child: TextField(
-                  controller: nameController,
-                  decoration: const InputDecoration(
-                    labelText: 'Name',
-                    border: OutlineInputBorder(),
-                    isDense: true,
+                        return DropdownMenuItem<String>(
+                          value: value,
+                          child: Text(value),
+                        );
+                      }).toList(),
+                    ),
                   ),
-                ),
-              ),
-              const SizedBox(width: 8),
-              Expanded(
-                child: DropdownButtonFormField<String>(
-                  value: tcpValue,
-                  decoration: const InputDecoration(
-                    labelText: 'TCP',
-                    border: OutlineInputBorder(),
-                    isDense: true,
-                  ),
-                  hint: const Text('選擇 TCP'),
-                  onChanged: (String? newValue) {
-                    _handleTcpSelection(newValue, tcpController);
-                  },
-                  items: [
-                    ...availableTcps.map<DropdownMenuItem<String>>((value) {
-                      return DropdownMenuItem<String>(
-                        value: value,
-                        child: Text(value),
-                      );
-                    }),
-                    if (currentTcp.isNotEmpty && !availableTcps.contains(currentTcp))
-                      DropdownMenuItem<String>(
-                        value: currentTcp,
-                        child: Text(currentTcp),
+                  SizedBox(
+                    width: w('type'),
+                    child: DropdownButtonFormField<String>(
+                      decoration: const InputDecoration(
+                        labelText: 'Type',
+                        border: OutlineInputBorder(),
+                        isDense: true,
                       ),
-                    const DropdownMenuItem<String>(
-                      value: _customTcpOption,
-                      child: Text('＋新增 TCP'),
+                      initialValue: selectedType,
+                      onChanged: (String? newValue) {
+                        setState(() {
+                          selectedType = newValue!;
+                          selectedChannel = getAvailableChannels(
+                            selectedBrand,
+                            selectedModel,
+                            selectedType,
+                          ).first;
+                        });
+                      },
+                      items: getAvailableTypes(selectedBrand, selectedModel)
+                          .map<DropdownMenuItem<String>>((String value) {
+                        return DropdownMenuItem<String>(
+                          value: value,
+                          child: Text(value),
+                        );
+                      }).toList(),
                     ),
-                  ],
-                ),
-              ),
-              const SizedBox(width: 8),
-              SizedBox(
-                width: 170,
-                child: DropdownButtonFormField<String>(
-                  value: areaValue,
-                  decoration: const InputDecoration(
-                    labelText: 'Area',
-                    border: OutlineInputBorder(),
-                    isDense: true,
                   ),
-                  hint: const Text('選擇 Area'),
-                  onChanged: (String? newValue) {
-                    _handleAreaSelection(newValue, areaController);
-                  },
-                  items: [
-                    ...availableAreas.map<DropdownMenuItem<String>>((value) {
-                      return DropdownMenuItem<String>(
-                        value: value,
-                        child: Text(value),
-                      );
-                    }),
-                    if (currentArea.isNotEmpty &&
-                        !availableAreas.contains(currentArea))
-                      DropdownMenuItem<String>(
-                        value: currentArea,
-                        child: Text(currentArea),
+                  SizedBox(
+                    width: w('module'),
+                    child: DropdownButtonFormField<String>(
+                      value: moduleIdValue,
+                      decoration: const InputDecoration(
+                        labelText: 'Module ID',
+                        border: OutlineInputBorder(),
+                        isDense: true,
                       ),
-                    const DropdownMenuItem<String>(
-                      value: _customAreaOption,
-                      child: Text('＋新增 Area'),
+                      hint: const Text('選擇 Module ID'),
+                      onChanged: (String? newValue) {
+                        _handleModuleIdSelection(newValue);
+                      },
+                      items: [
+                        ...availableModuleIds
+                            .map<DropdownMenuItem<String>>((value) {
+                          return DropdownMenuItem<String>(
+                            value: value,
+                            child: Text(value),
+                          );
+                        }),
+                        if (currentModuleId.isNotEmpty &&
+                            !availableModuleIds.contains(currentModuleId))
+                          DropdownMenuItem<String>(
+                            value: currentModuleId,
+                            child: Text(currentModuleId),
+                          ),
+                        const DropdownMenuItem<String>(
+                          value: _customModuleIdOption,
+                          child: Text('＋新增 Module ID'),
+                        ),
+                      ],
                     ),
-                  ],
-                ),
-              ),
-              const SizedBox(width: 8),
-              SizedBox(
-                width: 120,
-                child: TextField(
-                  controller: brightController,
-                  decoration: const InputDecoration(
-                    labelText: '最低亮度',
-                    border: OutlineInputBorder(),
-                    isDense: true,
                   ),
-                  keyboardType: TextInputType.number,
-                ),
-              ),
-              if (selectedType == 'dual') ...[
-                const SizedBox(width: 8),
-                SizedBox(
-                  width: 120,
-                  child: TextField(
-                    controller: ctMinController,
-                    decoration: const InputDecoration(
-                      labelText: '色溫最小',
-                      border: OutlineInputBorder(),
-                      isDense: true,
+                  SizedBox(
+                    width: w('channel'),
+                    child: DropdownButtonFormField<String>(
+                      decoration: const InputDecoration(
+                        labelText: 'Channel',
+                        border: OutlineInputBorder(),
+                        isDense: true,
+                      ),
+                      initialValue: selectedChannel,
+                      onChanged: (String? newValue) {
+                        setState(() {
+                          selectedChannel = newValue!;
+                        });
+                      },
+                      items:
+                          (_currentModuleId.isNotEmpty
+                                  ? _service.getSelectableChannelsForModule(
+                                      selectedBrand,
+                                      selectedModel,
+                                      selectedType,
+                                      _currentModuleId,
+                                    )
+                                  : getAvailableChannels(
+                                      selectedBrand,
+                                      selectedModel,
+                                      selectedType,
+                                    ))
+                              .map<DropdownMenuItem<String>>((String value) {
+                                return DropdownMenuItem<String>(
+                                  value: value,
+                                  child: Text(value),
+                                );
+                              })
+                              .toList(),
                     ),
-                    keyboardType: TextInputType.number,
                   ),
-                ),
-                const SizedBox(width: 8),
-                SizedBox(
-                  width: 120,
-                  child: TextField(
-                    controller: ctMaxController,
-                    decoration: const InputDecoration(
-                      labelText: '色溫最大',
-                      border: OutlineInputBorder(),
-                      isDense: true,
+                  SizedBox(
+                    width: w('name'),
+                    child: TextField(
+                      controller: nameController,
+                      decoration: const InputDecoration(
+                        labelText: 'Name',
+                        border: OutlineInputBorder(),
+                        isDense: true,
+                      ),
                     ),
-                    keyboardType: TextInputType.number,
                   ),
-                ),
-              ],
-              const SizedBox(width: 8),
-              ElevatedButton.icon(
-                onPressed: addDevice,
-                icon: const Icon(Icons.add),
-                label: const Text('添加設備'),
-                style: ElevatedButton.styleFrom(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 24,
-                    vertical: 20,
+                  SizedBox(
+                    width: w('tcp'),
+                    child: DropdownButtonFormField<String>(
+                      value: tcpValue,
+                      decoration: const InputDecoration(
+                        labelText: 'TCP',
+                        border: OutlineInputBorder(),
+                        isDense: true,
+                      ),
+                      hint: const Text('選擇 TCP'),
+                      onChanged: (String? newValue) {
+                        _handleTcpSelection(newValue, tcpController);
+                      },
+                      items: [
+                        ...availableTcps.map<DropdownMenuItem<String>>((value) {
+                          return DropdownMenuItem<String>(
+                            value: value,
+                            child: Text(value),
+                          );
+                        }),
+                        if (currentTcp.isNotEmpty &&
+                            !availableTcps.contains(currentTcp))
+                          DropdownMenuItem<String>(
+                            value: currentTcp,
+                            child: Text(currentTcp),
+                          ),
+                        const DropdownMenuItem<String>(
+                          value: _customTcpOption,
+                          child: Text('＋新增 TCP'),
+                        ),
+                      ],
+                    ),
                   ),
-                ),
-              ),
-              const SizedBox(width: 8),
-              ElevatedButton.icon(
-                onPressed: generateAndCopyOutput,
-                icon: const Icon(Icons.copy),
-                label: const Text('生成裝置設定'),
-                style: ElevatedButton.styleFrom(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 24,
-                    vertical: 20,
+                  SizedBox(
+                    width: w('area'),
+                    child: DropdownButtonFormField<String>(
+                      value: areaValue,
+                      decoration: const InputDecoration(
+                        labelText: 'Area',
+                        border: OutlineInputBorder(),
+                        isDense: true,
+                      ),
+                      hint: const Text('選擇 Area'),
+                      onChanged: (String? newValue) {
+                        _handleAreaSelection(newValue, areaController);
+                      },
+                      items: [
+                        ...availableAreas
+                            .map<DropdownMenuItem<String>>((value) {
+                          return DropdownMenuItem<String>(
+                            value: value,
+                            child: Text(value),
+                          );
+                        }),
+                        if (currentArea.isNotEmpty &&
+                            !availableAreas.contains(currentArea))
+                          DropdownMenuItem<String>(
+                            value: currentArea,
+                            child: Text(currentArea),
+                          ),
+                        const DropdownMenuItem<String>(
+                          value: _customAreaOption,
+                          child: Text('＋新增 Area'),
+                        ),
+                      ],
+                    ),
                   ),
-                ),
-              ),
-            ],
+                  SizedBox(
+                    width: w('bright'),
+                    child: TextField(
+                      controller: brightController,
+                      decoration: const InputDecoration(
+                        labelText: '最低亮度',
+                        border: OutlineInputBorder(),
+                        isDense: true,
+                      ),
+                      keyboardType: TextInputType.number,
+                    ),
+                  ),
+                  if (includeDual)
+                    SizedBox(
+                      width: w('ctMin'),
+                      child: TextField(
+                        controller: ctMinController,
+                        decoration: const InputDecoration(
+                          labelText: '色溫最小',
+                          border: OutlineInputBorder(),
+                          isDense: true,
+                        ),
+                        keyboardType: TextInputType.number,
+                      ),
+                    ),
+                  if (includeDual)
+                    SizedBox(
+                      width: w('ctMax'),
+                      child: TextField(
+                        controller: ctMaxController,
+                        decoration: const InputDecoration(
+                          labelText: '色溫最大',
+                          border: OutlineInputBorder(),
+                          isDense: true,
+                        ),
+                        keyboardType: TextInputType.number,
+                      ),
+                    ),
+                  SizedBox(
+                    width: w('addBtn'),
+                    child: ElevatedButton.icon(
+                      onPressed: addDevice,
+                      icon: const Icon(Icons.add),
+                      label: const Text('添加設備'),
+                      style: ElevatedButton.styleFrom(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 12,
+                          vertical: 20,
+                        ),
+                      ),
+                    ),
+                  ),
+                  SizedBox(
+                    width: w('genBtn'),
+                    child: ElevatedButton.icon(
+                      onPressed: generateAndCopyOutput,
+                      icon: const Icon(Icons.copy),
+                      label: const Text('生成裝置設定'),
+                      style: ElevatedButton.styleFrom(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 12,
+                          vertical: 20,
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
+              );
+            },
           ),
         ],
       ),
