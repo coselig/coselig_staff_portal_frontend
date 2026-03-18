@@ -15,6 +15,10 @@ class DiscoveryGeneratePage extends StatefulWidget {
 }
 
 class _DiscoveryGeneratePageState extends State<DiscoveryGeneratePage> {
+  static const String _customAreaOption = '__custom_area__';
+  static const String _customTcpOption = '__custom_tcp__';
+  static const String _customModuleIdOption = '__custom_module_id__';
+
   final DiscoveryService _service = DiscoveryService();
   List<String> get brands => _service.brands;
   Map<String, List<String>> get models => _service.models;
@@ -99,6 +103,206 @@ class _DiscoveryGeneratePageState extends State<DiscoveryGeneratePage> {
     return _service.getAvailableTypes(brand, model);
   }
 
+  List<String> getAvailableAreas() {
+    final areas = _service.devices
+        .map((d) => d.area?.trim())
+        .whereType<String>()
+        .where((a) => a.isNotEmpty)
+        .toSet()
+        .toList();
+    areas.sort();
+    return areas;
+  }
+
+  List<String> getAvailableTcps() {
+    final tcps = _service.devices
+        .map((d) => d.tcp.trim())
+        .where((tcp) => tcp.isNotEmpty)
+        .toSet()
+        .toList();
+    tcps.sort();
+    return tcps;
+  }
+
+  List<String> getAvailableModuleIds() {
+    final moduleIds = _service.devices
+        .map((d) => d.moduleId.trim())
+        .where((id) => id.isNotEmpty)
+        .toSet()
+        .toList();
+    moduleIds.sort();
+    return moduleIds;
+  }
+
+  Future<String?> _showAreaInputDialog(String initialValue) async {
+    final controller = TextEditingController(text: initialValue);
+    return showDialog<String>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('新增 Area'),
+        content: TextField(
+          controller: controller,
+          decoration: const InputDecoration(
+            labelText: 'Area',
+            hintText: '請輸入 Area',
+          ),
+          autofocus: true,
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('取消'),
+          ),
+          TextButton(
+            onPressed: () {
+              final area = controller.text.trim();
+              if (area.isNotEmpty) {
+                Navigator.pop(context, area);
+              }
+            },
+            child: const Text('確認'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Future<String?> _showModuleIdInputDialog(String initialValue) async {
+    final controller = TextEditingController(text: initialValue);
+    return showDialog<String>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('新增 Module ID'),
+        content: TextField(
+          controller: controller,
+          decoration: const InputDecoration(
+            labelText: 'Module ID',
+            hintText: '請輸入 Module ID',
+          ),
+          autofocus: true,
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('取消'),
+          ),
+          TextButton(
+            onPressed: () {
+              final moduleId = controller.text.trim();
+              if (moduleId.isNotEmpty) {
+                Navigator.pop(context, moduleId);
+              }
+            },
+            child: const Text('確認'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Future<String?> _showTcpInputDialog(String initialValue) async {
+    final controller = TextEditingController(text: initialValue);
+    return showDialog<String>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('新增 TCP'),
+        content: TextField(
+          controller: controller,
+          decoration: const InputDecoration(
+            labelText: 'TCP',
+            hintText: '請輸入 TCP',
+          ),
+          autofocus: true,
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('取消'),
+          ),
+          TextButton(
+            onPressed: () {
+              final tcp = controller.text.trim();
+              if (tcp.isNotEmpty) {
+                Navigator.pop(context, tcp);
+              }
+            },
+            child: const Text('確認'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Future<void> _handleAreaSelection(
+    String? newValue,
+    TextEditingController controller, {
+    VoidCallback? refresh,
+  }) async {
+    if (newValue == _customAreaOption) {
+      final newArea = await _showAreaInputDialog(controller.text);
+      if (newArea != null && newArea.isNotEmpty) {
+        controller.text = newArea;
+        if (refresh != null) {
+          refresh();
+        } else if (mounted) {
+          setState(() {});
+        }
+      }
+      return;
+    }
+
+    controller.text = newValue ?? '';
+    if (refresh != null) {
+      refresh();
+    } else if (mounted) {
+      setState(() {});
+    }
+  }
+
+  Future<void> _handleModuleIdSelection(String? newValue) async {
+    if (newValue == _customModuleIdOption) {
+      final newModuleId = await _showModuleIdInputDialog(moduleIdController.text);
+      if (newModuleId != null && newModuleId.isNotEmpty) {
+        moduleIdController.text = newModuleId;
+        if (mounted) {
+          setState(() {});
+        }
+      }
+      return;
+    }
+
+    moduleIdController.text = newValue ?? '';
+    if (mounted) {
+      setState(() {});
+    }
+  }
+
+  Future<void> _handleTcpSelection(
+    String? newValue,
+    TextEditingController controller, {
+    VoidCallback? refresh,
+  }) async {
+    if (newValue == _customTcpOption) {
+      final newTcp = await _showTcpInputDialog(controller.text);
+      if (newTcp != null && newTcp.isNotEmpty) {
+        controller.text = newTcp;
+        if (refresh != null) {
+          refresh();
+        } else if (mounted) {
+          setState(() {});
+        }
+      }
+      return;
+    }
+
+    controller.text = newValue ?? '';
+    if (refresh != null) {
+      refresh();
+    } else if (mounted) {
+      setState(() {});
+    }
+  }
+
   void addDevice() {
     if (moduleIdController.text.isNotEmpty) {
       final String deviceName = nameController.text.isNotEmpty
@@ -173,87 +377,162 @@ class _DiscoveryGeneratePageState extends State<DiscoveryGeneratePage> {
     showDialog(
       context: context,
       builder: (BuildContext context) {
-        return AlertDialog(
-          title: const Text('編輯裝置'),
-          content: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              TextField(
-                controller: nameController,
-                decoration: const InputDecoration(labelText: 'Name'),
-              ),
-              TextField(
-                controller: tcpController,
-                decoration: const InputDecoration(labelText: 'TCP'),
-              ),
-              const SizedBox(height: 8),
-              TextField(
-                controller: areaController,
-                decoration: const InputDecoration(labelText: 'Area'),
-              ),
-              const SizedBox(height: 8),
-              TextField(
-                controller: brightController,
-                decoration: const InputDecoration(
-                  labelText: '最低亮度 (bright_minimum)',
-                ),
-                keyboardType: TextInputType.number,
-              ),
-              if (device.type == 'dual') ...[
-                const SizedBox(height: 8),
-                TextField(
-                  controller: ctMinController,
-                  decoration: const InputDecoration(
-                    labelText: '最低色溫 (colortemp_minimum)',
+        return StatefulBuilder(
+          builder: (context, setDialogState) {
+            final availableAreas = getAvailableAreas();
+            final availableTcps = getAvailableTcps();
+            final currentArea = areaController.text.trim();
+            final areaValue = currentArea.isEmpty ? null : currentArea;
+            final currentTcp = tcpController.text.trim();
+            final tcpValue = currentTcp.isEmpty ? null : currentTcp;
+
+            return AlertDialog(
+              title: const Text('編輯裝置'),
+              content: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  TextField(
+                    controller: nameController,
+                    decoration: const InputDecoration(labelText: 'Name'),
                   ),
-                  keyboardType: TextInputType.number,
-                ),
-                const SizedBox(height: 8),
-                TextField(
-                  controller: ctMaxController,
-                  decoration: const InputDecoration(
-                    labelText: '最高色溫 (colortemp_maximum)',
+                  DropdownButtonFormField<String>(
+                    value: tcpValue,
+                    decoration: const InputDecoration(
+                      labelText: 'TCP',
+                      border: OutlineInputBorder(),
+                      isDense: true,
+                    ),
+                    hint: const Text('選擇 TCP'),
+                    onChanged: (String? newValue) {
+                      _handleTcpSelection(
+                        newValue,
+                        tcpController,
+                        refresh: () => setDialogState(() {}),
+                      );
+                    },
+                    items: [
+                      ...availableTcps.map<DropdownMenuItem<String>>((value) {
+                        return DropdownMenuItem<String>(
+                          value: value,
+                          child: Text(value),
+                        );
+                      }),
+                      if (currentTcp.isNotEmpty &&
+                          !availableTcps.contains(currentTcp))
+                        DropdownMenuItem<String>(
+                          value: currentTcp,
+                          child: Text(currentTcp),
+                        ),
+                      const DropdownMenuItem<String>(
+                        value: _customTcpOption,
+                        child: Text('＋新增 TCP'),
+                      ),
+                    ],
                   ),
-                  keyboardType: TextInputType.number,
+                  const SizedBox(height: 8),
+                  DropdownButtonFormField<String>(
+                    value: areaValue,
+                    decoration: const InputDecoration(
+                      labelText: 'Area',
+                      border: OutlineInputBorder(),
+                      isDense: true,
+                    ),
+                    hint: const Text('選擇 Area'),
+                    onChanged: (String? newValue) {
+                      _handleAreaSelection(
+                        newValue,
+                        areaController,
+                        refresh: () => setDialogState(() {}),
+                      );
+                    },
+                    items: [
+                      ...availableAreas.map<DropdownMenuItem<String>>((value) {
+                        return DropdownMenuItem<String>(
+                          value: value,
+                          child: Text(value),
+                        );
+                      }),
+                      if (currentArea.isNotEmpty &&
+                          !availableAreas.contains(currentArea))
+                        DropdownMenuItem<String>(
+                          value: currentArea,
+                          child: Text(currentArea),
+                        ),
+                      const DropdownMenuItem<String>(
+                        value: _customAreaOption,
+                        child: Text('＋新增 Area'),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 8),
+                  TextField(
+                    controller: brightController,
+                    decoration: const InputDecoration(
+                      labelText: '最低亮度 (bright_minimum)',
+                    ),
+                    keyboardType: TextInputType.number,
+                  ),
+                  if (device.type == 'dual') ...[
+                    const SizedBox(height: 8),
+                    TextField(
+                      controller: ctMinController,
+                      decoration: const InputDecoration(
+                        labelText: '最低色溫 (colortemp_minimum)',
+                      ),
+                      keyboardType: TextInputType.number,
+                    ),
+                    const SizedBox(height: 8),
+                    TextField(
+                      controller: ctMaxController,
+                      decoration: const InputDecoration(
+                        labelText: '最高色溫 (colortemp_maximum)',
+                      ),
+                      keyboardType: TextInputType.number,
+                    ),
+                  ],
+                ],
+              ),
+              actions: [
+                TextButton(
+                  onPressed: () => Navigator.of(context).pop(),
+                  child: const Text('取消'),
+                ),
+                TextButton(
+                  onPressed: () {
+                    final updatedDevice = Device(
+                      id: device.id,
+                      brand: device.brand,
+                      model: device.model,
+                      type: device.type,
+                      moduleId: device.moduleId,
+                      channel: device.channel,
+                      name: nameController.text.isNotEmpty
+                          ? nameController.text
+                          : "${device.model} ${device.moduleId} - ${device.channel}",
+                      tcp: tcpController.text.isNotEmpty
+                          ? tcpController.text
+                          : "1",
+                      area: areaController.text.isNotEmpty
+                          ? areaController.text
+                          : null,
+                      brightMinimum: int.tryParse(brightController.text),
+                      colortempMinimum: device.type == 'dual'
+                          ? int.tryParse(ctMinController.text)
+                          : null,
+                      colortempMaximum: device.type == 'dual'
+                          ? int.tryParse(ctMaxController.text)
+                          : null,
+                    );
+                    _service.updateDevice(updatedDevice);
+                    Navigator.of(context).pop();
+                    // 自動儲存配置
+                    _autoSaveConfiguration();
+                  },
+                  child: const Text('保存'),
                 ),
               ],
-            ],
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.of(context).pop(),
-              child: const Text('取消'),
-            ),
-            TextButton(
-              onPressed: () {
-                final updatedDevice = Device(
-                  id: device.id,
-                  brand: device.brand,
-                  model: device.model,
-                  type: device.type,
-                  moduleId: device.moduleId,
-                  channel: device.channel,
-                  name: nameController.text.isNotEmpty
-                      ? nameController.text
-                      : "${device.model} ${device.moduleId} - ${device.channel}",
-                  tcp: tcpController.text.isNotEmpty ? tcpController.text : "1",
-                  area: areaController.text.isNotEmpty ? areaController.text : null,
-                  brightMinimum: int.tryParse(brightController.text),
-                  colortempMinimum: device.type == 'dual'
-                      ? int.tryParse(ctMinController.text)
-                      : null,
-                  colortempMaximum: device.type == 'dual'
-                      ? int.tryParse(ctMaxController.text)
-                      : null,
-                );
-                _service.updateDevice(updatedDevice);
-                Navigator.of(context).pop();
-                // 自動儲存配置
-                _autoSaveConfiguration();
-              },
-              child: const Text('保存'),
-            ),
-          ],
+            );
+          },
         );
       },
     );
@@ -783,6 +1062,16 @@ class _DiscoveryGeneratePageState extends State<DiscoveryGeneratePage> {
   }
 
   Widget _buildAddDeviceForm() {
+    final availableAreas = getAvailableAreas();
+    final availableTcps = getAvailableTcps();
+    final availableModuleIds = getAvailableModuleIds();
+    final currentModuleId = moduleIdController.text.trim();
+    final moduleIdValue = currentModuleId.isEmpty ? null : currentModuleId;
+    final currentArea = areaController.text.trim();
+    final areaValue = currentArea.isEmpty ? null : currentArea;
+    final currentTcp = tcpController.text.trim();
+    final tcpValue = currentTcp.isEmpty ? null : currentTcp;
+
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
@@ -902,14 +1191,36 @@ class _DiscoveryGeneratePageState extends State<DiscoveryGeneratePage> {
               ),
               const SizedBox(width: 8),
               Expanded(
-                flex: 2,
-                child: TextField(
-                  controller: moduleIdController,
+                flex: 1,
+                child: DropdownButtonFormField<String>(
+                  value: moduleIdValue,
                   decoration: const InputDecoration(
                     labelText: 'Module ID',
                     border: OutlineInputBorder(),
                     isDense: true,
                   ),
+                  hint: const Text('選擇 Module ID'),
+                  onChanged: (String? newValue) {
+                    _handleModuleIdSelection(newValue);
+                  },
+                  items: [
+                    ...availableModuleIds.map<DropdownMenuItem<String>>((value) {
+                      return DropdownMenuItem<String>(
+                        value: value,
+                        child: Text(value),
+                      );
+                    }),
+                    if (currentModuleId.isNotEmpty &&
+                        !availableModuleIds.contains(currentModuleId))
+                      DropdownMenuItem<String>(
+                        value: currentModuleId,
+                        child: Text(currentModuleId),
+                      ),
+                    const DropdownMenuItem<String>(
+                      value: _customModuleIdOption,
+                      child: Text('＋新增 Module ID'),
+                    ),
+                  ],
                 ),
               ),
               const SizedBox(width: 8),
@@ -966,25 +1277,68 @@ class _DiscoveryGeneratePageState extends State<DiscoveryGeneratePage> {
               ),
               const SizedBox(width: 8),
               Expanded(
-                child: TextField(
-                  controller: tcpController,
+                child: DropdownButtonFormField<String>(
+                  value: tcpValue,
                   decoration: const InputDecoration(
                     labelText: 'TCP',
                     border: OutlineInputBorder(),
                     isDense: true,
                   ),
+                  hint: const Text('選擇 TCP'),
+                  onChanged: (String? newValue) {
+                    _handleTcpSelection(newValue, tcpController);
+                  },
+                  items: [
+                    ...availableTcps.map<DropdownMenuItem<String>>((value) {
+                      return DropdownMenuItem<String>(
+                        value: value,
+                        child: Text(value),
+                      );
+                    }),
+                    if (currentTcp.isNotEmpty && !availableTcps.contains(currentTcp))
+                      DropdownMenuItem<String>(
+                        value: currentTcp,
+                        child: Text(currentTcp),
+                      ),
+                    const DropdownMenuItem<String>(
+                      value: _customTcpOption,
+                      child: Text('＋新增 TCP'),
+                    ),
+                  ],
                 ),
               ),
               const SizedBox(width: 8),
               SizedBox(
-                width: 150,
-                child: TextField(
-                  controller: areaController,
+                width: 170,
+                child: DropdownButtonFormField<String>(
+                  value: areaValue,
                   decoration: const InputDecoration(
                     labelText: 'Area',
                     border: OutlineInputBorder(),
                     isDense: true,
                   ),
+                  hint: const Text('選擇 Area'),
+                  onChanged: (String? newValue) {
+                    _handleAreaSelection(newValue, areaController);
+                  },
+                  items: [
+                    ...availableAreas.map<DropdownMenuItem<String>>((value) {
+                      return DropdownMenuItem<String>(
+                        value: value,
+                        child: Text(value),
+                      );
+                    }),
+                    if (currentArea.isNotEmpty &&
+                        !availableAreas.contains(currentArea))
+                      DropdownMenuItem<String>(
+                        value: currentArea,
+                        child: Text(currentArea),
+                      ),
+                    const DropdownMenuItem<String>(
+                      value: _customAreaOption,
+                      child: Text('＋新增 Area'),
+                    ),
+                  ],
                 ),
               ),
               const SizedBox(width: 8),
@@ -1049,30 +1403,6 @@ class _DiscoveryGeneratePageState extends State<DiscoveryGeneratePage> {
                   padding: const EdgeInsets.symmetric(
                     horizontal: 24,
                     vertical: 20,
-                  ),
-                ),
-              ),
-              const SizedBox(width: 8),
-              ElevatedButton.icon(
-                onPressed: exportDeviceConfigsFile,
-                icon: const Icon(Icons.download),
-                label: const Text('匯出 deviceConfigs JSON'),
-                style: ElevatedButton.styleFrom(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 16,
-                    vertical: 18,
-                  ),
-                ),
-              ),
-              const SizedBox(width: 8),
-              ElevatedButton.icon(
-                onPressed: exportDeviceConfigsSchemaFile,
-                icon: const Icon(Icons.download_outlined),
-                label: const Text('匯出 JSON Schema'),
-                style: ElevatedButton.styleFrom(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 16,
-                    vertical: 18,
                   ),
                 ),
               ),
