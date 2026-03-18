@@ -1113,15 +1113,23 @@ class _CustomerHomePageState extends State<CustomerHomePage> {
                       moduleCount: _modules.length,
                       onChanged: (list) {
                         setState(() {
-                          _powerSupplies.clear();
-                          _powerSupplies.addAll(list);
+                          _powerSupplies = List<PowerSupply>.from(list);
                           // keep loads aligned: trim or extend with zeros
-                          if (_powerSupplyLoads.length > _powerSupplies.length) {
-                            _powerSupplyLoads = _powerSupplyLoads.sublist(0, _powerSupplies.length);
-                          } else if (_powerSupplyLoads.length < _powerSupplies.length) {
+                          if (_powerSupplyLoads.length >
+                              _powerSupplies.length) {
+                            _powerSupplyLoads = _powerSupplyLoads.sublist(
+                              0,
+                              _powerSupplies.length,
+                            );
+                          } else if (_powerSupplyLoads.length <
+                              _powerSupplies.length) {
                             _powerSupplyLoads = [
                               ..._powerSupplyLoads,
-                              ...List<double>.filled(_powerSupplies.length - _powerSupplyLoads.length, 0.0)
+                              ...List<double>.filled(
+                                _powerSupplies.length -
+                                    _powerSupplyLoads.length,
+                                0.0,
+                              ),
                             ];
                           }
                         });
@@ -1375,7 +1383,8 @@ class _CustomerHomePageState extends State<CustomerHomePage> {
     setState(() {
       final oldLoop = _loops[loopIndex];
       final newLoop = oldLoop.copyWith(
-        fixtures: List<LoopFixture>.from(oldLoop.fixtures)..removeAt(fixtureIndex),
+        fixtures: List<LoopFixture>.from(oldLoop.fixtures)
+          ..removeAt(fixtureIndex),
       );
       _loops[loopIndex] = newLoop;
       _syncLoopInModules(oldLoop, newLoop);
@@ -2234,16 +2243,19 @@ class _CustomerHomePageState extends State<CustomerHomePage> {
   void _createNewConfiguration() {
     showDialog(
       context: context,
-      builder: (context) => AlertDialog(
+      builder: (dialogContext) => AlertDialog(
         title: const Text('新建估價配置'),
         content: const Text('確定要新建配置嗎？這將清除所有當前數據。'),
         actions: [
           TextButton(
-            onPressed: () => Navigator.of(context).pop(),
+            onPressed: () => Navigator.of(dialogContext).pop(),
             child: const Text('取消'),
           ),
           ElevatedButton(
-            onPressed: () {
+            onPressed: () async {
+              final newConfigName =
+                  '新估價配置_${DateTime.now().millisecondsSinceEpoch}';
+              String? errorMessage;
               setState(() {
                 // 重置所有數據
                 _loops.clear();
@@ -2251,8 +2263,8 @@ class _CustomerHomePageState extends State<CustomerHomePage> {
                 _switches.clear();
                 _switchCountController.clear();
                 _otherDevices.clear();
-                _powerSupplies.clear();
-                _powerSupplyLoads.clear();
+                _powerSupplies = [];
+                _powerSupplyLoads = [];
                 _boardMaterials.clear();
                 _wiringItems.clear();
                 _spaces.clear();
@@ -2261,14 +2273,54 @@ class _CustomerHomePageState extends State<CustomerHomePage> {
                 _ceilingHasLn = false;
                 _ceilingHasMaintenanceHole = false;
                 _switchHasLn = false;
-                _currentConfigurationName = '新估價配置';
+                _currentConfigurationName = newConfigName;
                 _selectedConfigurationName = null; // 重置下拉選單選擇狀態
                 _currentStep = 0; // 返回第一步
               });
-              Navigator.of(context).pop();
+
+              try {
+                final authService = Provider.of<AuthService>(
+                  context,
+                  listen: false,
+                );
+                final effectiveCustomerId = authService.isCustomer
+                    ? int.tryParse(authService.userId ?? '')
+                    : _selectedCustomer?.userId;
+
+                final emptyQuoteData = QuoteData(
+                  switches: _switches,
+                  loops: _loops,
+                  modules: _modules,
+                  switchCount: _switchCountController.text,
+                  otherDevices: _otherDevices,
+                  powerSupplies: _powerSupplies,
+                  boardMaterials: _boardMaterials,
+                  wiring: _wiringItems,
+                  ceilingHasLn: _ceilingHasLn,
+                  ceilingHasMaintenanceHole: _ceilingHasMaintenanceHole,
+                  switchHasLn: _switchHasLn,
+                );
+
+                await _quoteService.saveConfiguration(
+                  newConfigName,
+                  emptyQuoteData,
+                  customerUserId: effectiveCustomerId,
+                );
+                await _loadConfigurations();
+
+                if (!mounted) return;
+                setState(() {
+                  _selectedConfigurationName = newConfigName;
+                });
+              } catch (e) {
+                errorMessage = '新建配置失敗: $e';
+              }
+
+              if (!mounted) return;
+              Navigator.of(dialogContext).pop();
               ScaffoldMessenger.of(
                 context,
-              ).showSnackBar(const SnackBar(content: Text('已新建配置')));
+              ).showSnackBar(SnackBar(content: Text(errorMessage ?? '已新建配置')));
             },
             child: const Text('確定'),
           ),
@@ -2384,7 +2436,7 @@ class _CustomerHomePageState extends State<CustomerHomePage> {
     );
   }
 
-  void _loadConfigurations() async {
+  Future<void> _loadConfigurations() async {
     try {
       await _quoteService.fetchConfigurations();
       await _quoteService.fetchModuleOptions();
@@ -2620,19 +2672,19 @@ class _CustomerHomePageState extends State<CustomerHomePage> {
         }
       }
 
-        if (chosen != null) {
-          assigned.add(chosen);
-          assignmentPairs.add({'module': module, 'supply': chosen});
-          assignedLoads.add(requiredWatt);
+      if (chosen != null) {
+        assigned.add(chosen);
+        assignmentPairs.add({'module': module, 'supply': chosen});
+        assignedLoads.add(requiredWatt);
       } else {
         unassignedModules.add({'module': module, 'requiredWatt': requiredWatt});
       }
     }
 
-      setState(() {
-        _powerSupplies = assigned;
-        _powerSupplyLoads = assignedLoads;
-      });
+    setState(() {
+      _powerSupplies = assigned;
+      _powerSupplyLoads = assignedLoads;
+    });
     _autoSave();
 
     showDialog(
