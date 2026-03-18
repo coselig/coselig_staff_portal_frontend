@@ -16,6 +16,16 @@ class _DeviceConfigManagementPageState
   bool _isLoading = true;
   String? _error;
 
+  List<String> _availableBrands() {
+    final brands = _service.deviceConfigOptions
+        .map((e) => e.brand.trim())
+        .where((e) => e.isNotEmpty)
+        .toSet()
+        .toList();
+    brands.sort();
+    return brands;
+  }
+
   @override
   void initState() {
     super.initState();
@@ -41,7 +51,9 @@ class _DeviceConfigManagementPageState
   Future<void> _addItem() async {
     final result = await showDialog<DeviceConfigOption>(
       context: context,
-      builder: (context) => const _DeviceConfigEditDialog(),
+      builder: (context) => _DeviceConfigEditDialog(
+        availableBrands: _availableBrands(),
+      ),
     );
     if (result != null) {
       setState(() => _isLoading = true);
@@ -62,7 +74,10 @@ class _DeviceConfigManagementPageState
   Future<void> _editItem(DeviceConfigOption item) async {
     final result = await showDialog<DeviceConfigOption>(
       context: context,
-      builder: (context) => _DeviceConfigEditDialog(initial: item),
+      builder: (context) => _DeviceConfigEditDialog(
+        initial: item,
+        availableBrands: _availableBrands(),
+      ),
     );
     if (result != null && item.id != null) {
       setState(() => _isLoading = true);
@@ -247,8 +262,12 @@ class _DeviceConfigManagementPageState
 
 class _DeviceConfigEditDialog extends StatefulWidget {
   final DeviceConfigOption? initial;
+  final List<String> availableBrands;
 
-  const _DeviceConfigEditDialog({this.initial});
+  const _DeviceConfigEditDialog({
+    this.initial,
+    required this.availableBrands,
+  });
 
   @override
   State<_DeviceConfigEditDialog> createState() =>
@@ -256,6 +275,8 @@ class _DeviceConfigEditDialog extends StatefulWidget {
 }
 
 class _DeviceConfigEditDialogState extends State<_DeviceConfigEditDialog> {
+  static const String _customBrandOption = '__custom_brand__';
+
   late TextEditingController _brandController;
   late TextEditingController _modelController;
   late List<String> _types;
@@ -408,9 +429,60 @@ class _DeviceConfigEditDialogState extends State<_DeviceConfigEditDialog> {
     }
   }
 
+  Future<String?> _showBrandInputDialog(String initialValue) async {
+    final controller = TextEditingController(text: initialValue);
+    return showDialog<String>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('新增 Brand'),
+        content: TextField(
+          controller: controller,
+          decoration: const InputDecoration(
+            labelText: 'Brand',
+            hintText: '請輸入品牌',
+          ),
+          autofocus: true,
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('取消'),
+          ),
+          TextButton(
+            onPressed: () {
+              final brand = controller.text.trim();
+              if (brand.isNotEmpty) {
+                Navigator.pop(context, brand);
+              }
+            },
+            child: const Text('確認'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Future<void> _handleBrandSelection(String? newValue) async {
+    if (newValue == _customBrandOption) {
+      final newBrand = await _showBrandInputDialog(_brandController.text);
+      if (newBrand != null && newBrand.isNotEmpty) {
+        setState(() {
+          _brandController.text = newBrand;
+        });
+      }
+      return;
+    }
+
+    setState(() {
+      _brandController.text = newValue ?? '';
+    });
+  }
+
   @override
   Widget build(BuildContext context) {
     final isEdit = widget.initial != null;
+    final currentBrand = _brandController.text.trim();
+    final brandValue = currentBrand.isEmpty ? null : currentBrand;
 
     return AlertDialog(
       title: Text(isEdit ? '編輯裝置設定' : '新增裝置設定'),
@@ -425,12 +497,34 @@ class _DeviceConfigEditDialogState extends State<_DeviceConfigEditDialog> {
               Row(
                 children: [
                   Expanded(
-                    child: TextField(
-                      controller: _brandController,
+                    child: DropdownButtonFormField<String>(
+                      value: brandValue,
                       decoration: const InputDecoration(
                         labelText: '品牌 (Brand)',
                         border: OutlineInputBorder(),
                       ),
+                      hint: const Text('選擇品牌'),
+                      onChanged: (String? newValue) {
+                        _handleBrandSelection(newValue);
+                      },
+                      items: [
+                        ...widget.availableBrands.map<DropdownMenuItem<String>>((value) {
+                          return DropdownMenuItem<String>(
+                            value: value,
+                            child: Text(value),
+                          );
+                        }),
+                        if (currentBrand.isNotEmpty &&
+                            !widget.availableBrands.contains(currentBrand))
+                          DropdownMenuItem<String>(
+                            value: currentBrand,
+                            child: Text(currentBrand),
+                          ),
+                        const DropdownMenuItem<String>(
+                          value: _customBrandOption,
+                          child: Text('＋新增 Brand'),
+                        ),
+                      ],
                     ),
                   ),
                   const SizedBox(width: 8),
