@@ -498,7 +498,7 @@ class _DeviceConfigEditDialogState extends State<_DeviceConfigEditDialog> {
                 children: [
                   Expanded(
                     child: DropdownButtonFormField<String>(
-                      value: brandValue,
+                      initialValue: brandValue,
                       decoration: const InputDecoration(
                         labelText: '品牌 (Brand)',
                         border: OutlineInputBorder(),

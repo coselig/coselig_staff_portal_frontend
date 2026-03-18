@@ -383,7 +383,7 @@ class _AttendanceCalendarViewState extends State<AttendanceCalendarView> {
                     BoxShadow(
                       color: Theme.of(
                         context,
-                      ).colorScheme.primary.withOpacity(0.3),
+                      ).colorScheme.primary.withAlpha(77),
                       blurRadius: 8,
                       spreadRadius: 1,
                     ),

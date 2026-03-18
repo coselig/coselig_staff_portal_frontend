@@ -130,7 +130,7 @@ class _AttendanceViewerState extends State<AttendanceViewer> {
     return Container(
       decoration: BoxDecoration(
         border: Border.all(
-          color: Colors.grey.withOpacity(0.5), // 淡色外框
+          color: Colors.grey.withAlpha(128), // 淡色外框
           width: 1.0,
         ),
         borderRadius: BorderRadius.circular(8.0),
@@ -335,7 +335,7 @@ class _AttendanceViewerState extends State<AttendanceViewer> {
     return Container(
       decoration: BoxDecoration(
         border: Border.all(
-          color: Colors.grey.withOpacity(0.5), // 淡色外框
+          color: Colors.grey.withAlpha(128), // 淡色外框
           width: 1.0,
         ),
         borderRadius: BorderRadius.circular(8.0),
