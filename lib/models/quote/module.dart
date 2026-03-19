@@ -1,5 +1,6 @@
 import 'package:coselig_staff_portal/models/quote/fixture_allocation.dart';
 import 'package:coselig_staff_portal/models/quote/loop_allocation.dart';
+import 'package:coselig_staff_portal/models/quote/loop.dart';
 import 'package:coselig_staff_portal/models/quote/ampere_check_result.dart';
 import 'package:coselig_staff_portal/models/quote/light_fixture.dart';
 
@@ -95,12 +96,12 @@ class Module {
     return availableChannels >= requiredChannels;
   }
 
-  bool canAssignLoop(loop, int count) {
+  bool canAssignLoop(Loop loop, int count) {
     int requiredChannels = count * _getChannelsPerLoop(loop.dimmingType);
     return availableChannels >= requiredChannels;
   }
 
-  AmpereCheckResult checkLoopAmpereLimit(loop, int count) {
+  AmpereCheckResult checkLoopAmpereLimit(Loop loop, int count) {
     final totalWatt = loop.fixtures.fold(0, (sum, fixture) => sum + fixture.totalWatt);
     final totalAmpereForLoop = totalWatt / loop.voltage;
     final channelsPerLoop = _getChannelsPerLoop(loop.dimmingType);
