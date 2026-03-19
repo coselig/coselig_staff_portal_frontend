@@ -2,20 +2,24 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:coselig_staff_portal/services/quote_service.dart';
 
-/// 設定檔格式
-/// {
-///   'table': 'switch_options',
-///   'columns': [
-///     {'name': 'name', 'label': '名稱', 'type': 'text'},
-///     {'name': 'count', 'label': '數量', 'type': 'number'},
-///     {'name': 'price', 'label': '價格', 'type': 'number'},
-///     {'name': 'location', 'label': '位置', 'type': 'text'},
-///   ],
-///   'fetch': (QuoteService service) => service.fetchSwitchOptions(),
-///   'add': (QuoteService service, Map<String, dynamic> data) => service.addSwitchOption(data),
-///   'update': (QuoteService service, int id, Map<String, dynamic> data) => service.updateSwitchOption(id, data),
-///   'delete': (QuoteService service, int id) => service.deleteSwitchOption(id),
-/// }
+/* 設定檔格式
+```dart
+{
+  'table': 'switch_options',
+  'columns': [
+    {'name': 'name', 'label': '名稱', 'type': 'text'},
+    {'name': 'count', 'label': '數量', 'type': 'number'},
+    {'name': 'price', 'label': '價格', 'type': 'number'},
+    {'name': 'location', 'label': '位置', 'type': 'text'},
+  ],
+  'fetch': (QuoteService service) => service.fetchSwitchOptions(),
+  'add': (QuoteService service, Map<String, dynamic> data) => service.addSwitchOption(data),
+  'update': (QuoteService service, int id, Map<String, dynamic> data) => service.updateSwitchOption(id, data),
+  'delete': (QuoteService service, int id) => service.deleteSwitchOption(id),
+}
+```
+*/
+
 
 class GenericManagementPage extends StatefulWidget {
   final Map<String, dynamic> config;
