@@ -390,7 +390,7 @@ class _DiscoveryGeneratePageState extends State<DiscoveryGeneratePage> {
                     decoration: const InputDecoration(labelText: 'Name'),
                   ),
                   DropdownButtonFormField<String>(
-                    value: tcpValue,
+                    initialValue: tcpValue,
                     decoration: const InputDecoration(
                       labelText: 'TCP',
                       border: OutlineInputBorder(),
@@ -425,7 +425,7 @@ class _DiscoveryGeneratePageState extends State<DiscoveryGeneratePage> {
                   ),
                   const SizedBox(height: 8),
                   DropdownButtonFormField<String>(
-                    value: areaValue,
+                    initialValue: areaValue,
                     decoration: const InputDecoration(
                       labelText: 'Area',
                       border: OutlineInputBorder(),
