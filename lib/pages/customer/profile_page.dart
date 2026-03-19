@@ -67,16 +67,21 @@ class _CustomerProfilePageState extends State<CustomerProfilePage> {
         _isActive = c.isActive;
       }
     } catch (e) {
+      if (!mounted) return;
       ScaffoldMessenger.of(
         context,
       ).showSnackBar(SnackBar(content: Text('載入個人資料失敗: $e')));
     } finally {
-      setState(() => _loading = false);
+      if (mounted) setState(() => _loading = false);
     }
   }
 
   Future<void> _save() async {
     if (!_formKey.currentState!.validate()) return;
+    // 在進入 async gap 前先取得所有 context 相關參照
+    final customerService = Provider.of<CustomerService>(context, listen: false);
+    final messenger = ScaffoldMessenger.of(context);
+    final navigator = Navigator.of(context);
     setState(() => _loading = true);
     try {
       await _userService.updateCurrentUserData({
@@ -88,10 +93,6 @@ class _CustomerProfilePageState extends State<CustomerProfilePage> {
       });
 
       if (_customerId != null) {
-        final customerService = Provider.of<CustomerService>(
-          context,
-          listen: false,
-        );
         final success = await customerService.updateCustomer(_customerId!, {
           'company': _companyController.text.trim(),
           'tax_id': _taxIdController.text.trim(),
@@ -102,16 +103,14 @@ class _CustomerProfilePageState extends State<CustomerProfilePage> {
         if (!success) throw Exception('更新客戶資料失敗');
       }
 
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(const SnackBar(content: Text('個人資料已儲存')));
-      Navigator.of(context).pop();
+      if (!mounted) return;
+      messenger.showSnackBar(const SnackBar(content: Text('個人資料已儲存')));
+      navigator.pop();
     } catch (e) {
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: Text('儲存失敗: $e')));
+      if (!mounted) return;
+      messenger.showSnackBar(SnackBar(content: Text('儲存失敗: $e')));
     } finally {
-      setState(() => _loading = false);
+      if (mounted) setState(() => _loading = false);
     }
   }
 

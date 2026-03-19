@@ -25,12 +25,15 @@ class _BlePageState extends State<BlePage> {
   void startScan() async {
     // 請求權限（僅適用於移動裝置）
     if (!kIsWeb) {
+      // 在進入 async gap 前先取得 messenger
+      final messenger = ScaffoldMessenger.of(context);
       var scanStatus = await Permission.bluetoothScan.request();
       var connectStatus = await Permission.bluetoothConnect.request();
+      if (!mounted) return;
       if (!scanStatus.isGranted || !connectStatus.isGranted) {
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(const SnackBar(content: Text('需要藍芽權限才能掃描裝置')));
+        messenger.showSnackBar(
+          const SnackBar(content: Text('需要藍芽權限才能掃描裝置')),
+        );
         return;
       }
     }
@@ -42,17 +45,21 @@ class _BlePageState extends State<BlePage> {
       });
 
       FlutterBluePlus.scanResults.listen((results) {
-        setState(() {
-          scanResults = results;
-        });
+        if (mounted) {
+          setState(() {
+            scanResults = results;
+          });
+        }
       });
 
       await FlutterBluePlus.startScan(timeout: const Duration(seconds: 10));
 
+      if (!mounted) return;
       setState(() {
         isScanning = false;
       });
     } catch (e) {
+      if (!mounted) return;
       setState(() {
         isScanning = false;
       });

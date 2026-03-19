@@ -230,6 +230,8 @@ class _CustomerHomePageState extends State<CustomerHomePage> {
       final switchOptions = await _quoteService
           .fetchSwitchOptions(); // 從資料庫撈取開關資料
 
+      if (!mounted) return;
+
       if (switchOptions.isEmpty) {
         ScaffoldMessenger.of(
           context,
@@ -255,11 +257,12 @@ class _CustomerHomePageState extends State<CustomerHomePage> {
         ),
       );
     } catch (e) {
+      if (!mounted) return;
       ScaffoldMessenger.of(
         context,
       ).showSnackBar(SnackBar(content: Text('載入開關選項失敗: $e')));
     } finally {
-      setState(() => _isLoading = false);
+      if (mounted) setState(() => _isLoading = false);
     }
   }
 
@@ -361,6 +364,7 @@ class _CustomerHomePageState extends State<CustomerHomePage> {
   void _saveSwitchConfigurations() async {
     try {
       await _quoteService.saveSwitchConfigurations(_switches);
+      if (!mounted) return;
       ScaffoldMessenger.of(
         context,
       ).showSnackBar(const SnackBar(content: Text('開關配置已保存')));
@@ -1460,6 +1464,8 @@ class _CustomerHomePageState extends State<CustomerHomePage> {
       }
     }
 
+    if (!mounted) return;
+
     // 正常添加迴路
     setState(() {
       if (module.canAssignLoop(loop, 1)) {
@@ -2253,6 +2259,14 @@ class _CustomerHomePageState extends State<CustomerHomePage> {
           ),
           ElevatedButton(
             onPressed: () async {
+              // 在進入 async gap 前先取得所有 context 相關參照
+              final navigator = Navigator.of(dialogContext);
+              final messenger = ScaffoldMessenger.of(context);
+              final authService = Provider.of<AuthService>(
+                context,
+                listen: false,
+              );
+
               final newConfigName =
                   '新估價配置_${DateTime.now().millisecondsSinceEpoch}';
               String? errorMessage;
@@ -2279,10 +2293,6 @@ class _CustomerHomePageState extends State<CustomerHomePage> {
               });
 
               try {
-                final authService = Provider.of<AuthService>(
-                  context,
-                  listen: false,
-                );
                 final effectiveCustomerId = authService.isCustomer
                     ? int.tryParse(authService.userId ?? '')
                     : _selectedCustomer?.userId;
@@ -2317,10 +2327,8 @@ class _CustomerHomePageState extends State<CustomerHomePage> {
               }
 
               if (!mounted) return;
-              Navigator.of(dialogContext).pop();
-              ScaffoldMessenger.of(
-                context,
-              ).showSnackBar(SnackBar(content: Text(errorMessage ?? '已新建配置')));
+              navigator.pop();
+              messenger.showSnackBar(SnackBar(content: Text(errorMessage ?? '已新建配置')));
             },
             child: const Text('確定'),
           ),
@@ -2378,6 +2386,14 @@ class _CustomerHomePageState extends State<CustomerHomePage> {
           ElevatedButton(
             onPressed: () async {
               if (nameController.text.trim().isNotEmpty) {
+                // 在進入 async gap 前先取得所有 context 相關參照
+                final navigator = Navigator.of(context);
+                final messenger = ScaffoldMessenger.of(context);
+                final authService = Provider.of<AuthService>(
+                  context,
+                  listen: false,
+                );
+
                 setState(() => _isLoading = true);
                 try {
                   final quoteData = QuoteData(
@@ -2394,10 +2410,6 @@ class _CustomerHomePageState extends State<CustomerHomePage> {
                     switchHasLn: _switchHasLn,
                   );
 
-                  final authService = Provider.of<AuthService>(
-                    context,
-                    listen: false,
-                  );
                   final effectiveCustomerId = authService.isCustomer
                       ? int.tryParse(authService.userId ?? '')
                       : _selectedCustomer?.userId;
@@ -2414,18 +2426,16 @@ class _CustomerHomePageState extends State<CustomerHomePage> {
                         ? projectAddressController.text.trim()
                         : null,
                   );
+                  if (!mounted) return;
                   _currentConfigurationName = nameController.text.trim();
                   _loadConfigurations(); // 刷新配置列表
-                  Navigator.of(context).pop();
-                  ScaffoldMessenger.of(
-                    context,
-                  ).showSnackBar(SnackBar(content: Text('配置已儲存')));
+                  navigator.pop();
+                  messenger.showSnackBar(SnackBar(content: Text('配置已儲存')));
                 } catch (e) {
-                  ScaffoldMessenger.of(
-                    context,
-                  ).showSnackBar(SnackBar(content: Text('儲存失敗: $e')));
+                  if (!mounted) return;
+                  messenger.showSnackBar(SnackBar(content: Text('儲存失敗: $e')));
                 } finally {
-                  setState(() => _isLoading = false);
+                  if (mounted) setState(() => _isLoading = false);
                 }
               }
             },
@@ -2745,6 +2755,7 @@ class _CustomerHomePageState extends State<CustomerHomePage> {
     setState(() => _isLoading = true);
     try {
       final quoteData = await _quoteService.loadConfiguration(configName);
+      if (!mounted) return;
       if (quoteData != null) {
         setState(() {
           _loops.clear();
@@ -2779,6 +2790,7 @@ class _CustomerHomePageState extends State<CustomerHomePage> {
         ).showSnackBar(const SnackBar(content: Text('配置已載入')));
       }
     } catch (e) {
+      if (!mounted) return;
       // 載入失敗時恢復之前的配置名稱
       setState(() {
         _currentConfigurationName = previousConfigName;
@@ -2788,7 +2800,7 @@ class _CustomerHomePageState extends State<CustomerHomePage> {
         context,
       ).showSnackBar(SnackBar(content: Text('載入失敗: $e')));
     } finally {
-      setState(() => _isLoading = false);
+      if (mounted) setState(() => _isLoading = false);
     }
   }
 
@@ -2811,6 +2823,7 @@ class _CustomerHomePageState extends State<CustomerHomePage> {
       ),
     );
 
+    if (!mounted) return;
     if (confirm == true) {
       _deleteSelectedConfiguration(configName);
     }
@@ -2820,6 +2833,7 @@ class _CustomerHomePageState extends State<CustomerHomePage> {
     setState(() => _isLoading = true);
     try {
       await _quoteService.deleteConfiguration(configName);
+      if (!mounted) return;
       // 重置當前狀態
       setState(() {
         _currentConfigurationName = '新估價配置';
@@ -2839,11 +2853,12 @@ class _CustomerHomePageState extends State<CustomerHomePage> {
         context,
       ).showSnackBar(const SnackBar(content: Text('配置已刪除')));
     } catch (e) {
+      if (!mounted) return;
       ScaffoldMessenger.of(
         context,
       ).showSnackBar(SnackBar(content: Text('刪除失敗: $e')));
     } finally {
-      setState(() => _isLoading = false);
+      if (mounted) setState(() => _isLoading = false);
     }
   }
 }
