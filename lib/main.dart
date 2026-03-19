@@ -79,11 +79,12 @@ class _AppInitializerState extends State<AppInitializer> {
   @override
   void initState() {
     super.initState();
+    // 在進入 async gap 前先取得 service 參照
+    final authService = context.read<AuthService>();
+    final attendanceService = context.read<AttendanceService>();
     // 應用啟動時初始化共享數據（需等登入後再獲取）
     Future.microtask(() {
-      final authService = context.read<AuthService>();
       if (authService.isLoggedIn) {
-        final attendanceService = context.read<AttendanceService>();
         attendanceService.fetchAndCacheWorkingStaff();
       }
     });
