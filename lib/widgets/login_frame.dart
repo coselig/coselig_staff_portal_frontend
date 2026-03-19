@@ -47,6 +47,9 @@ class _LoginFrameState extends State<LoginFrame> {
               height: 56,
               child: OutlinedButton.icon(
                 onPressed: () async {
+                  final messenger = ScaffoldMessenger.of(context);
+                  final uiSettingsProvider = context.read<UiSettingsProvider>();
+                  final attendanceService = context.read<AttendanceService>();
                   try {
                     // 初始化 Google Identity Services
                     html.ScriptElement script = html.ScriptElement()
@@ -107,41 +110,31 @@ class _LoginFrameState extends State<LoginFrame> {
                       final success = await authService.verifyGoogleToken(
                         idToken,
                       );
+                      if (!mounted) return;
                       if (success) {
-                        if (mounted) {
-                          context
-                              .read<UiSettingsProvider>().bindAuthService(
-                            authService,
-                          );
-                          context
-                              .read<AttendanceService>()
-                              .fetchAndCacheWorkingStaff();
-                          navigatorKey.currentState!.pushReplacementNamed(
-                            authService.isCustomer ? '/customer_home' : '/home',
-                          );
-                        }
+                        uiSettingsProvider.bindAuthService(authService);
+                        attendanceService.fetchAndCacheWorkingStaff();
+                        navigatorKey.currentState!.pushReplacementNamed(
+                          authService.isCustomer ? '/customer_home' : '/home',
+                        );
                       } else {
                         // 登入失敗，顯示錯誤訊息
-                        if (mounted) {
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            SnackBar(content: Text(authService.message)),
-                          );
-                        }
+                        messenger.showSnackBar(
+                          SnackBar(content: Text(authService.message)),
+                        );
                       }
                     } else {
                       // 用戶取消或超時
-                      if (mounted) {
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(content: Text('Google 登入已取消或超時')),
-                        );
-                      }
-                    }
-                  } catch (e) {
-                    if (mounted) {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        SnackBar(content: Text('Google 登入錯誤: $e')),
+                      if (!mounted) return;
+                      messenger.showSnackBar(
+                        const SnackBar(content: Text('Google 登入已取消或超時')),
                       );
                     }
+                  } catch (e) {
+                    if (!mounted) return;
+                    messenger.showSnackBar(
+                      SnackBar(content: Text('Google 登入錯誤: $e')),
+                    );
                   }
                 },
                 icon: const Icon(Icons.login, color: Colors.blue),
@@ -207,23 +200,19 @@ class _LoginFrameState extends State<LoginFrame> {
                 height: 56,
                 child: ElevatedButton(
                   onPressed: () async {
+                    final uiSettingsProvider = context.read<UiSettingsProvider>();
+                    final attendanceService = context.read<AttendanceService>();
                     final success = await authService.login(
                       accountController.text,
                       passwordController.text,
                     );
+                    if (!mounted) return;
                     if (success) {
-                      if (mounted) {
-                        context
-                            .read<UiSettingsProvider>().bindAuthService(
-                          authService,
-                        );
-                        context
-                            .read<AttendanceService>()
-                            .fetchAndCacheWorkingStaff();
-                        navigatorKey.currentState!.pushReplacementNamed(
-                          authService.isCustomer ? '/customer_home' : '/home',
-                        );
-                      }
+                      uiSettingsProvider.bindAuthService(authService);
+                      attendanceService.fetchAndCacheWorkingStaff();
+                      navigatorKey.currentState!.pushReplacementNamed(
+                        authService.isCustomer ? '/customer_home' : '/home',
+                      );
                     }
                     setState(() {});
                   },

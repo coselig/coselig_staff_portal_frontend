@@ -644,6 +644,7 @@ class _DiscoveryGeneratePageState extends State<DiscoveryGeneratePage> {
             underline: Container(),
             onChanged: (String? newValue) async {
               if (newValue != null) {
+                final messenger = ScaffoldMessenger.of(context);
                 setState(() {
                   _selectedConfiguration = newValue;
                 });
@@ -652,24 +653,16 @@ class _DiscoveryGeneratePageState extends State<DiscoveryGeneratePage> {
                   // 清空設備列表
                   _service.clearDevices();
                   if (mounted) {
-                    ScaffoldMessenger.of(
-                      context,
-                    ).showSnackBar(const SnackBar(content: Text('已清空配置')));
+                    messenger.showSnackBar(const SnackBar(content: Text('已清空配置')));
                   }
                 } else {
                   try {
                     await _service.loadConfiguration(newValue);
-                    if (mounted) {
-                      ScaffoldMessenger.of(
-                        context,
-                      ).showSnackBar(const SnackBar(content: Text('配置加載成功')));
-                    }
+                    if (!mounted) return;
+                    messenger.showSnackBar(const SnackBar(content: Text('配置加載成功')));
                   } catch (e) {
-                    if (mounted) {
-                      ScaffoldMessenger.of(
-                        context,
-                      ).showSnackBar(SnackBar(content: Text('加載配置失敗: $e')));
-                    }
+                    if (!mounted) return;
+                    messenger.showSnackBar(SnackBar(content: Text('加載配置失敗: $e')));
                   }
                 }
               }
@@ -691,6 +684,7 @@ class _DiscoveryGeneratePageState extends State<DiscoveryGeneratePage> {
             icon: const Icon(Icons.save),
             tooltip: '保存配置',
             onPressed: () async {
+              final messenger = ScaffoldMessenger.of(context);
               // 如果是新配置，彈出對話框輸入名稱
               if (_selectedConfiguration == '新配置') {
                 final nameController = TextEditingController();
@@ -725,11 +719,10 @@ class _DiscoveryGeneratePageState extends State<DiscoveryGeneratePage> {
 
                 if (newName != null && newName.isNotEmpty) {
                   if (newName == '新配置') {
-                    if (mounted) {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(content: Text('無法使用預設配置名稱')),
-                      );
-                    }
+                    if (!mounted) return;
+                    messenger.showSnackBar(
+                      const SnackBar(content: Text('無法使用預設配置名稱')),
+                    );
                     return;
                   }
 
@@ -740,17 +733,11 @@ class _DiscoveryGeneratePageState extends State<DiscoveryGeneratePage> {
                     });
                     _service.setConfigurationName(newName);
                     await _service.fetchConfigurations();
-                    if (mounted) {
-                      ScaffoldMessenger.of(
-                        context,
-                      ).showSnackBar(const SnackBar(content: Text('配置保存成功')));
-                    }
+                    if (!mounted) return;
+                    messenger.showSnackBar(const SnackBar(content: Text('配置保存成功')));
                   } catch (e) {
-                    if (mounted) {
-                      ScaffoldMessenger.of(
-                        context,
-                      ).showSnackBar(SnackBar(content: Text('保存配置失敗: $e')));
-                    }
+                    if (!mounted) return;
+                    messenger.showSnackBar(SnackBar(content: Text('保存配置失敗: $e')));
                   }
                 }
               } else {
@@ -758,17 +745,11 @@ class _DiscoveryGeneratePageState extends State<DiscoveryGeneratePage> {
                 try {
                   await _service.saveConfiguration(_selectedConfiguration!);
                   await _service.fetchConfigurations();
-                  if (mounted) {
-                    ScaffoldMessenger.of(
-                      context,
-                    ).showSnackBar(const SnackBar(content: Text('配置保存成功')));
-                  }
+                  if (!mounted) return;
+                  messenger.showSnackBar(const SnackBar(content: Text('配置保存成功')));
                 } catch (e) {
-                  if (mounted) {
-                    ScaffoldMessenger.of(
-                      context,
-                    ).showSnackBar(SnackBar(content: Text('保存配置失敗: $e')));
-                  }
+                  if (!mounted) return;
+                  messenger.showSnackBar(SnackBar(content: Text('保存配置失敗: $e')));
                 }
               }
             },
@@ -778,12 +759,11 @@ class _DiscoveryGeneratePageState extends State<DiscoveryGeneratePage> {
             icon: const Icon(Icons.delete, color: Colors.red),
             tooltip: '刪除配置',
             onPressed: () async {
+              final messenger = ScaffoldMessenger.of(context);
               if (_selectedConfiguration == null ||
                   _selectedConfiguration == '新配置') {
                 if (mounted) {
-                  ScaffoldMessenger.of(
-                    context,
-                  ).showSnackBar(const SnackBar(content: Text('請先選擇要刪除的配置')));
+                  messenger.showSnackBar(const SnackBar(content: Text('請先選擇要刪除的配置')));
                 }
                 return;
               }
@@ -818,17 +798,11 @@ class _DiscoveryGeneratePageState extends State<DiscoveryGeneratePage> {
                   });
                   _service.clearDevices();
                   await _service.fetchConfigurations();
-                  if (mounted) {
-                    ScaffoldMessenger.of(
-                      context,
-                    ).showSnackBar(const SnackBar(content: Text('配置刪除成功')));
-                  }
+                  if (!mounted) return;
+                  messenger.showSnackBar(const SnackBar(content: Text('配置刪除成功')));
                 } catch (e) {
-                  if (mounted) {
-                    ScaffoldMessenger.of(
-                      context,
-                    ).showSnackBar(SnackBar(content: Text('刪除配置失敗: $e')));
-                  }
+                  if (!mounted) return;
+                  messenger.showSnackBar(SnackBar(content: Text('刪除配置失敗: $e')));
                 }
               }
             },

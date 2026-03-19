@@ -97,10 +97,11 @@ class _StaffHomePageState extends State<StaffHomePage> {
     );
 
     if (result != null && result.isNotEmpty) {
+      if (!mounted) return;
+      final attendanceService = context.read<AttendanceService>();
+      final authService = context.read<AuthService>();
       try {
         // 調用後端 API 更新時段名稱
-        final attendanceService = context.read<AttendanceService>();
-
         final success = await attendanceService.updatePeriodName(
           currentPeriod,
           result,
@@ -108,7 +109,6 @@ class _StaffHomePageState extends State<StaffHomePage> {
 
         if (success) {
           // 刷新今日打卡資料
-          final authService = context.read<AuthService>();
           if (authService.userId != null) {
             await attendanceService.getTodayAttendance(authService.userId!);
             attendanceService.updateDynamicPeriods();
@@ -167,6 +167,7 @@ class _StaffHomePageState extends State<StaffHomePage> {
     );
 
     if (result == true) {
+      if (!mounted) return;
       final attendance = context.read<AttendanceService>();
       if (isCheckIn) {
         await attendance.checkIn(userId, period: period);
