@@ -1,5 +1,4 @@
 import 'dart:async';
-import 'dart:js' as js;
 import 'package:coselig_staff_portal/main.dart';
 import 'package:coselig_staff_portal/services/attendance_service.dart';
 import 'package:coselig_staff_portal/services/auth_service.dart';
@@ -64,13 +63,13 @@ class _LoginFrameState extends State<LoginFrame> {
                     // 初始化 GIS
                     html.ScriptElement initScript = html.ScriptElement()
                       ..innerHtml = '''
-                        window.googleLoginResult = null;
+                        sessionStorage.removeItem('googleLoginResult');
                         window.googleLoginComplete = null;
                         if (window.google && window.google.accounts && window.google.accounts.id) {
                           window.google.accounts.id.initialize({
                             client_id: '120974904090-7i1lmj710vvvfjaf71du6tdb4sun8i8q.apps.googleusercontent.com',
                             callback: function(response) {
-                              window.googleLoginResult = response.credential;
+                              sessionStorage.setItem('googleLoginResult', response.credential || '');
                               // 通知 Flutter 應用程式登入完成
                               if (window.googleLoginComplete) {
                                 window.googleLoginComplete(response.credential);
@@ -90,14 +89,14 @@ class _LoginFrameState extends State<LoginFrame> {
                     for (int i = 0; i < 120; i++) {
                       await Future.delayed(const Duration(milliseconds: 500));
                       try {
-                        // 使用 js 來訪問 window 屬性
-                        final result = js.context['googleLoginResult'];
-                        if (result != null &&
-                            result is String &&
-                            result.isNotEmpty) {
+                        final result =
+                            html.window.sessionStorage['googleLoginResult'];
+                        if (result != null && result.isNotEmpty) {
                           idToken = result;
                           // 清除結果
-                          js.context['googleLoginResult'] = null;
+                          html.window.sessionStorage.remove(
+                            'googleLoginResult',
+                          );
                           break;
                         }
                       } catch (e) {
@@ -176,9 +175,7 @@ class _LoginFrameState extends State<LoginFrame> {
                 ),
                 child: Text(
                   showPasswordLogin ? '隱藏帳號密碼登入' : '使用帳號密碼登入',
-                  style: TextStyle(
-                    fontSize: 16,
-                  ),
+                  style: TextStyle(fontSize: 16),
                 ),
               ),
             ),
@@ -200,7 +197,8 @@ class _LoginFrameState extends State<LoginFrame> {
                 height: 56,
                 child: ElevatedButton(
                   onPressed: () async {
-                    final uiSettingsProvider = context.read<UiSettingsProvider>();
+                    final uiSettingsProvider = context
+                        .read<UiSettingsProvider>();
                     final attendanceService = context.read<AttendanceService>();
                     final success = await authService.login(
                       accountController.text,
@@ -236,12 +234,12 @@ class _LoginFrameState extends State<LoginFrame> {
               ),
             ],
             // SizedBox(height: 8),
-          //     child: Text(
-          //       authService.message,
-          //       style: const TextStyle(fontFamily: 'Courier', fontSize: 14),
-          //     ),
-          //   ),
-          // ),
+            //     child: Text(
+            //       authService.message,
+            //       style: const TextStyle(fontFamily: 'Courier', fontSize: 14),
+            //     ),
+            //   ),
+            // ),
           ],
         ),
       ),
