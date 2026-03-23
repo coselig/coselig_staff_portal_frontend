@@ -97,10 +97,17 @@ class _CustomerHomePageState extends State<CustomerHomePage> {
     final spacesFromLoops = _loops.map((l) => l.space).toSet();
     final spacesFromSwitches = _switches.map((s) => s.space).toSet();
     final allSpaces = {...spacesFromLoops, ...spacesFromSwitches};
+    final newSpaces = <String>[];
     for (final space in allSpaces) {
       if (!_spaces.contains(space)) {
-        _spaces.add(space);
+        newSpaces.add(space);
       }
+    }
+    if (newSpaces.isNotEmpty) {
+      setState(() {
+        _spaces.addAll(newSpaces);
+      });
+      _autoSave();
     }
   }
 
@@ -340,6 +347,7 @@ class _CustomerHomePageState extends State<CustomerHomePage> {
           powerSupplies: _powerSupplies,
           boardMaterials: _boardMaterials,
           wiring: _wiringItems,
+          spaces: _spaces,
           ceilingHasLn: _ceilingHasLn,
           ceilingHasMaintenanceHole: _ceilingHasMaintenanceHole,
           switchHasLn: _switchHasLn,
@@ -2306,6 +2314,7 @@ class _CustomerHomePageState extends State<CustomerHomePage> {
                   powerSupplies: _powerSupplies,
                   boardMaterials: _boardMaterials,
                   wiring: _wiringItems,
+                  spaces: _spaces,
                   ceilingHasLn: _ceilingHasLn,
                   ceilingHasMaintenanceHole: _ceilingHasMaintenanceHole,
                   switchHasLn: _switchHasLn,
@@ -2405,6 +2414,7 @@ class _CustomerHomePageState extends State<CustomerHomePage> {
                     powerSupplies: _powerSupplies,
                     boardMaterials: _boardMaterials,
                     wiring: _wiringItems,
+                    spaces: _spaces,
                     ceilingHasLn: _ceilingHasLn,
                     ceilingHasMaintenanceHole: _ceilingHasMaintenanceHole,
                     switchHasLn: _switchHasLn,
@@ -2780,10 +2790,15 @@ class _CustomerHomePageState extends State<CustomerHomePage> {
           _switches.clear();
           _switches.addAll(quoteData.switches);
 
-          // 從迴路重建空間列表
+          // 優先使用載入的 spaces（若有），否則從迴路重建
           _spaces.clear();
-          _spaces.add('未分類');
-          _rebuildSpacesFromLoops();
+          if (quoteData.spaces.isNotEmpty) {
+            _spaces.addAll(quoteData.spaces);
+            if (!_spaces.contains('未分類')) _spaces.insert(0, '未分類');
+          } else {
+            _spaces.add('未分類');
+            _rebuildSpacesFromLoops();
+          }
         });
         ScaffoldMessenger.of(
           context,

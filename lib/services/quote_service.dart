@@ -65,6 +65,7 @@ class QuoteData {
   final List<MaterialItem> boardMaterials;
   final List<MaterialItem> wiring;
   final List<SwitchModel> switches;
+  final List<String> spaces;
 
   // 樣態選項
   final bool ceilingHasLn;
@@ -80,6 +81,7 @@ class QuoteData {
     required this.boardMaterials,
     required this.wiring,
     required this.switches,
+    required this.spaces,
     required this.ceilingHasLn,
     required this.ceilingHasMaintenanceHole,
     required this.switchHasLn,
@@ -127,6 +129,8 @@ class QuoteData {
               ?.map((s) => SwitchModel.fromJson(s))
               .toList() ??
           [],
+      spaces:
+          (json['spaces'] as List?)?.map((s) => s.toString()).toList() ?? [],
       ceilingHasLn: json['ceilingHasLn'] ?? false,
       ceilingHasMaintenanceHole: json['ceilingHasMaintenanceHole'] ?? false,
       switchHasLn: json['switchHasLn'] ?? false,
@@ -143,6 +147,7 @@ class QuoteData {
       'boardMaterials': boardMaterials.map((m) => m.toJson()).toList(),
       'wiring': wiring.map((m) => m.toJson()).toList(),
       'switches': switches.map((s) => s.toJson()).toList(),
+      'spaces': spaces,
       'ceilingHasLn': ceilingHasLn,
       'ceilingHasMaintenanceHole': ceilingHasMaintenanceHole,
       'switchHasLn': switchHasLn,
