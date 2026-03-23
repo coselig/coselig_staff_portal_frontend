@@ -21,6 +21,7 @@ import 'widgets/quote_result_dialog.dart';
 import 'widgets/edit_loop_dialog.dart';
 
 import 'package:coselig_staff_portal/models/quote/loop_info.dart';
+import 'package:coselig_staff_portal/pages/customer/wiring_diagram_page.dart';
 
 class CustomerHomePage extends StatefulWidget {
   const CustomerHomePage({super.key});
@@ -692,6 +693,26 @@ class _CustomerHomePageState extends State<CustomerHomePage> {
                   ? () => _showDeleteConfirmation(_currentConfigurationName)
                   : null,
               tooltip: _selectedConfigurationName != null ? '刪除當前配置' : '尚未載入配置',
+            ),
+            // 配線圖預覽按鈕
+            IconButton(
+              iconSize: context.scaledIconSize(24),
+              icon: Icon(
+                Icons.alt_route,
+                color: Theme.of(context).colorScheme.primary,
+              ),
+              onPressed: () {
+                Navigator.of(context).push(
+                  MaterialPageRoute(
+                    builder: (_) => WiringDiagramPage(
+                      powerSupplies: _powerSupplies,
+                      modules: _modules,
+                      loops: _loops,
+                    ),
+                  ),
+                );
+              },
+              tooltip: '配線圖預覽',
             ),
           ],
         ],
