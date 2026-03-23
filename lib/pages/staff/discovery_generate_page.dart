@@ -1464,6 +1464,20 @@ class _DiscoveryGeneratePageState extends State<DiscoveryGeneratePage> {
                       ),
                     ),
                   ),
+                  SizedBox(
+                    width: w('genBtn'),
+                    child: ElevatedButton.icon(
+                      onPressed: generateAndCopyYamlOutput,
+                      icon: const Icon(Icons.copy),
+                      label: const Text('生成 YAML'),
+                      style: ElevatedButton.styleFrom(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 12,
+                          vertical: 20,
+                        ),
+                      ),
+                    ),
+                  ),
                 ],
               );
             },
