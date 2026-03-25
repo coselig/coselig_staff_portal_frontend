@@ -59,6 +59,7 @@ class _SplashScreenState extends State<SplashScreen> {
             currentPath == '/admin' ||
             currentPath == '/ble' ||
             currentPath == '/customer_home' ||
+            currentPath == '/customer_quote_builder' ||
             currentPath == '/customer_profile' ||
             currentPath == '/home' ||
             currentPath == '/user_data' ||

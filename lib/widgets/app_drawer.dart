@@ -100,7 +100,7 @@ class AppDrawer extends StatelessWidget {
               leading: Icon(Icons.calculate),
               title: Text('估價系統'),
               onTap: () {
-                navigatorKey.currentState!.pushNamed('/customer_home');
+                navigatorKey.currentState!.pushNamed('/customer_quote_builder');
               },
             ),
             ExpansionTile(
@@ -149,6 +149,13 @@ class AppDrawer extends StatelessWidget {
           ] else ...[
             // 顧客特定的選項
             ListTile(
+              leading: Icon(Icons.home),
+              title: Text('首頁'),
+              onTap: () {
+                navigatorKey.currentState!.pushNamed('/customer_home');
+              },
+            ),
+            ListTile(
               leading: Icon(Icons.person),
               title: Text('個人資料'),
               onTap: () {
@@ -159,7 +166,7 @@ class AppDrawer extends StatelessWidget {
               leading: Icon(Icons.calculate),
               title: Text('估價系統'),
               onTap: () {
-                navigatorKey.currentState!.pushNamed('/customer_home');
+                navigatorKey.currentState!.pushNamed('/customer_quote_builder');
               },
             ),
           ],
