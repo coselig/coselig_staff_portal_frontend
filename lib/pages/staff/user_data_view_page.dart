@@ -98,7 +98,7 @@ class _UserDataViewPageState extends State<UserDataViewPage> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('用戶資料預覽（管理員）'),
+        title: const Text('用戶資料預覽'),
       ),
       drawer: const AppDrawer(),
       body: _isLoading && _allUsers.isEmpty

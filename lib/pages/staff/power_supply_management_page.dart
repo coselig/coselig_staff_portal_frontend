@@ -1,5 +1,5 @@
 import 'package:coselig_staff_portal/models/quote/quote_models.dart';
-import 'package:coselig_staff_portal/pages/admin/generic_management_page.dart';
+import 'package:coselig_staff_portal/pages/staff/generic_management_page.dart';
 import 'package:coselig_staff_portal/services/quote_service.dart';
 import 'package:flutter/material.dart';
 
