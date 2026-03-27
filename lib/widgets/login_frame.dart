@@ -21,12 +21,9 @@ class _LoginFrameState extends State<LoginFrame> {
   static const String _googleClientId =
       '120974904090-7i1lmj710vvvfjaf71du6tdb4sun8i8q.apps.googleusercontent.com';
 
-  final TextEditingController accountController = TextEditingController();
-  final TextEditingController passwordController = TextEditingController();
   final GoogleSignIn _googleSignIn = GoogleSignIn.instance;
 
   StreamSubscription<GoogleSignInAuthenticationEvent>? _googleAuthSubscription;
-  bool showPasswordLogin = false;
   bool _isGoogleReady = !kIsWeb;
   bool _isGoogleSigningIn = false;
   String? _googleErrorMessage;
@@ -42,8 +39,6 @@ class _LoginFrameState extends State<LoginFrame> {
   @override
   void dispose() {
     _googleAuthSubscription?.cancel();
-    accountController.dispose();
-    passwordController.dispose();
     super.dispose();
   }
 
@@ -235,110 +230,16 @@ class _LoginFrameState extends State<LoginFrame> {
   Widget build(BuildContext context) {
     final authService = context.watch<AuthService>();
     final screenWidth = MediaQuery.of(context).size.width;
-    final isSmallScreen = screenWidth < 600;
-    final frameWidth = isSmallScreen ? screenWidth * 0.85 : screenWidth * 0.4;
-    final buttonWidth = (frameWidth - 32).clamp(220.0, 400.0).toDouble();
+    final frameWidth = (screenWidth < 600 ? screenWidth * 0.85 : 360.0)
+        .clamp(220.0, 400.0)
+        .toDouble();
 
-    return Container(
-      decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(12),
-        color: const Color.fromARGB(28, 211, 80, 40),
-      ),
-      padding: const EdgeInsets.all(16.0),
+    return SizedBox(
       width: frameWidth,
-      constraints: BoxConstraints(
-        minHeight: isSmallScreen ? 300 : 250,
-        maxHeight:
-            MediaQuery.of(context).size.height * (isSmallScreen ? 0.9 : 0.8),
-      ),
-      child: SingleChildScrollView(
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            _buildGoogleLoginSection(
-              context: context,
-              buttonWidth: buttonWidth,
-              authService: authService,
-            ),
-            const SizedBox(height: 16),
-            SizedBox(
-              width: double.infinity,
-              height: 48,
-              child: OutlinedButton(
-                onPressed: () {
-                  setState(() {
-                    showPasswordLogin = !showPasswordLogin;
-                  });
-                },
-                style: OutlinedButton.styleFrom(
-                  side: BorderSide(
-                    color: Theme.of(context).colorScheme.outline,
-                  ),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(8),
-                  ),
-                ),
-                child: Text(
-                  showPasswordLogin ? '隱藏帳號密碼登入' : '使用帳號密碼登入',
-                  style: const TextStyle(fontSize: 16),
-                ),
-              ),
-            ),
-            if (showPasswordLogin) ...[
-              const SizedBox(height: 16),
-              TextField(
-                controller: accountController,
-                decoration: const InputDecoration(labelText: '電子郵件/帳號'),
-              ),
-              TextField(
-                controller: passwordController,
-                decoration: const InputDecoration(labelText: '密碼'),
-                obscureText: true,
-              ),
-              const SizedBox(height: 20),
-              SizedBox(
-                width: double.infinity,
-                height: 56,
-                child: ElevatedButton(
-                  onPressed: () async {
-                    final uiSettingsProvider = context
-                        .read<UiSettingsProvider>();
-                    final attendanceService = context.read<AttendanceService>();
-                    final success = await authService.login(
-                      accountController.text,
-                      passwordController.text,
-                    );
-                    if (!mounted) return;
-                    if (success) {
-                      uiSettingsProvider.bindAuthService(authService);
-                      attendanceService.fetchAndCacheWorkingStaff();
-                      navigatorKey.currentState!.pushReplacementNamed(
-                        authService.isCustomer ? '/customer_home' : '/home',
-                      );
-                    }
-                    setState(() {});
-                  },
-                  style: ElevatedButton.styleFrom(
-                    padding: const EdgeInsets.symmetric(
-                      vertical: 16,
-                      horizontal: 32,
-                    ),
-                    textStyle: const TextStyle(
-                      fontSize: 18,
-                      fontWeight: FontWeight.bold,
-                    ),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                    elevation: 3,
-                    tapTargetSize: MaterialTapTargetSize.padded,
-                  ),
-                  child: const Text('登入'),
-                ),
-              ),
-            ],
-          ],
-        ),
+      child: _buildGoogleLoginSection(
+        context: context,
+        buttonWidth: frameWidth,
+        authService: authService,
       ),
     );
   }

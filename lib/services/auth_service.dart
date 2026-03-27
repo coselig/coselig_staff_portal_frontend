@@ -11,8 +11,6 @@ class AuthService extends ChangeNotifier {
   static const String baseUrl =
       'https://employeeservice.coseligtest.workers.dev';
 
-  // 移除 GoogleSignIn，使用自定義 Google Identity Services 實現
-
   String? name;
   String? chineseName;
   String? email;
@@ -116,108 +114,6 @@ class AuthService extends ChangeNotifier {
   }
 
   /* =========
-   * 登入
-   * ========= */
-  Future<bool> login(String email, String password) async {
-    isLoading = true;
-    message = '正在登入...';
-    notifyListeners();
-
-    try {
-      // 支援 email 或 name 登入
-      Map<String, dynamic> loginBody;
-      if (email.contains('@')) {
-        loginBody = {'email': email, 'password': password};
-      } else {
-        loginBody = {'name': email, 'password': password};
-      }
-      final res = await _client
-          .post(
-            Uri.parse('$baseUrl/api/login'),
-            headers: {'Content-Type': 'application/json'},
-            body: jsonEncode(loginBody),
-          )
-          .timeout(const Duration(seconds: 10));
-
-      final data = jsonDecode(res.body);
-
-      if (res.statusCode == 200 && data['user'] != null) {
-        name = data['user']['name'];
-        this.email = data['user']['email'];
-        role = data['user']['role'];
-        userId = data['user']['id']?.toString();
-        themeMode = data['user']['theme_mode'];
-        fontSizeScale = (data['user']['font_size_scale'] as num?)?.toDouble();
-        showWorkingStaffCard =
-            data['user']['show_working_staff_card'] == 1 ||
-            data['user']['show_working_staff_card'] == true;
-        message = '登入成功';
-        isLoading = false;
-        notifyListeners();
-        return true;
-      } else {
-        _clearUser();
-        message = data['error'] ?? '登入失敗';
-      }
-    } catch (e) {
-      if (e is TimeoutException) {
-        message = '網路連線超時，請檢查網路';
-      } else {
-        message = '請求失敗: $e';
-      }
-    }
-
-    isLoading = false;
-    notifyListeners();
-    return false;
-  }
-
-  /* =========
-   * 註冊
-   * ========= */
-  Future<bool> register(String name, String email, String password) async {
-    isLoading = true;
-    message = '註冊中...';
-    notifyListeners();
-
-    try {
-      final res = await _client
-          .post(
-            Uri.parse('$baseUrl/api/register'),
-            headers: {'Content-Type': 'application/json'},
-            body: jsonEncode({
-              'name': name,
-              'email': email,
-              'password': password,
-              'role': 'customer',
-            }),
-          )
-          .timeout(const Duration(seconds: 10));
-
-      final data = jsonDecode(res.body);
-
-      if (res.statusCode == 201) {
-        message = '註冊成功，請登入';
-        isLoading = false;
-        notifyListeners();
-        return true;
-      } else {
-        message = data['error'] ?? '註冊失敗';
-      }
-    } catch (e) {
-      if (e is TimeoutException) {
-        message = '網路連線超時，請檢查網路';
-      } else {
-        message = '請求失敗: $e';
-      }
-    }
-
-    isLoading = false;
-    notifyListeners();
-    return false;
-  }
-
-  /* =========
    * 登出
    * ========= */
   Future<void> logout() async {
@@ -235,38 +131,6 @@ class AuthService extends ChangeNotifier {
     message = '已登出';
     isLoading = false;
     notifyListeners();
-  }
-
-  /* =========
-   * Google 登入 - 簡化版本（實際由 login_frame.dart 處理）
-   * ========= */
-  Future<bool> googleLogin() async {
-    // 這個方法現在主要用於顯示訊息，實際的 Google 登入邏輯在 login_frame.dart 中
-    isLoading = true;
-    message = '正在準備 Google 登入...';
-    notifyListeners();
-
-    try {
-      message = '請使用瀏覽器的 Google 登入提示';
-      notifyListeners();
-
-      // 等待用戶完成登入（實際上會由 Google Identity Services 處理）
-      await Future.delayed(const Duration(seconds: 2));
-
-      // 注意：實際的 Google 登入邏輯現在在 login_frame.dart 中實現
-      // 這裡只是一個占位符方法
-      message = 'Google 登入已由登入頁面處理';
-      isLoading = false;
-      notifyListeners();
-      return false; // 返回 false，因為實際登入由 login_frame.dart 處理
-
-    } catch (e) {
-      message = 'Google 登入準備失敗: $e';
-      _clearUser();
-      isLoading = false;
-      notifyListeners();
-      return false;
-    }
   }
 
   /* =========

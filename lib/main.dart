@@ -10,7 +10,6 @@ import 'package:coselig_staff_portal/pages/staff/device_config_management_page.d
 import 'package:coselig_staff_portal/pages/staff/fixture_type_management_page.dart';
 import 'package:coselig_staff_portal/pages/staff/module_management_page.dart';
 import 'package:coselig_staff_portal/pages/staff/power_supply_management_page.dart';
-import 'package:coselig_staff_portal/pages/general/register_page.dart';
 import 'package:coselig_staff_portal/pages/general/splash_page.dart';
 import 'package:coselig_staff_portal/pages/staff/staff_home_page.dart';
 import 'package:coselig_staff_portal/pages/customer/customer_home_page.dart';
@@ -164,7 +163,6 @@ class MainApp extends StatelessWidget {
                 '/customer_quote_builder': (context) =>
                     const CustomerQuoteBuilderPage(),
                 '/customer_profile': (context) => const CustomerProfilePage(),
-                '/register': (context) => const RegisterPage(),
                 '/admin': (context) => const AllAttendanceViewPage(),
                 '/discovery_generate': (context) =>
                     const DiscoveryGeneratePage(),
