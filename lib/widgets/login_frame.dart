@@ -143,6 +143,11 @@ class _LoginFrameState extends State<LoginFrame> {
     required AuthService authService,
   }) {
     final bool isBusy = _isGoogleSigningIn || authService.isLoading;
+    final brightness = Theme.of(context).brightness;
+    final googleButtonTheme =
+        brightness == Brightness.dark
+            ? google_web.GSIButtonTheme.filledBlack
+            : google_web.GSIButtonTheme.outline;
 
     if (!kIsWeb) {
       return SizedBox(
@@ -204,7 +209,7 @@ class _LoginFrameState extends State<LoginFrame> {
               child: Center(
                 child: google_web.renderButton(
                   configuration: google_web.GSIButtonConfiguration(
-                    theme: google_web.GSIButtonTheme.outline,
+                    theme: googleButtonTheme,
                     text: google_web.GSIButtonText.signinWith,
                     size: google_web.GSIButtonSize.large,
                     shape: google_web.GSIButtonShape.rectangular,
