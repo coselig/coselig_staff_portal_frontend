@@ -68,7 +68,7 @@ class _AuthPageState extends State<AuthPage> {
                   ),
                   const SizedBox(height: 8),
                   const Text(
-                    '本應用程式僅限 @coselig.com 域名下的 Google 帳號使用，旨在提高公司內部管理效率和員工工作體驗。',
+                    '本應用程式支援使用 Google 帳號登入，實際可使用的功能與資料範圍仍依帳號角色與權限而定。',
                     style: TextStyle(fontSize: 14, fontStyle: FontStyle.italic),
                   ),
                   const SizedBox(height: 12),
