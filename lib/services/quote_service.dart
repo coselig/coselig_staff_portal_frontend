@@ -1,8 +1,10 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:http/browser_client.dart';
 import 'dart:convert';
 import 'package:coselig_staff_portal/main.dart';
 import 'package:coselig_staff_portal/models/quote/quote_models.dart';
+import 'package:universal_html/html.dart' as html;
 
 class QuoteConfiguration {
   final int id;
@@ -155,14 +157,43 @@ class QuoteData {
   }
 }
 
+class QuoteRealtimeEvent {
+  final String type;
+  final int? quoteId;
+  final String? quoteName;
+  final String? action;
+  final QuoteData? quoteData;
+
+  const QuoteRealtimeEvent({
+    required this.type,
+    this.quoteId,
+    this.quoteName,
+    this.action,
+    this.quoteData,
+  });
+
+  bool get isConfigurationsUpdated => type == 'quote-configurations-updated';
+  bool get isFormSnapshot => type == 'quote-form-snapshot';
+  bool get isAccessDenied => type == 'quote-form-access-denied';
+}
+
 class QuoteService extends ChangeNotifier {
   final String baseUrl = 'https://employeeservice.coseligtest.workers.dev';
   final BrowserClient _client = BrowserClient()..withCredentials = true;
   final List<QuoteConfiguration> _configurations = [];
   final List<ModuleOption> _moduleOptions = [];
   final List<FixtureTypeData> _fixtureTypeOptions = [];
+  final StreamController<QuoteRealtimeEvent> _realtimeEvents =
+      StreamController<QuoteRealtimeEvent>.broadcast();
   bool _isLoading = false;
   String? _error;
+  bool _isFetchingConfigurations = false;
+  html.WebSocket? _quoteSyncSocket;
+  Timer? _quoteSyncReconnectTimer;
+  bool _shouldKeepQuoteRealtime = false;
+  int _quoteSyncReconnectAttempt = 0;
+  bool _isQuoteRealtimeConnected = false;
+  int? _activeQuoteId;
 
   List<QuoteConfiguration> get configurations =>
       List.unmodifiable(_configurations);
@@ -179,11 +210,35 @@ class QuoteService extends ChangeNotifier {
       : defaultFixtureTypeData;
   bool get isLoading => _isLoading;
   String? get error => _error;
+  bool get isQuoteRealtimeConnected => _isQuoteRealtimeConnected;
+  Stream<QuoteRealtimeEvent> get realtimeEvents => _realtimeEvents.stream;
 
-  Future<void> fetchConfigurations() async {
-    _isLoading = true;
-    _error = null;
-    notifyListeners();
+  Uri get _quoteSyncWebSocketUri {
+    final uri = Uri.parse('$baseUrl/api/quote-sync/ws');
+    final socketScheme = uri.scheme == 'https' ? 'wss' : 'ws';
+    return uri.replace(scheme: socketScheme);
+  }
+
+  int? _normalizeQuoteId(dynamic value) {
+    final normalized = int.tryParse(value?.toString() ?? '');
+    if (normalized == null || normalized <= 0) {
+      return null;
+    }
+
+    return normalized;
+  }
+
+  Future<void> fetchConfigurations({bool silent = false}) async {
+    if (_isFetchingConfigurations) {
+      return;
+    }
+
+    _isFetchingConfigurations = true;
+    if (!silent) {
+      _isLoading = true;
+      _error = null;
+      notifyListeners();
+    }
 
     try {
       final response = await _client.get(
@@ -207,17 +262,21 @@ class QuoteService extends ChangeNotifier {
     } catch (e) {
       _error = 'Network error: $e';
     } finally {
-      _isLoading = false;
+      _isFetchingConfigurations = false;
+      if (!silent) {
+        _isLoading = false;
+      }
       notifyListeners();
     }
   }
 
-  Future<void> saveConfiguration(
+  Future<int?> saveConfiguration(
     String name,
     QuoteData quoteData, {
     int? customerUserId,
     String? projectName,
     String? projectAddress,
+    bool broadcastListUpdate = true,
   }) async {
     _isLoading = true;
     _error = null;
@@ -234,6 +293,7 @@ class QuoteService extends ChangeNotifier {
       if (projectAddress != null && projectAddress.isNotEmpty) {
         requestBody['projectAddress'] = projectAddress;
       }
+      requestBody['broadcastListUpdate'] = broadcastListUpdate;
       final response = await _client.post(
         Uri.parse('$baseUrl/api/quote-configurations'),
         headers: {'Content-Type': 'application/json'},
@@ -241,7 +301,12 @@ class QuoteService extends ChangeNotifier {
       );
 
       if (response.statusCode == 200) {
-        await fetchConfigurations(); // Refresh the list
+        final data = jsonDecode(response.body);
+        final configurationId = _normalizeQuoteId(data['configurationId']);
+        if (broadcastListUpdate) {
+          await fetchConfigurations(); // Refresh the list
+        }
+        return configurationId;
       } else if (response.statusCode == 401) {
         _error = 'Unauthorized';
         navigatorKey.currentState?.pushReplacementNamed('/login');
@@ -257,6 +322,215 @@ class QuoteService extends ChangeNotifier {
       _isLoading = false;
       notifyListeners();
     }
+
+    return null;
+  }
+
+  void startQuoteRealtimeSync() {
+    _shouldKeepQuoteRealtime = true;
+    _quoteSyncReconnectTimer?.cancel();
+
+    final socket = _quoteSyncSocket;
+    if (socket != null &&
+        (socket.readyState == html.WebSocket.OPEN ||
+            socket.readyState == html.WebSocket.CONNECTING)) {
+      return;
+    }
+
+    _connectQuoteSyncSocket();
+  }
+
+  void stopQuoteRealtimeSync() {
+    _shouldKeepQuoteRealtime = false;
+    _quoteSyncReconnectTimer?.cancel();
+    _quoteSyncReconnectTimer = null;
+    _quoteSyncReconnectAttempt = 0;
+    _activeQuoteId = null;
+
+    final socket = _quoteSyncSocket;
+    _quoteSyncSocket = null;
+    _setQuoteRealtimeConnected(false);
+
+    if (socket != null) {
+      try {
+        socket.close(1000, 'quote-sync-stopped');
+      } catch (_) {
+        debugPrint('關閉估價同步 WebSocket 失敗');
+      }
+    }
+  }
+
+  void setActiveQuoteSyncId(int? quoteId) {
+    _activeQuoteId = _normalizeQuoteId(quoteId);
+    final socket = _quoteSyncSocket;
+    if (socket == null || socket.readyState != html.WebSocket.OPEN) {
+      return;
+    }
+
+    if (_activeQuoteId == null) {
+      _sendQuoteSyncMessage({'type': 'unsubscribe-quote-form'});
+    } else {
+      _sendQuoteSyncMessage({
+        'type': 'subscribe-quote-form',
+        'quoteId': _activeQuoteId,
+      });
+    }
+  }
+
+  void publishQuoteFormSnapshot(int quoteId, QuoteData quoteData) {
+    final normalizedQuoteId = _normalizeQuoteId(quoteId);
+    if (normalizedQuoteId == null) {
+      return;
+    }
+
+    _activeQuoteId = normalizedQuoteId;
+    _sendQuoteSyncMessage({
+      'type': 'quote-form-snapshot',
+      'quoteId': normalizedQuoteId,
+      'quoteData': quoteData.toJson(),
+    });
+  }
+
+  void _connectQuoteSyncSocket() {
+    try {
+      final socket = html.WebSocket(_quoteSyncWebSocketUri.toString());
+      _quoteSyncSocket = socket;
+
+      socket.onOpen.listen((_) {
+        if (_quoteSyncSocket != socket) return;
+        _quoteSyncReconnectAttempt = 0;
+        _setQuoteRealtimeConnected(true);
+        if (_activeQuoteId != null) {
+          _sendQuoteSyncMessage({
+            'type': 'subscribe-quote-form',
+            'quoteId': _activeQuoteId,
+          });
+        }
+      });
+
+      socket.onMessage.listen((event) {
+        if (_quoteSyncSocket != socket) return;
+        final data = event.data;
+        if (data is String) {
+          unawaited(_handleQuoteSyncMessage(data));
+        }
+      });
+
+      socket.onError.listen((_) {
+        if (_quoteSyncSocket != socket) return;
+        debugPrint('估價同步 WebSocket 發生錯誤');
+      });
+
+      socket.onClose.listen((_) {
+        if (_quoteSyncSocket != socket) return;
+        _quoteSyncSocket = null;
+        _setQuoteRealtimeConnected(false);
+        _scheduleQuoteSyncReconnect();
+      });
+    } catch (e) {
+      debugPrint('建立估價同步 WebSocket 失敗: $e');
+      _scheduleQuoteSyncReconnect();
+    }
+  }
+
+  Future<void> _handleQuoteSyncMessage(String rawMessage) async {
+    try {
+      final decoded = jsonDecode(rawMessage);
+      if (decoded is! Map) {
+        return;
+      }
+
+      final payload = Map<String, dynamic>.from(decoded);
+      final type = payload['type'];
+
+      if (type == 'quote-configurations-updated') {
+        unawaited(fetchConfigurations(silent: true));
+        _realtimeEvents.add(
+          QuoteRealtimeEvent(
+            type: type,
+            quoteId: _normalizeQuoteId(payload['quoteId']),
+            action: payload['action']?.toString(),
+            quoteName: payload['quoteName']?.toString(),
+          ),
+        );
+        return;
+      }
+
+      if (type == 'quote-form-snapshot') {
+        final quoteId = _normalizeQuoteId(payload['quoteId']);
+        final quoteDataJson = payload['quoteData'];
+        if (quoteId == null || quoteDataJson is! Map) {
+          return;
+        }
+
+        _realtimeEvents.add(
+          QuoteRealtimeEvent(
+            type: type,
+            quoteId: quoteId,
+            quoteName: payload['quoteName']?.toString(),
+            quoteData: QuoteData.fromJson(
+              Map<String, dynamic>.from(quoteDataJson),
+            ),
+          ),
+        );
+        return;
+      }
+
+      if (type == 'quote-form-access-denied') {
+        final quoteId = _normalizeQuoteId(payload['quoteId']);
+        _realtimeEvents.add(
+          QuoteRealtimeEvent(
+            type: type,
+            quoteId: quoteId,
+            quoteName: payload['quoteName']?.toString(),
+          ),
+        );
+      }
+    } catch (e) {
+      debugPrint('解析估價同步訊息失敗: $e');
+    }
+  }
+
+  void _scheduleQuoteSyncReconnect() {
+    if (!_shouldKeepQuoteRealtime || _quoteSyncReconnectTimer != null) {
+      return;
+    }
+
+    const retryDelays = [1, 2, 5, 10, 20, 30];
+    final delayIndex = _quoteSyncReconnectAttempt < retryDelays.length
+        ? _quoteSyncReconnectAttempt
+        : retryDelays.length - 1;
+    final delaySeconds = retryDelays[delayIndex];
+    _quoteSyncReconnectAttempt += 1;
+
+    _quoteSyncReconnectTimer = Timer(Duration(seconds: delaySeconds), () {
+      _quoteSyncReconnectTimer = null;
+      if (_shouldKeepQuoteRealtime && _quoteSyncSocket == null) {
+        _connectQuoteSyncSocket();
+      }
+    });
+  }
+
+  void _sendQuoteSyncMessage(Map<String, dynamic> payload) {
+    final socket = _quoteSyncSocket;
+    if (socket == null || socket.readyState != html.WebSocket.OPEN) {
+      return;
+    }
+
+    try {
+      socket.send(jsonEncode(payload));
+    } catch (e) {
+      debugPrint('送出估價同步訊息失敗: $e');
+    }
+  }
+
+  void _setQuoteRealtimeConnected(bool connected) {
+    if (_isQuoteRealtimeConnected == connected) {
+      return;
+    }
+
+    _isQuoteRealtimeConnected = connected;
+    notifyListeners();
   }
 
   Future<QuoteData?> loadConfiguration(String name) async {
@@ -838,5 +1112,13 @@ class QuoteService extends ChangeNotifier {
       _isLoading = false;
       notifyListeners();
     }
+  }
+
+  @override
+  void dispose() {
+    stopQuoteRealtimeSync();
+    _realtimeEvents.close();
+    _client.close();
+    super.dispose();
   }
 }

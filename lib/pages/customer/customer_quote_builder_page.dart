@@ -298,17 +298,21 @@ class _CustomerQuoteBuilderPageState extends State<CustomerQuoteBuilderPage> {
   List<PowerSupply> _powerSupplies = [];
   List<double> _powerSupplyLoads = [];
   List<PowerSupply> _powerSupplyOptions = [];
-  List<MaterialItem> _boardMaterials = [];
-  List<MaterialItem> _wiringItems = [];
+  final List<MaterialItem> _boardMaterials = [];
+  final List<MaterialItem> _wiringItems = [];
 
   late QuoteService _quoteService;
   late CustomerService _customerService;
   String _currentConfigurationName = '新估價配置';
   String? _selectedConfigurationName; // 追蹤下拉選單中選中的配置
+  int? _selectedConfigurationId;
   bool _isLoading = false;
   Customer? _selectedCustomer; // 選中的客戶
   Timer? _autoSaveTimer;
+  Timer? _formSyncTimer;
+  StreamSubscription<QuoteRealtimeEvent>? _quoteRealtimeSubscription;
   bool _autoSaving = false;
+  bool _applyingRemoteQuoteSnapshot = false;
 
   @override
   void initState() {
@@ -319,6 +323,10 @@ class _CustomerQuoteBuilderPageState extends State<CustomerQuoteBuilderPage> {
         : 'Coselig 員工系統 - 估價系統';
     _quoteService = Provider.of<QuoteService>(context, listen: false);
     _customerService = Provider.of<CustomerService>(context, listen: false);
+    _quoteService.startQuoteRealtimeSync();
+    _quoteRealtimeSubscription = _quoteService.realtimeEvents.listen(
+      _handleQuoteRealtimeEvent,
+    );
     _loadConfigurations();
     if (!authService.isCustomer) {
       _loadCustomers();
@@ -328,40 +336,205 @@ class _CustomerQuoteBuilderPageState extends State<CustomerQuoteBuilderPage> {
   @override
   void dispose() {
     _autoSaveTimer?.cancel();
+    _formSyncTimer?.cancel();
+    _quoteRealtimeSubscription?.cancel();
+    _quoteService.stopQuoteRealtimeSync();
     _switchCountController.dispose();
     super.dispose();
   }
 
+  QuoteData _buildCurrentQuoteData() {
+    return QuoteData(
+      switches: List<SwitchModel>.from(_switches),
+      loops: List<Loop>.from(_loops),
+      modules: List<Module>.from(_modules),
+      switchCount: _switchCountController.text,
+      otherDevices: List<OtherDevice>.from(_otherDevices),
+      powerSupplies: List<PowerSupply>.from(_powerSupplies),
+      boardMaterials: List<MaterialItem>.from(_boardMaterials),
+      wiring: List<MaterialItem>.from(_wiringItems),
+      spaces: List<String>.from(_spaces),
+      ceilingHasLn: _ceilingHasLn,
+      ceilingHasMaintenanceHole: _ceilingHasMaintenanceHole,
+      switchHasLn: _switchHasLn,
+    );
+  }
+
+  void _resetQuoteBuilderState({
+    String configurationName = '新估價配置',
+    String? selectedConfigurationName,
+    int? selectedConfigurationId,
+  }) {
+    _autoSaveTimer?.cancel();
+    _formSyncTimer?.cancel();
+    _loops.clear();
+    _modules.clear();
+    _switches.clear();
+    _switchCountController.clear();
+    _otherDevices.clear();
+    _powerSupplies = [];
+    _powerSupplyLoads = [];
+    _boardMaterials.clear();
+    _wiringItems.clear();
+    _spaces.clear();
+    _spaces.add('未分類');
+    _ceilingHasLn = false;
+    _ceilingHasMaintenanceHole = false;
+    _switchHasLn = false;
+    _currentConfigurationName = configurationName;
+    _selectedConfigurationName = selectedConfigurationName;
+    _selectedConfigurationId = selectedConfigurationId;
+    _currentStep = 0;
+  }
+
+  void _applyQuoteDataToBuilder(
+    QuoteData quoteData, {
+    required String configurationName,
+    required int? configurationId,
+    bool resetStep = false,
+  }) {
+    _loops
+      ..clear()
+      ..addAll(quoteData.loops);
+    _modules
+      ..clear()
+      ..addAll(quoteData.modules);
+    _switchCountController.text = quoteData.switchCount;
+    _otherDevices = List<OtherDevice>.from(quoteData.otherDevices);
+    _powerSupplies = List<PowerSupply>.from(quoteData.powerSupplies);
+    _powerSupplyLoads = List<double>.filled(_powerSupplies.length, 0.0);
+    _boardMaterials
+      ..clear()
+      ..addAll(quoteData.boardMaterials);
+    _wiringItems
+      ..clear()
+      ..addAll(quoteData.wiring);
+    _ceilingHasLn = quoteData.ceilingHasLn;
+    _ceilingHasMaintenanceHole = quoteData.ceilingHasMaintenanceHole;
+    _switchHasLn = quoteData.switchHasLn;
+    _currentConfigurationName = configurationName;
+    _selectedConfigurationName = configurationName;
+    _selectedConfigurationId = configurationId;
+
+    _switches
+      ..clear()
+      ..addAll(quoteData.switches);
+
+    _spaces.clear();
+    if (quoteData.spaces.isNotEmpty) {
+      _spaces.addAll(quoteData.spaces);
+      if (!_spaces.contains('未分類')) {
+        _spaces.insert(0, '未分類');
+      }
+    } else {
+      _spaces.add('未分類');
+      _rebuildSpacesFromLoops();
+    }
+
+    if (resetStep) {
+      _currentStep = 0;
+    }
+  }
+
+  void _setActiveQuoteSyncId(int? quoteId) {
+    _quoteService.setActiveQuoteSyncId(quoteId);
+  }
+
+  void _scheduleFormSnapshotBroadcast() {
+    final quoteId = _selectedConfigurationId;
+    if (quoteId == null || _applyingRemoteQuoteSnapshot) {
+      return;
+    }
+
+    _formSyncTimer?.cancel();
+    _formSyncTimer = Timer(const Duration(milliseconds: 250), () {
+      _quoteService.publishQuoteFormSnapshot(quoteId, _buildCurrentQuoteData());
+    });
+  }
+
+  void _handleQuoteRealtimeEvent(QuoteRealtimeEvent event) {
+    if (!mounted) {
+      return;
+    }
+
+    final activeQuoteId = _selectedConfigurationId;
+    if (event.isConfigurationsUpdated) {
+      if (event.action == 'deleted' &&
+          activeQuoteId != null &&
+          event.quoteId == activeQuoteId) {
+        _autoSaveTimer?.cancel();
+        _formSyncTimer?.cancel();
+        setState(() {
+          _resetQuoteBuilderState();
+        });
+        _setActiveQuoteSyncId(null);
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(const SnackBar(content: Text('目前估價單已在其他裝置被刪除')));
+      }
+      return;
+    }
+
+    if (event.isAccessDenied &&
+        activeQuoteId != null &&
+        event.quoteId == activeQuoteId) {
+      _autoSaveTimer?.cancel();
+      _formSyncTimer?.cancel();
+      setState(() {
+        _resetQuoteBuilderState();
+      });
+      _setActiveQuoteSyncId(null);
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('你目前沒有這張估價單的同步權限')));
+      return;
+    }
+
+    if (!event.isFormSnapshot ||
+        event.quoteData == null ||
+        activeQuoteId == null ||
+        event.quoteId != activeQuoteId) {
+      return;
+    }
+
+    _autoSaveTimer?.cancel();
+    _formSyncTimer?.cancel();
+    _applyingRemoteQuoteSnapshot = true;
+    setState(() {
+      _applyQuoteDataToBuilder(
+        event.quoteData!,
+        configurationName: _currentConfigurationName,
+        configurationId: activeQuoteId,
+      );
+    });
+    _applyingRemoteQuoteSnapshot = false;
+  }
+
   /// 自動存檔（帶 debounce，僅在已有已存儲配置時才會觸發）
   void _autoSave() {
-    if (_selectedConfigurationName == null) return;
+    final selectedConfigurationName = _selectedConfigurationName;
+    final selectedConfigurationId = _selectedConfigurationId;
+    if (selectedConfigurationName == null ||
+        selectedConfigurationId == null ||
+        _applyingRemoteQuoteSnapshot) {
+      return;
+    }
+
+    _scheduleFormSnapshotBroadcast();
     _autoSaveTimer?.cancel();
     _autoSaveTimer = Timer(const Duration(milliseconds: 800), () async {
       if (_autoSaving) return;
       _autoSaving = true;
       try {
-        final quoteData = QuoteData(
-          switches: _switches,
-          loops: _loops,
-          modules: _modules,
-          switchCount: _switchCountController.text,
-          otherDevices: _otherDevices,
-          powerSupplies: _powerSupplies,
-          boardMaterials: _boardMaterials,
-          wiring: _wiringItems,
-          spaces: _spaces,
-          ceilingHasLn: _ceilingHasLn,
-          ceilingHasMaintenanceHole: _ceilingHasMaintenanceHole,
-          switchHasLn: _switchHasLn,
-        );
         final authService = Provider.of<AuthService>(context, listen: false);
         final effectiveCustomerId = authService.isCustomer
             ? int.tryParse(authService.userId ?? '')
             : _selectedCustomer?.userId;
         await _quoteService.saveConfiguration(
-          _currentConfigurationName,
-          quoteData,
+          selectedConfigurationName,
+          _buildCurrentQuoteData(),
           customerUserId: effectiveCustomerId,
+          broadcastListUpdate: false,
         );
       } catch (_) {
         // 靜默處理自動存檔錯誤
@@ -543,10 +716,14 @@ class _CustomerQuoteBuilderPageState extends State<CustomerQuoteBuilderPage> {
                   }),
                 ],
                 onChanged: (Customer? customer) {
+                  _autoSaveTimer?.cancel();
+                  _formSyncTimer?.cancel();
                   setState(() {
                     _selectedCustomer = customer;
                     _selectedConfigurationName = null;
+                    _selectedConfigurationId = null;
                   });
+                  _setActiveQuoteSyncId(null);
                 },
               ),
             ],
@@ -646,11 +823,13 @@ class _CustomerQuoteBuilderPageState extends State<CustomerQuoteBuilderPage> {
                           }).toList(),
                           onChanged: (String? configName) {
                             if (configName != null) {
-                              setState(() {
-                                _selectedConfigurationName = configName;
-                                _currentConfigurationName = configName;
-                              });
-                              _loadSelectedConfiguration(configName);
+                              final matchingConfigurations = configurations
+                                  .where((config) => config.name == configName);
+                              if (matchingConfigurations.isNotEmpty) {
+                                _loadSelectedConfiguration(
+                                  matchingConfigurations.first,
+                                );
+                              }
                             }
                           },
                         ),
@@ -2301,65 +2480,38 @@ class _CustomerQuoteBuilderPageState extends State<CustomerQuoteBuilderPage> {
                   '新估價配置_${DateTime.now().millisecondsSinceEpoch}';
               String? errorMessage;
               setState(() {
-                // 重置所有數據
-                _loops.clear();
-                _modules.clear();
-                _switches.clear();
-                _switchCountController.clear();
-                _otherDevices.clear();
-                _powerSupplies = [];
-                _powerSupplyLoads = [];
-                _boardMaterials.clear();
-                _wiringItems.clear();
-                _spaces.clear();
-                _spaces.add('未分類');
-                // reset style options
-                _ceilingHasLn = false;
-                _ceilingHasMaintenanceHole = false;
-                _switchHasLn = false;
-                _currentConfigurationName = newConfigName;
-                _selectedConfigurationName = null; // 重置下拉選單選擇狀態
-                _currentStep = 0; // 返回第一步
+                _resetQuoteBuilderState(configurationName: newConfigName);
               });
+              _setActiveQuoteSyncId(null);
 
               try {
                 final effectiveCustomerId = authService.isCustomer
                     ? int.tryParse(authService.userId ?? '')
                     : _selectedCustomer?.userId;
 
-                final emptyQuoteData = QuoteData(
-                  switches: _switches,
-                  loops: _loops,
-                  modules: _modules,
-                  switchCount: _switchCountController.text,
-                  otherDevices: _otherDevices,
-                  powerSupplies: _powerSupplies,
-                  boardMaterials: _boardMaterials,
-                  wiring: _wiringItems,
-                  spaces: _spaces,
-                  ceilingHasLn: _ceilingHasLn,
-                  ceilingHasMaintenanceHole: _ceilingHasMaintenanceHole,
-                  switchHasLn: _switchHasLn,
-                );
-
-                await _quoteService.saveConfiguration(
+                final configurationId = await _quoteService.saveConfiguration(
                   newConfigName,
-                  emptyQuoteData,
+                  _buildCurrentQuoteData(),
                   customerUserId: effectiveCustomerId,
                 );
                 await _loadConfigurations();
 
                 if (!mounted) return;
                 setState(() {
+                  _currentConfigurationName = newConfigName;
                   _selectedConfigurationName = newConfigName;
+                  _selectedConfigurationId = configurationId;
                 });
+                _setActiveQuoteSyncId(configurationId);
               } catch (e) {
                 errorMessage = '新建配置失敗: $e';
               }
 
               if (!mounted) return;
               navigator.pop();
-              messenger.showSnackBar(SnackBar(content: Text(errorMessage ?? '已新建配置')));
+              messenger.showSnackBar(
+                SnackBar(content: Text(errorMessage ?? '已新建配置')),
+              );
             },
             child: const Text('確定'),
           ),
@@ -2427,28 +2579,14 @@ class _CustomerQuoteBuilderPageState extends State<CustomerQuoteBuilderPage> {
 
                 setState(() => _isLoading = true);
                 try {
-                  final quoteData = QuoteData(
-                    switches: _switches,
-                    loops: _loops,
-                    modules: _modules,
-                    switchCount: _switchCountController.text,
-                    otherDevices: _otherDevices,
-                    powerSupplies: _powerSupplies,
-                    boardMaterials: _boardMaterials,
-                    wiring: _wiringItems,
-                    spaces: _spaces,
-                    ceilingHasLn: _ceilingHasLn,
-                    ceilingHasMaintenanceHole: _ceilingHasMaintenanceHole,
-                    switchHasLn: _switchHasLn,
-                  );
-
                   final effectiveCustomerId = authService.isCustomer
                       ? int.tryParse(authService.userId ?? '')
                       : _selectedCustomer?.userId;
+                  final savedConfigurationName = nameController.text.trim();
 
-                  await _quoteService.saveConfiguration(
-                    nameController.text.trim(),
-                    quoteData,
+                  final configurationId = await _quoteService.saveConfiguration(
+                    savedConfigurationName,
+                    _buildCurrentQuoteData(),
                     customerUserId: effectiveCustomerId,
                     projectName: projectNameController.text.trim().isNotEmpty
                         ? projectNameController.text.trim()
@@ -2459,7 +2597,12 @@ class _CustomerQuoteBuilderPageState extends State<CustomerQuoteBuilderPage> {
                         : null,
                   );
                   if (!mounted) return;
-                  _currentConfigurationName = nameController.text.trim();
+                  setState(() {
+                    _currentConfigurationName = savedConfigurationName;
+                    _selectedConfigurationName = savedConfigurationName;
+                    _selectedConfigurationId = configurationId;
+                  });
+                  _setActiveQuoteSyncId(configurationId);
                   _loadConfigurations(); // 刷新配置列表
                   navigator.pop();
                   messenger.showSnackBar(SnackBar(content: Text('配置已儲存')));
@@ -2782,46 +2925,28 @@ class _CustomerQuoteBuilderPageState extends State<CustomerQuoteBuilderPage> {
     }
   }
 
-  void _loadSelectedConfiguration(String configName) async {
+  void _loadSelectedConfiguration(QuoteConfiguration configuration) async {
+    final configName = configuration.name;
     final previousConfigName = _currentConfigurationName;
+    final previousSelectedConfigurationName = _selectedConfigurationName;
+    final previousSelectedConfigurationId = _selectedConfigurationId;
+    _autoSaveTimer?.cancel();
+    _formSyncTimer?.cancel();
+    _setActiveQuoteSyncId(null);
     setState(() => _isLoading = true);
     try {
       final quoteData = await _quoteService.loadConfiguration(configName);
       if (!mounted) return;
       if (quoteData != null) {
         setState(() {
-          _loops.clear();
-          _loops.addAll(quoteData.loops);
-          _modules.clear();
-          _modules.addAll(quoteData.modules);
-          _switchCountController.text = quoteData.switchCount;
-          _otherDevices = List<OtherDevice>.from(quoteData.otherDevices);
-          _powerSupplies = List<PowerSupply>.from(quoteData.powerSupplies);
-          // initialize per-supply loads to zero for loaded configurations
-          _powerSupplyLoads = List<double>.filled(_powerSupplies.length, 0.0);
-          _boardMaterials = List<MaterialItem>.from(quoteData.boardMaterials);
-          _wiringItems = List<MaterialItem>.from(quoteData.wiring);
-          // restore new style options
-          _ceilingHasLn = quoteData.ceilingHasLn;
-          _ceilingHasMaintenanceHole = quoteData.ceilingHasMaintenanceHole;
-          _switchHasLn = quoteData.switchHasLn;
-          _currentConfigurationName = configName;
-          _currentStep = 0; // 回到起始步驟
-
-          // 載入開關資料
-          _switches.clear();
-          _switches.addAll(quoteData.switches);
-
-          // 優先使用載入的 spaces（若有），否則從迴路重建
-          _spaces.clear();
-          if (quoteData.spaces.isNotEmpty) {
-            _spaces.addAll(quoteData.spaces);
-            if (!_spaces.contains('未分類')) _spaces.insert(0, '未分類');
-          } else {
-            _spaces.add('未分類');
-            _rebuildSpacesFromLoops();
-          }
+          _applyQuoteDataToBuilder(
+            quoteData,
+            configurationName: configName,
+            configurationId: configuration.id,
+            resetStep: true,
+          );
         });
+        _setActiveQuoteSyncId(configuration.id);
         ScaffoldMessenger.of(
           context,
         ).showSnackBar(const SnackBar(content: Text('配置已載入')));
@@ -2831,8 +2956,10 @@ class _CustomerQuoteBuilderPageState extends State<CustomerQuoteBuilderPage> {
       // 載入失敗時恢復之前的配置名稱
       setState(() {
         _currentConfigurationName = previousConfigName;
-        _selectedConfigurationName = null; // 重置下拉選單選擇狀態
+        _selectedConfigurationName = previousSelectedConfigurationName;
+        _selectedConfigurationId = previousSelectedConfigurationId;
       });
+      _setActiveQuoteSyncId(previousSelectedConfigurationId);
       ScaffoldMessenger.of(
         context,
       ).showSnackBar(SnackBar(content: Text('載入失敗: $e')));
@@ -2867,23 +2994,17 @@ class _CustomerQuoteBuilderPageState extends State<CustomerQuoteBuilderPage> {
   }
 
   void _deleteSelectedConfiguration(String configName) async {
+    _autoSaveTimer?.cancel();
+    _formSyncTimer?.cancel();
     setState(() => _isLoading = true);
     try {
       await _quoteService.deleteConfiguration(configName);
       if (!mounted) return;
       // 重置當前狀態
       setState(() {
-        _currentConfigurationName = '新估價配置';
-        _selectedConfigurationName = null;
-        _loops.clear();
-        _modules.clear();
-        _spaces.clear();
-        _spaces.add('未分類');
-        _ceilingHasLn = false;
-        _ceilingHasMaintenanceHole = false;
-        _switchHasLn = false;
-        _currentStep = 0;
+        _resetQuoteBuilderState();
       });
+      _setActiveQuoteSyncId(null);
       // 重新載入配置列表
       _loadConfigurations();
       ScaffoldMessenger.of(
