@@ -3,7 +3,6 @@ import 'package:flutter/material.dart';
 
 import 'package:provider/provider.dart';
 import 'package:coselig_staff_portal/services/auth_service.dart';
-import 'package:coselig_staff_portal/services/attendance_service.dart';
 import 'package:coselig_staff_portal/services/ui_settings_provider.dart';
 import 'package:coselig_staff_portal/constants/app_constants.dart';
 
@@ -51,8 +50,6 @@ class _SplashScreenState extends State<SplashScreen> {
       if (authService.isLoggedIn) {
         // 登入成功後載入 UI 偏好設定
         context.read<UiSettingsProvider>().bindAuthService(authService);
-        // 登入成功後才獲取正在上班的員工列表
-        context.read<AttendanceService>().fetchAndCacheWorkingStaff();
         // 檢查當前 URL 路徑
         final currentPath = html.window.location.pathname;
         if (currentPath == '/discovery_generate' ||

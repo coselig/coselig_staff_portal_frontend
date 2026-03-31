@@ -1,6 +1,8 @@
+import 'dart:async';
 import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:http/browser_client.dart';
+import 'package:universal_html/html.dart' as html;
 
 class AttendanceService extends ChangeNotifier {
   /// Flutter Web 必須用 BrowserClient 才能送 Cookie
@@ -20,9 +22,24 @@ class AttendanceService extends ChangeNotifier {
   // 正在上班的員工列表快取
   List<Map<String, dynamic>> workingStaffList = [];
   bool isLoadingWorkingStaff = false;
+  html.WebSocket? _workingStaffSocket;
+  Timer? _workingStaffReconnectTimer;
+  bool _shouldKeepWorkingStaffRealtime = false;
+  int _workingStaffReconnectAttempt = 0;
+  bool _isRefreshingWorkingStaff = false;
+  bool _queuedWorkingStaffRefresh = false;
+  bool _isWorkingStaffRealtimeConnected = false;
 
   // 動態時段管理
   List<String> dynamicPeriods = ['時段1'];
+
+  bool get isWorkingStaffRealtimeConnected => _isWorkingStaffRealtimeConnected;
+
+  Uri get _workingStaffWebSocketUri {
+    final uri = Uri.parse('$baseUrl/api/working-staff/ws');
+    final socketScheme = uri.scheme == 'https' ? 'wss' : 'ws';
+    return uri.replace(scheme: socketScheme);
+  }
 
   /// 取得指定月份的打卡記錄
   Future<Map<int, dynamic>> getMonthAttendance(
@@ -87,9 +104,17 @@ class AttendanceService extends ChangeNotifier {
   }
 
   /// 獲取並快取正在上班的員工列表（帶狀態管理）
-  Future<void> fetchAndCacheWorkingStaff() async {
-    isLoadingWorkingStaff = true;
-    notifyListeners();
+  Future<void> fetchAndCacheWorkingStaff({bool silent = false}) async {
+    if (_isRefreshingWorkingStaff) {
+      _queuedWorkingStaffRefresh = true;
+      return;
+    }
+
+    _isRefreshingWorkingStaff = true;
+    if (!silent) {
+      isLoadingWorkingStaff = true;
+      notifyListeners();
+    }
 
     try {
       final workingStaff = await getWorkingStaff();
@@ -104,12 +129,135 @@ class AttendanceService extends ChangeNotifier {
           )
           .toList();
     } catch (e) {
-      workingStaffList = [];
       debugPrint('獲取正在上班員工失敗: $e');
     } finally {
-      isLoadingWorkingStaff = false;
+      _isRefreshingWorkingStaff = false;
+      if (!silent) {
+        isLoadingWorkingStaff = false;
+      }
       notifyListeners();
     }
+
+    if (_queuedWorkingStaffRefresh) {
+      _queuedWorkingStaffRefresh = false;
+      unawaited(fetchAndCacheWorkingStaff(silent: true));
+    }
+  }
+
+  void startWorkingStaffRealtimeUpdates() {
+    _shouldKeepWorkingStaffRealtime = true;
+    _workingStaffReconnectTimer?.cancel();
+
+    final socket = _workingStaffSocket;
+    if (socket != null &&
+        (socket.readyState == html.WebSocket.OPEN ||
+            socket.readyState == html.WebSocket.CONNECTING)) {
+      return;
+    }
+
+    _connectWorkingStaffSocket();
+  }
+
+  void stopWorkingStaffRealtimeUpdates() {
+    _shouldKeepWorkingStaffRealtime = false;
+    _workingStaffReconnectTimer?.cancel();
+    _workingStaffReconnectTimer = null;
+    _workingStaffReconnectAttempt = 0;
+
+    final socket = _workingStaffSocket;
+    _workingStaffSocket = null;
+    _setWorkingStaffRealtimeConnected(false);
+
+    if (socket != null) {
+      try {
+        socket.close(1000, 'working-staff-card-hidden');
+      } catch (_) {
+        debugPrint('關閉正在上班 WebSocket 失敗');
+      }
+    }
+  }
+
+  void _connectWorkingStaffSocket() {
+    try {
+      final socket = html.WebSocket(_workingStaffWebSocketUri.toString());
+      _workingStaffSocket = socket;
+
+      socket.onOpen.listen((_) {
+        if (_workingStaffSocket != socket) return;
+        _workingStaffReconnectAttempt = 0;
+        _setWorkingStaffRealtimeConnected(true);
+      });
+
+      socket.onMessage.listen((event) {
+        if (_workingStaffSocket != socket) return;
+        final data = event.data;
+        if (data is String) {
+          unawaited(_handleWorkingStaffSocketMessage(data));
+        }
+      });
+
+      socket.onError.listen((_) {
+        if (_workingStaffSocket != socket) return;
+        debugPrint('正在上班 WebSocket 發生錯誤');
+      });
+
+      socket.onClose.listen((_) {
+        if (_workingStaffSocket != socket) return;
+        _workingStaffSocket = null;
+        _setWorkingStaffRealtimeConnected(false);
+        _scheduleWorkingStaffReconnect();
+      });
+    } catch (e) {
+      debugPrint('建立正在上班 WebSocket 失敗: $e');
+      _scheduleWorkingStaffReconnect();
+    }
+  }
+
+  Future<void> _handleWorkingStaffSocketMessage(String rawMessage) async {
+    try {
+      final decoded = jsonDecode(rawMessage);
+      if (decoded is! Map) {
+        return;
+      }
+
+      final payload = Map<String, dynamic>.from(decoded);
+      final type = payload['type'];
+      if (type == 'working-staff-updated' || type == 'working-staff-refetch') {
+        await fetchAndCacheWorkingStaff(silent: true);
+      }
+    } catch (e) {
+      debugPrint('解析正在上班 WebSocket 訊息失敗: $e');
+    }
+  }
+
+  void _scheduleWorkingStaffReconnect() {
+    if (!_shouldKeepWorkingStaffRealtime ||
+        _workingStaffReconnectTimer != null) {
+      return;
+    }
+
+    const retryDelays = [1, 2, 5, 10, 20, 30];
+    final delayIndex = _workingStaffReconnectAttempt < retryDelays.length
+        ? _workingStaffReconnectAttempt
+        : retryDelays.length - 1;
+    final delaySeconds = retryDelays[delayIndex];
+    _workingStaffReconnectAttempt += 1;
+
+    _workingStaffReconnectTimer = Timer(Duration(seconds: delaySeconds), () {
+      _workingStaffReconnectTimer = null;
+      if (_shouldKeepWorkingStaffRealtime && _workingStaffSocket == null) {
+        _connectWorkingStaffSocket();
+      }
+    });
+  }
+
+  void _setWorkingStaffRealtimeConnected(bool connected) {
+    if (_isWorkingStaffRealtimeConnected == connected) {
+      return;
+    }
+
+    _isWorkingStaffRealtimeConnected = connected;
+    notifyListeners();
   }
 
   /// 上班打卡
@@ -390,5 +538,12 @@ class AttendanceService extends ChangeNotifier {
     } else {
       throw Exception('Failed to fetch all employees attendance');
     }
+  }
+
+  @override
+  void dispose() {
+    stopWorkingStaffRealtimeUpdates();
+    _client.close();
+    super.dispose();
   }
 }

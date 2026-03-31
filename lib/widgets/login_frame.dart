@@ -1,7 +1,6 @@
 import 'dart:async';
 
 import 'package:coselig_staff_portal/main.dart';
-import 'package:coselig_staff_portal/services/attendance_service.dart';
 import 'package:coselig_staff_portal/services/auth_service.dart';
 import 'package:coselig_staff_portal/services/ui_settings_provider.dart';
 import 'package:flutter/foundation.dart';
@@ -44,18 +43,15 @@ class _LoginFrameState extends State<LoginFrame> {
 
   Future<void> _initializeGoogleSignIn() async {
     try {
-      await _googleSignIn.initialize(
-        clientId: _googleClientId,
-      );
+      await _googleSignIn.initialize(clientId: _googleClientId);
 
-      _googleAuthSubscription = _googleSignIn.authenticationEvents.listen(
-        (event) {
-          if (event is GoogleSignInAuthenticationEventSignIn) {
-            unawaited(_handleGoogleAuthentication(event.user));
-          }
-        },
-        onError: _handleGoogleAuthenticationError,
-      );
+      _googleAuthSubscription = _googleSignIn.authenticationEvents.listen((
+        event,
+      ) {
+        if (event is GoogleSignInAuthenticationEventSignIn) {
+          unawaited(_handleGoogleAuthentication(event.user));
+        }
+      }, onError: _handleGoogleAuthenticationError);
 
       if (!mounted) return;
       setState(() {
@@ -76,9 +72,9 @@ class _LoginFrameState extends State<LoginFrame> {
     setState(() {
       _isGoogleSigningIn = false;
     });
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text('Google 登入錯誤: $error')),
-    );
+    ScaffoldMessenger.of(
+      context,
+    ).showSnackBar(SnackBar(content: Text('Google 登入錯誤: $error')));
   }
 
   Future<void> _handleGoogleAuthentication(GoogleSignInAccount user) async {
@@ -89,7 +85,6 @@ class _LoginFrameState extends State<LoginFrame> {
     final messenger = ScaffoldMessenger.of(context);
     final authService = context.read<AuthService>();
     final uiSettingsProvider = context.read<UiSettingsProvider>();
-    final attendanceService = context.read<AttendanceService>();
 
     setState(() {
       _isGoogleSigningIn = true;
@@ -109,20 +104,15 @@ class _LoginFrameState extends State<LoginFrame> {
 
       if (success) {
         uiSettingsProvider.bindAuthService(authService);
-        attendanceService.fetchAndCacheWorkingStaff();
         navigatorKey.currentState!.pushReplacementNamed(
           authService.isCustomer ? '/customer_home' : '/home',
         );
       } else {
-        messenger.showSnackBar(
-          SnackBar(content: Text(authService.message)),
-        );
+        messenger.showSnackBar(SnackBar(content: Text(authService.message)));
       }
     } catch (e) {
       if (!mounted) return;
-      messenger.showSnackBar(
-        SnackBar(content: Text('Google 登入錯誤: $e')),
-      );
+      messenger.showSnackBar(SnackBar(content: Text('Google 登入錯誤: $e')));
     } finally {
       if (mounted) {
         setState(() {
@@ -139,10 +129,9 @@ class _LoginFrameState extends State<LoginFrame> {
   }) {
     final bool isBusy = _isGoogleSigningIn || authService.isLoading;
     final brightness = Theme.of(context).brightness;
-    final googleButtonTheme =
-        brightness == Brightness.dark
-            ? google_web.GSIButtonTheme.filledBlack
-            : google_web.GSIButtonTheme.outline;
+    final googleButtonTheme = brightness == Brightness.dark
+        ? google_web.GSIButtonTheme.filledBlack
+        : google_web.GSIButtonTheme.outline;
 
     if (!kIsWeb) {
       return SizedBox(
@@ -217,10 +206,7 @@ class _LoginFrameState extends State<LoginFrame> {
         ),
         if (isBusy) ...[
           const SizedBox(height: 8),
-          const Text(
-            '正在驗證 Google 登入...',
-            textAlign: TextAlign.center,
-          ),
+          const Text('正在驗證 Google 登入...', textAlign: TextAlign.center),
         ],
       ],
     );

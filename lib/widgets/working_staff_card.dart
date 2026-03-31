@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:coselig_staff_portal/services/attendance_service.dart';
@@ -11,6 +13,30 @@ class WorkingStaffCard extends StatefulWidget {
 }
 
 class _WorkingStaffCardState extends State<WorkingStaffCard> {
+  late AttendanceService _attendanceService;
+  bool _didStartRealtime = false;
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    if (_didStartRealtime) return;
+
+    _didStartRealtime = true;
+    _attendanceService = context.read<AttendanceService>();
+    _attendanceService.startWorkingStaffRealtimeUpdates();
+    unawaited(
+      _attendanceService.fetchAndCacheWorkingStaff(
+        silent: _attendanceService.workingStaffList.isNotEmpty,
+      ),
+    );
+  }
+
+  @override
+  void dispose() {
+    _attendanceService.stopWorkingStaffRealtimeUpdates();
+    super.dispose();
+  }
+
   String formatTime(dynamic time) {
     if (time == null) return '未知';
     try {
@@ -46,12 +72,20 @@ class _WorkingStaffCardState extends State<WorkingStaffCard> {
                   ),
                 ),
                 const Spacer(),
-                IconButton(
-                  icon: const Icon(Icons.refresh),
-                  tooltip: '刷新',
-                  onPressed: attendance.isLoadingWorkingStaff
-                      ? null
-                      : () => attendance.fetchAndCacheWorkingStaff(),
+                const SizedBox(width: 8),
+                Tooltip(
+                  message: attendance.isWorkingStaffRealtimeConnected
+                      ? '即時更新已連線'
+                      : '即時更新重連中',
+                  child: Icon(
+                    attendance.isWorkingStaffRealtimeConnected
+                        ? Icons.wifi_tethering
+                        : Icons.wifi_tethering_error_rounded,
+                    color: attendance.isWorkingStaffRealtimeConnected
+                        ? Colors.green
+                        : Theme.of(context).colorScheme.outline,
+                    size: isMobile ? 18 : 20,
+                  ),
                 ),
               ],
             ),
@@ -68,7 +102,9 @@ class _WorkingStaffCardState extends State<WorkingStaffCard> {
                     child: Text(
                       '目前沒有員工正在上班',
                       style: TextStyle(
-                        color: Theme.of(context).colorScheme.onSurface.withAlpha(150),
+                        color: Theme.of(
+                          context,
+                        ).colorScheme.onSurface.withAlpha(150),
                         fontSize: (isMobile ? 14 : 16).toDouble(),
                       ),
                     ),
@@ -78,7 +114,8 @@ class _WorkingStaffCardState extends State<WorkingStaffCard> {
                       final chineseName = emp['chinese_name'];
                       final englishName = emp['name'] ?? '';
                       final displayName =
-                          chineseName != null && chineseName.toString().isNotEmpty
+                          chineseName != null &&
+                              chineseName.toString().isNotEmpty
                           ? chineseName.toString()
                           : englishName;
                       return ListTile(

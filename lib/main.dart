@@ -68,27 +68,8 @@ void main() async {
   );
 }
 
-class AppInitializer extends StatefulWidget {
+class AppInitializer extends StatelessWidget {
   const AppInitializer({super.key});
-
-  @override
-  State<AppInitializer> createState() => _AppInitializerState();
-}
-
-class _AppInitializerState extends State<AppInitializer> {
-  @override
-  void initState() {
-    super.initState();
-    // 在進入 async gap 前先取得 service 參照
-    final authService = context.read<AuthService>();
-    final attendanceService = context.read<AttendanceService>();
-    // 應用啟動時初始化共享數據（需等登入後再獲取）
-    Future.microtask(() {
-      if (authService.isLoggedIn) {
-        attendanceService.fetchAndCacheWorkingStaff();
-      }
-    });
-  }
 
   @override
   Widget build(BuildContext context) {
