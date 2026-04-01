@@ -32,6 +32,45 @@ const List<_OptionConfig> _buttonRemoteOptions = [
   _OptionConfig('long', '長形'),
 ];
 
+const List<String> _entryResponseKeys = [
+  'entryLightingRelay',
+  'entrySwitchOriginalController',
+  'entrySwitchOriginalSignalDirect',
+  'entrySwitchEnergyHarvesting',
+  'entrySwitchSceneRemoteWall',
+  'entrySwitchSceneRemoteButton',
+  'entryHost',
+];
+
+const List<String> _upgradeResponseKeys = [
+  'upgradeLightingDimmer',
+  'upgradeLightingDimmerCt',
+  'upgradeLightingNonZ2m',
+  'upgradeSwitchOriginalController',
+  'upgradeSwitchOriginalSignalDirect',
+  'upgradeSwitchSceneRemoteWall',
+  'upgradeSwitchSceneRemoteButton',
+  'upgradeSwitchNonZ2m',
+  'auxPresenceSensor',
+  'auxDoorSensor',
+  'auxInfraredRemote',
+  'auxSmartLock',
+  'auxOther',
+  'evaluationWirelessDimmer',
+  'evaluationCurtain',
+  'evaluationAirConditioner',
+  'evaluationMonitor',
+  'evaluationApiAppliance',
+  'evaluationHost',
+];
+
+const List<String> _singleEntryRowResponseKeys = [
+  'entryLightingRelay',
+  'upgradeLightingDimmer',
+  'upgradeLightingDimmerCt',
+  'upgradeLightingNonZ2m',
+];
+
 class SmartHomeAssessmentPage extends StatefulWidget {
   const SmartHomeAssessmentPage({super.key});
 
@@ -53,6 +92,7 @@ class _SmartHomeAssessmentPageState extends State<SmartHomeAssessmentPage> {
   bool _hasUnsavedChanges = false;
   String? _error;
   int _editorVersion = 0;
+  final Map<String, bool> _expandedPanels = {};
 
   @override
   void initState() {
@@ -71,8 +111,9 @@ class _SmartHomeAssessmentPageState extends State<SmartHomeAssessmentPage> {
     return {
       'template': 'smart_home_assessment',
       'version': 1,
+      'selectedTrack': 'entry',
       'responses': {
-        'entryLightingRelay': _entryChecklistDefaults(6),
+        'entryLightingRelay': _entryChecklistDefaults(1),
         'entrySwitchOriginalController': _optionChecklistDefaults(
           _threeGangOptions,
         ),
@@ -89,9 +130,9 @@ class _SmartHomeAssessmentPageState extends State<SmartHomeAssessmentPage> {
           _buttonRemoteOptions,
         ),
         'entryHost': _hostChecklistDefaults(),
-        'upgradeLightingDimmer': _entryChecklistDefaults(6),
-        'upgradeLightingDimmerCt': _entryChecklistDefaults(6),
-        'upgradeLightingNonZ2m': _entryChecklistDefaults(3),
+        'upgradeLightingDimmer': _entryChecklistDefaults(1),
+        'upgradeLightingDimmerCt': _entryChecklistDefaults(1),
+        'upgradeLightingNonZ2m': _entryChecklistDefaults(1),
         'upgradeSwitchOriginalController': _optionChecklistDefaults(
           _threeGangOptions,
         ),
@@ -157,6 +198,8 @@ class _SmartHomeAssessmentPageState extends State<SmartHomeAssessmentPage> {
 
   static Map<String, dynamic> _hostChecklistDefaults() {
     return {
+      'selectedArchitecture': '',
+      'selectedConnection': '',
       'arm': {'checked': false, 'ethernet': false, 'wifi': false},
       'x86': {'checked': false, 'ethernet': false, 'wifi': false},
     };
@@ -199,11 +242,182 @@ class _SmartHomeAssessmentPageState extends State<SmartHomeAssessmentPage> {
       return defaults;
     }
 
-    return Map<String, dynamic>.from(_deepMerge(defaults, raw));
+    final merged = Map<String, dynamic>.from(_deepMerge(defaults, raw));
+    final selectedTrack = raw['selectedTrack']?.toString();
+    if (selectedTrack == 'entry' || selectedTrack == 'upgrade') {
+      merged['selectedTrack'] = selectedTrack;
+    } else {
+      merged['selectedTrack'] = _inferSelectedTrack(raw);
+    }
+
+    final responses = (merged['responses'] as Map?)?.cast<String, dynamic>();
+    if (responses != null) {
+      for (final key in _singleEntryRowResponseKeys) {
+        final response = responses[key];
+        if (response is Map) {
+          final converted = Map<String, dynamic>.from(response);
+          converted['entries'] = _trimTrailingEmptyEntries(
+            converted['entries'],
+            minimumRows: 1,
+          );
+          responses[key] = converted;
+        }
+      }
+
+      for (final key in ['entryHost', 'evaluationHost']) {
+        final response = responses[key];
+        if (response is Map) {
+          responses[key] = _normalizeHostResponse(
+            Map<String, dynamic>.from(response),
+          );
+        }
+      }
+    }
+
+    return merged;
+  }
+
+  Map<String, dynamic> _normalizeHostResponse(Map<String, dynamic> response) {
+    final arm = Map<String, dynamic>.from(
+      response['arm'] is Map
+          ? response['arm'] as Map
+          : const {'checked': false, 'ethernet': false, 'wifi': false},
+    );
+    final x86 = Map<String, dynamic>.from(
+      response['x86'] is Map
+          ? response['x86'] as Map
+          : const {'checked': false, 'ethernet': false, 'wifi': false},
+    );
+
+    String selectedArchitecture = response['selectedArchitecture']?.toString() ?? '';
+    if (selectedArchitecture != 'arm' && selectedArchitecture != 'x86') {
+      if (arm['checked'] == true) {
+        selectedArchitecture = 'arm';
+      } else if (x86['checked'] == true) {
+        selectedArchitecture = 'x86';
+      } else {
+        selectedArchitecture = '';
+      }
+    }
+
+    String selectedConnection = response['selectedConnection']?.toString() ?? '';
+    if (selectedConnection != 'ethernet' && selectedConnection != 'wifi') {
+      final selectedMap = selectedArchitecture == 'arm'
+          ? arm
+          : selectedArchitecture == 'x86'
+          ? x86
+          : null;
+      if (selectedMap?['ethernet'] == true) {
+        selectedConnection = 'ethernet';
+      } else if (selectedMap?['wifi'] == true) {
+        selectedConnection = 'wifi';
+      } else if (arm['ethernet'] == true || x86['ethernet'] == true) {
+        selectedConnection = 'ethernet';
+      } else if (arm['wifi'] == true || x86['wifi'] == true) {
+        selectedConnection = 'wifi';
+      } else {
+        selectedConnection = '';
+      }
+    }
+
+    if (selectedArchitecture.isEmpty) {
+      selectedConnection = '';
+    }
+
+    arm['checked'] = selectedArchitecture == 'arm';
+    x86['checked'] = selectedArchitecture == 'x86';
+    arm['ethernet'] =
+        selectedArchitecture == 'arm' && selectedConnection == 'ethernet';
+    arm['wifi'] = selectedArchitecture == 'arm' && selectedConnection == 'wifi';
+    x86['ethernet'] =
+        selectedArchitecture == 'x86' && selectedConnection == 'ethernet';
+    x86['wifi'] = selectedArchitecture == 'x86' && selectedConnection == 'wifi';
+
+    response['selectedArchitecture'] = selectedArchitecture;
+    response['selectedConnection'] = selectedConnection;
+    response['arm'] = arm;
+    response['x86'] = x86;
+    return response;
+  }
+
+  List<Map<String, dynamic>> _trimTrailingEmptyEntries(
+    dynamic rawEntries, {
+    required int minimumRows,
+  }) {
+    final entries = rawEntries is List
+        ? rawEntries.map((item) {
+            if (item is Map<String, dynamic>) {
+              return item;
+            }
+            if (item is Map) {
+              return Map<String, dynamic>.from(item);
+            }
+            return <String, dynamic>{'label': '', 'quantity': ''};
+          }).toList()
+        : <Map<String, dynamic>>[];
+
+    bool isBlankEntry(Map<String, dynamic> entry) {
+      final label = entry['label']?.toString().trim() ?? '';
+      final quantity = entry['quantity']?.toString().trim() ?? '';
+      return label.isEmpty && quantity.isEmpty;
+    }
+
+    while (entries.length > minimumRows && isBlankEntry(entries.last)) {
+      entries.removeLast();
+    }
+
+    while (entries.length < minimumRows) {
+      entries.add({'label': '', 'quantity': ''});
+    }
+
+    return entries;
+  }
+
+  String _inferSelectedTrack(Map<String, dynamic> raw) {
+    final rawResponses = raw['responses'];
+    if (rawResponses is! Map) {
+      return 'entry';
+    }
+
+    bool hasCheckedIn(List<String> keys) {
+      for (final key in keys) {
+        final value = rawResponses[key];
+        if (value is Map) {
+          final checked = value['checked'];
+          if (checked == true) {
+            return true;
+          }
+
+          final arm = value['arm'];
+          final x86 = value['x86'];
+          if (arm is Map && arm['checked'] == true) {
+            return true;
+          }
+          if (x86 is Map && x86['checked'] == true) {
+            return true;
+          }
+        }
+      }
+      return false;
+    }
+
+    final hasEntryChecked = hasCheckedIn(_entryResponseKeys);
+    final hasUpgradeChecked = hasCheckedIn(_upgradeResponseKeys);
+
+    if (hasUpgradeChecked && !hasEntryChecked) {
+      return 'upgrade';
+    }
+
+    return 'entry';
   }
 
   Map<String, dynamic> get _responses =>
       (_formData['responses'] as Map).cast<String, dynamic>();
+
+  String get _selectedTrack {
+    final track = _formData['selectedTrack']?.toString();
+    return track == 'upgrade' ? 'upgrade' : 'entry';
+  }
 
   Map<String, dynamic> _response(String key) {
     final value = _responses[key];
@@ -263,6 +477,16 @@ class _SmartHomeAssessmentPageState extends State<SmartHomeAssessmentPage> {
       return;
     }
     setState(() => _hasUnsavedChanges = true);
+  }
+
+  bool _isPanelExpanded(String panelKey, {bool defaultValue = false}) {
+    return _expandedPanels.putIfAbsent(panelKey, () => defaultValue);
+  }
+
+  void _setPanelExpanded(String panelKey, bool expanded) {
+    setState(() {
+      _expandedPanels[panelKey] = expanded;
+    });
   }
 
   String _displayTimestamp(String value) {
@@ -837,12 +1061,15 @@ class _SmartHomeAssessmentPageState extends State<SmartHomeAssessmentPage> {
   }
 
   Widget _buildChecklistContainer({
+    required String panelKey,
     required bool checked,
     required ValueChanged<bool> onChanged,
     required String title,
     String? subtitle,
     required List<Widget> children,
   }) {
+    final expanded = _isPanelExpanded(panelKey, defaultValue: checked);
+
     return Container(
       margin: const EdgeInsets.only(bottom: 16),
       padding: const EdgeInsets.all(18),
@@ -854,22 +1081,53 @@ class _SmartHomeAssessmentPageState extends State<SmartHomeAssessmentPage> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          CheckboxListTile(
-            value: checked,
-            onChanged: (value) => onChanged(value ?? false),
-            contentPadding: EdgeInsets.zero,
-            controlAffinity: ListTileControlAffinity.leading,
-            title: Text(
-              title,
-              style: const TextStyle(fontWeight: FontWeight.w700),
-            ),
-            subtitle: subtitle == null ? null : Text(subtitle),
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Expanded(
+                child: CheckboxListTile(
+                  value: checked,
+                  onChanged: (value) {
+                    final nextValue = value ?? false;
+                    onChanged(nextValue);
+                    _setPanelExpanded(panelKey, nextValue);
+                  },
+                  contentPadding: EdgeInsets.zero,
+                  controlAffinity: ListTileControlAffinity.leading,
+                  title: Text(
+                    title,
+                    style: const TextStyle(fontWeight: FontWeight.w700),
+                  ),
+                  subtitle: subtitle == null ? null : Text(subtitle),
+                ),
+              ),
+              IconButton(
+                onPressed: () => _setPanelExpanded(panelKey, !expanded),
+                tooltip: expanded ? '收合' : '展開',
+                icon: Icon(
+                  expanded
+                      ? Icons.keyboard_arrow_up
+                      : Icons.keyboard_arrow_down,
+                ),
+              ),
+            ],
           ),
-          if (children.isNotEmpty)
-            Padding(
-              padding: const EdgeInsets.only(left: 12),
-              child: Column(children: children),
-            ),
+          AnimatedCrossFade(
+            duration: const Duration(milliseconds: 180),
+            crossFadeState: expanded
+                ? CrossFadeState.showFirst
+                : CrossFadeState.showSecond,
+            firstChild: children.isNotEmpty
+                ? Padding(
+                    padding: const EdgeInsets.only(left: 12),
+                    child: Column(children: children),
+                  )
+                : const SizedBox.shrink(),
+            secondChild: const SizedBox.shrink(),
+            sizeCurve: Curves.easeInOut,
+            firstCurve: Curves.easeInOut,
+            secondCurve: Curves.easeInOut,
+          ),
         ],
       ),
     );
@@ -887,6 +1145,7 @@ class _SmartHomeAssessmentPageState extends State<SmartHomeAssessmentPage> {
     final entries = _entries(response, minimumRows: minimumRows);
 
     return _buildChecklistContainer(
+      panelKey: responseKey,
       checked: checked,
       onChanged: (value) {
         setState(() {
@@ -997,6 +1256,7 @@ class _SmartHomeAssessmentPageState extends State<SmartHomeAssessmentPage> {
     final values = _options(response);
 
     return _buildChecklistContainer(
+      panelKey: responseKey,
       checked: checked,
       onChanged: (value) {
         setState(() {
@@ -1041,6 +1301,7 @@ class _SmartHomeAssessmentPageState extends State<SmartHomeAssessmentPage> {
     final checked = response['checked'] == true;
 
     return _buildChecklistContainer(
+      panelKey: responseKey,
       checked: checked,
       onChanged: (value) {
         setState(() {
@@ -1079,6 +1340,7 @@ class _SmartHomeAssessmentPageState extends State<SmartHomeAssessmentPage> {
     final checked = response['checked'] == true;
 
     return _buildChecklistContainer(
+      panelKey: responseKey,
       checked: checked,
       onChanged: (value) {
         setState(() {
@@ -1140,6 +1402,7 @@ class _SmartHomeAssessmentPageState extends State<SmartHomeAssessmentPage> {
     response['other'] = other;
 
     return _buildChecklistContainer(
+      panelKey: responseKey,
       checked: checked,
       onChanged: (value) {
         setState(() {
@@ -1227,76 +1490,10 @@ class _SmartHomeAssessmentPageState extends State<SmartHomeAssessmentPage> {
   }
 
   Widget _buildHostChecklist(String responseKey) {
-    final response = _response(responseKey);
-    final arm = (response['arm'] as Map).cast<String, dynamic>();
-    final x86 = (response['x86'] as Map).cast<String, dynamic>();
-
-    Widget architectureCard(String title, Map<String, dynamic> item) {
-      final checked = item['checked'] == true;
-      return Container(
-        width: 320,
-        padding: const EdgeInsets.all(16),
-        decoration: BoxDecoration(
-          color: Theme.of(context).colorScheme.surfaceContainerLowest,
-          borderRadius: BorderRadius.circular(18),
-          border: Border.all(
-            color: Theme.of(context).colorScheme.outlineVariant,
-          ),
-        ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            CheckboxListTile(
-              value: checked,
-              onChanged: (value) {
-                setState(() {
-                  item['checked'] = value ?? false;
-                  if (value != true) {
-                    item['ethernet'] = false;
-                    item['wifi'] = false;
-                  }
-                  _hasUnsavedChanges = true;
-                });
-              },
-              contentPadding: EdgeInsets.zero,
-              controlAffinity: ListTileControlAffinity.leading,
-              title: Text(
-                title,
-                style: const TextStyle(fontWeight: FontWeight.w700),
-              ),
-            ),
-            CheckboxListTile(
-              value: item['ethernet'] == true,
-              onChanged: checked
-                  ? (value) {
-                      setState(() {
-                        item['ethernet'] = value ?? false;
-                        _hasUnsavedChanges = true;
-                      });
-                    }
-                  : null,
-              contentPadding: EdgeInsets.zero,
-              controlAffinity: ListTileControlAffinity.leading,
-              title: const Text('Ethernet'),
-            ),
-            CheckboxListTile(
-              value: item['wifi'] == true,
-              onChanged: checked
-                  ? (value) {
-                      setState(() {
-                        item['wifi'] = value ?? false;
-                        _hasUnsavedChanges = true;
-                      });
-                    }
-                  : null,
-              contentPadding: EdgeInsets.zero,
-              controlAffinity: ListTileControlAffinity.leading,
-              title: const Text('WiFi'),
-            ),
-          ],
-        ),
-      );
-    }
+    final response = _normalizeHostResponse(_response(responseKey));
+    final selectedArchitecture =
+        response['selectedArchitecture']?.toString() ?? '';
+    final selectedConnection = response['selectedConnection']?.toString() ?? '';
 
     return Container(
       margin: const EdgeInsets.only(bottom: 16),
@@ -1316,14 +1513,91 @@ class _SmartHomeAssessmentPageState extends State<SmartHomeAssessmentPage> {
             ).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w700),
           ),
           const SizedBox(height: 12),
+          Text(
+            '架構',
+            style: Theme.of(
+              context,
+            ).textTheme.bodyMedium?.copyWith(fontWeight: FontWeight.w700),
+          ),
+          const SizedBox(height: 10),
           Wrap(
             spacing: 12,
             runSpacing: 12,
             children: [
-              architectureCard('Arm 架構', arm),
-              architectureCard('X86 架構', x86),
+              ChoiceChip(
+                label: const Text('Arm 架構'),
+                selected: selectedArchitecture == 'arm',
+                onSelected: (_) {
+                  setState(() {
+                    response['selectedArchitecture'] = 'arm';
+                    _normalizeHostResponse(response);
+                    _hasUnsavedChanges = true;
+                  });
+                },
+              ),
+              ChoiceChip(
+                label: const Text('X86 架構'),
+                selected: selectedArchitecture == 'x86',
+                onSelected: (_) {
+                  setState(() {
+                    response['selectedArchitecture'] = 'x86';
+                    _normalizeHostResponse(response);
+                    _hasUnsavedChanges = true;
+                  });
+                },
+              ),
             ],
           ),
+          const SizedBox(height: 16),
+          Text(
+            '連線方式',
+            style: Theme.of(
+              context,
+            ).textTheme.bodyMedium?.copyWith(fontWeight: FontWeight.w700),
+          ),
+          const SizedBox(height: 10),
+          Wrap(
+            spacing: 12,
+            runSpacing: 12,
+            children: [
+              ChoiceChip(
+                label: const Text('Ethernet'),
+                selected: selectedConnection == 'ethernet',
+                onSelected: selectedArchitecture.isEmpty
+                    ? null
+                    : (_) {
+                        setState(() {
+                          response['selectedConnection'] = 'ethernet';
+                          _normalizeHostResponse(response);
+                          _hasUnsavedChanges = true;
+                        });
+                      },
+              ),
+              ChoiceChip(
+                label: const Text('WiFi'),
+                selected: selectedConnection == 'wifi',
+                onSelected: selectedArchitecture.isEmpty
+                    ? null
+                    : (_) {
+                        setState(() {
+                          response['selectedConnection'] = 'wifi';
+                          _normalizeHostResponse(response);
+                          _hasUnsavedChanges = true;
+                        });
+                      },
+              ),
+            ],
+          ),
+          if (selectedArchitecture.isEmpty)
+            Padding(
+              padding: const EdgeInsets.only(top: 10),
+              child: Text(
+                '請先選擇主機架構',
+                style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                  color: Theme.of(context).colorScheme.onSurfaceVariant,
+                ),
+              ),
+            ),
         ],
       ),
     );
@@ -1365,10 +1639,56 @@ class _SmartHomeAssessmentPageState extends State<SmartHomeAssessmentPage> {
     );
   }
 
+  Widget _buildTrackSelector() {
+    return Card(
+      elevation: 0,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
+      child: Padding(
+        padding: const EdgeInsets.all(24),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              '方案類型',
+              style: Theme.of(
+                context,
+              ).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.w800),
+            ),
+            const SizedBox(height: 8),
+            Wrap(
+              spacing: 12,
+              runSpacing: 12,
+              children: [
+                ChoiceChip(
+                  label: const Text('1. 入門'),
+                  selected: _selectedTrack == 'entry',
+                  onSelected: (_) {
+                    setState(() {
+                      _formData['selectedTrack'] = 'entry';
+                      _hasUnsavedChanges = true;
+                    });
+                  },
+                ),
+                ChoiceChip(
+                  label: const Text('2. 裝修/升級優化'),
+                  selected: _selectedTrack == 'upgrade',
+                  onSelected: (_) {
+                    setState(() {
+                      _formData['selectedTrack'] = 'upgrade';
+                      _hasUnsavedChanges = true;
+                    });
+                  },
+                ),
+              ],
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
   Widget _buildFormSections() {
-    return Column(
-      children: [
-        _buildSectionCard(
+    final entrySection = _buildSectionCard(
           title: '1. 入門',
           subtitle: '燈具聯網',
           children: [
@@ -1383,7 +1703,7 @@ class _SmartHomeAssessmentPageState extends State<SmartHomeAssessmentPage> {
               responseKey: 'entryLightingRelay',
               title: '燈具迴路加裝「無線訊號通斷器」',
               entryLabel: '燈具形態',
-              minimumRows: 6,
+          minimumRows: 1,
             ),
             const SizedBox(height: 8),
             Text(
@@ -1428,9 +1748,9 @@ class _SmartHomeAssessmentPageState extends State<SmartHomeAssessmentPage> {
             const SizedBox(height: 12),
             _buildHostChecklist('entryHost'),
           ],
-        ),
-        const SizedBox(height: 20),
-        _buildSectionCard(
+    );
+
+    final upgradeSection = _buildSectionCard(
           title: '2. 裝修/升級優化',
           subtitle: '建立光環境',
           children: [
@@ -1445,19 +1765,19 @@ class _SmartHomeAssessmentPageState extends State<SmartHomeAssessmentPage> {
               responseKey: 'upgradeLightingDimmer',
               title: '燈具迴路改裝「無線訊號調光控制器」',
               entryLabel: '燈具形態',
-              minimumRows: 6,
+          minimumRows: 1,
             ),
             _buildEntryChecklist(
               responseKey: 'upgradeLightingDimmerCt',
               title: '燈具迴路改裝「無線訊號調光/調色控制器」',
               entryLabel: '燈具形態',
-              minimumRows: 6,
+          minimumRows: 1,
             ),
             _buildEntryChecklist(
               responseKey: 'upgradeLightingNonZ2m',
               title: '「非Z2M」燈具迴路',
               entryLabel: '燈具形態',
-              minimumRows: 3,
+          minimumRows: 1,
             ),
             const SizedBox(height: 8),
             Text(
@@ -1565,7 +1885,13 @@ class _SmartHomeAssessmentPageState extends State<SmartHomeAssessmentPage> {
             const SizedBox(height: 12),
             _buildHostChecklist('evaluationHost'),
           ],
-        ),
+    );
+
+    return Column(
+      children: [
+        _buildTrackSelector(),
+        const SizedBox(height: 20),
+        if (_selectedTrack == 'entry') entrySection else upgradeSection,
       ],
     );
   }
