@@ -10,6 +10,7 @@ import 'package:coselig_staff_portal/pages/staff/device_config_management_page.d
 import 'package:coselig_staff_portal/pages/staff/fixture_type_management_page.dart';
 import 'package:coselig_staff_portal/pages/staff/module_management_page.dart';
 import 'package:coselig_staff_portal/pages/staff/power_supply_management_page.dart';
+import 'package:coselig_staff_portal/pages/staff/smart_home_assessment_page.dart';
 import 'package:coselig_staff_portal/pages/general/splash_page.dart';
 import 'package:coselig_staff_portal/pages/staff/staff_home_page.dart';
 import 'package:coselig_staff_portal/pages/customer/customer_home_page.dart';
@@ -156,6 +157,8 @@ class MainApp extends StatelessWidget {
                 '/switch_management': (context) => const SwitchManagementPage(),
                 '/power_supply_management': (context) =>
                     const PowerSupplyManagementPage(),
+                '/smart_home_assessment': (context) =>
+                    const SmartHomeAssessmentPage(),
                 '/device_config_management': (context) =>
                     const DeviceConfigManagementPage(),
                 '/privacy': (context) => const PrivacyPolicyPage(),

@@ -103,6 +103,13 @@ class AppDrawer extends StatelessWidget {
                 navigatorKey.currentState!.pushNamed('/customer_quote_builder');
               },
             ),
+            ListTile(
+              leading: Icon(Icons.fact_check_outlined),
+              title: Text('智慧型住宅確認表'),
+              onTap: () {
+                navigatorKey.currentState!.pushNamed('/smart_home_assessment');
+              },
+            ),
             ExpansionTile(
               initiallyExpanded: false,
               leading: Icon(Icons.tune),
