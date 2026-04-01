@@ -176,6 +176,13 @@ class AppDrawer extends StatelessWidget {
                 navigatorKey.currentState!.pushNamed('/customer_quote_builder');
               },
             ),
+            ListTile(
+              leading: Icon(Icons.receipt_long),
+              title: Text('我的報價單'),
+              onTap: () {
+                navigatorKey.currentState!.pushNamed('/customer_quotes');
+              },
+            ),
           ],
           const Divider(),
           ListTile(

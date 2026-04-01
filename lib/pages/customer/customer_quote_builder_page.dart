@@ -308,6 +308,11 @@ class _CustomerQuoteBuilderPageState extends State<CustomerQuoteBuilderPage> {
   int? _selectedConfigurationId;
   bool _isLoading = false;
   Customer? _selectedCustomer; // 選中的客戶
+  String? _currentProjectName;
+  String? _currentProjectAddress;
+  String? _currentUpdatedAt;
+  bool _currentIsPublished = false;
+  String? _currentSentAt;
   Timer? _autoSaveTimer;
   Timer? _formSyncTimer;
   StreamSubscription<QuoteRealtimeEvent>? _quoteRealtimeSubscription;
@@ -360,6 +365,77 @@ class _CustomerQuoteBuilderPageState extends State<CustomerQuoteBuilderPage> {
     );
   }
 
+  String _formatTimestamp(String? rawValue) {
+    final value = rawValue?.trim() ?? '';
+    if (value.isEmpty) {
+      return '尚未儲存';
+    }
+
+    final normalized = value.contains('T')
+        ? value
+        : value.replaceFirst(' ', 'T');
+    final parsed = DateTime.tryParse(normalized);
+    if (parsed == null) {
+      return value;
+    }
+
+    final local = parsed.toLocal();
+    String twoDigits(int number) => number.toString().padLeft(2, '0');
+
+    return '${local.year}/${twoDigits(local.month)}/${twoDigits(local.day)} '
+        '${twoDigits(local.hour)}:${twoDigits(local.minute)}';
+  }
+
+  void _applySaveResult(QuoteSaveResult? saveResult) {
+    if (saveResult == null) {
+      return;
+    }
+
+    _selectedConfigurationId =
+        saveResult.configurationId ?? _selectedConfigurationId;
+    _currentConfigurationName = saveResult.name.isNotEmpty
+        ? saveResult.name
+        : _currentConfigurationName;
+    _selectedConfigurationName = _currentConfigurationName;
+    _currentProjectName = saveResult.projectName;
+    _currentProjectAddress = saveResult.projectAddress;
+    _currentUpdatedAt = saveResult.updatedAt;
+    _currentIsPublished = saveResult.isPublished;
+    _currentSentAt = saveResult.sentAt;
+  }
+
+  void _syncCurrentConfigurationMetadata() {
+    final selectedConfigurationName = _selectedConfigurationName;
+    if (selectedConfigurationName == null) {
+      return;
+    }
+
+    QuoteConfiguration? matchedConfiguration;
+    for (final configuration in _quoteService.configurations) {
+      if (_selectedConfigurationId != null &&
+          configuration.id == _selectedConfigurationId) {
+        matchedConfiguration = configuration;
+        break;
+      }
+      if (configuration.name == selectedConfigurationName) {
+        matchedConfiguration = configuration;
+      }
+    }
+
+    if (matchedConfiguration == null || !mounted) {
+      return;
+    }
+
+    final configuration = matchedConfiguration;
+    setState(() {
+      _currentProjectName = configuration.projectName;
+      _currentProjectAddress = configuration.projectAddress;
+      _currentUpdatedAt = configuration.updatedAt;
+      _currentIsPublished = configuration.isPublished;
+      _currentSentAt = configuration.sentAt;
+    });
+  }
+
   void _resetQuoteBuilderState({
     String configurationName = '新估價配置',
     String? selectedConfigurationName,
@@ -384,6 +460,11 @@ class _CustomerQuoteBuilderPageState extends State<CustomerQuoteBuilderPage> {
     _currentConfigurationName = configurationName;
     _selectedConfigurationName = selectedConfigurationName;
     _selectedConfigurationId = selectedConfigurationId;
+    _currentProjectName = null;
+    _currentProjectAddress = null;
+    _currentUpdatedAt = null;
+    _currentIsPublished = false;
+    _currentSentAt = null;
     _currentStep = 0;
   }
 
@@ -530,12 +611,24 @@ class _CustomerQuoteBuilderPageState extends State<CustomerQuoteBuilderPage> {
         final effectiveCustomerId = authService.isCustomer
             ? int.tryParse(authService.userId ?? '')
             : _selectedCustomer?.userId;
-        await _quoteService.saveConfiguration(
+        final saveResult = await _quoteService.saveConfiguration(
           selectedConfigurationName,
           _buildCurrentQuoteData(),
           customerUserId: effectiveCustomerId,
+          projectName: (_currentProjectName ?? '').trim().isNotEmpty
+              ? _currentProjectName!.trim()
+              : null,
+          projectAddress: (_currentProjectAddress ?? '').trim().isNotEmpty
+              ? _currentProjectAddress!.trim()
+              : null,
           broadcastListUpdate: false,
         );
+        if (!mounted || saveResult == null) {
+          return;
+        }
+        setState(() {
+          _applySaveResult(saveResult);
+        });
       } catch (_) {
         // 靜默處理自動存檔錯誤
       } finally {
@@ -556,6 +649,535 @@ class _CustomerQuoteBuilderPageState extends State<CustomerQuoteBuilderPage> {
         context,
       ).showSnackBar(SnackBar(content: Text('保存開關配置失敗: $e')));
     }
+  }
+
+  Widget _buildQuoteStatusBanner(AuthService authService) {
+    final colorScheme = Theme.of(context).colorScheme;
+    final hasProjectName = (_currentProjectName ?? '').trim().isNotEmpty;
+    final hasProjectAddress = (_currentProjectAddress ?? '').trim().isNotEmpty;
+    final hasSentAt = (_currentSentAt ?? '').trim().isNotEmpty;
+
+    return Container(
+      margin: const EdgeInsets.fromLTRB(16, 16, 16, 0),
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: colorScheme.surfaceContainerLowest,
+        borderRadius: BorderRadius.circular(18),
+        border: Border.all(color: colorScheme.outlineVariant),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Wrap(
+            spacing: 12,
+            runSpacing: 8,
+            crossAxisAlignment: WrapCrossAlignment.center,
+            children: [
+              Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Icon(Icons.description_outlined, color: colorScheme.primary),
+                  const SizedBox(width: 8),
+                  Text(
+                    _currentConfigurationName,
+                    style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
+                ],
+              ),
+              if (_currentUpdatedAt != null &&
+                  _currentUpdatedAt!.trim().isNotEmpty)
+                Chip(
+                  avatar: const Icon(Icons.schedule, size: 18),
+                  label: Text('最後修改 ${_formatTimestamp(_currentUpdatedAt)}'),
+                ),
+              Chip(
+                avatar: Icon(
+                  _currentIsPublished
+                      ? Icons.mark_email_read_outlined
+                      : Icons.drafts_outlined,
+                  size: 18,
+                ),
+                label: Text(_currentIsPublished ? '已發送' : '草稿'),
+              ),
+              Chip(
+                avatar: const Icon(Icons.device_hub_outlined, size: 18),
+                label: Text('迴路 ${_loops.length} 個'),
+              ),
+            ],
+          ),
+          if (!authService.isCustomer && _selectedCustomer != null) ...[
+            const SizedBox(height: 10),
+            Text(
+              '客戶：${_selectedCustomer!.name}${_selectedCustomer!.company != null ? ' (${_selectedCustomer!.company})' : ''}',
+              style: Theme.of(context).textTheme.bodyMedium,
+            ),
+          ],
+          if (hasProjectName || hasProjectAddress) ...[
+            const SizedBox(height: 10),
+            if (hasProjectName)
+              Text(
+                '專案名稱：${_currentProjectName!.trim()}',
+                style: Theme.of(context).textTheme.bodyMedium,
+              ),
+            if (hasProjectAddress)
+              Text(
+                '專案地址：${_currentProjectAddress!.trim()}',
+                style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                  color: colorScheme.onSurfaceVariant,
+                ),
+              ),
+          ],
+          if (_currentIsPublished && hasSentAt) ...[
+            const SizedBox(height: 10),
+            Text(
+              '發送時間：${_formatTimestamp(_currentSentAt)}',
+              style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                color: colorScheme.onSurfaceVariant,
+              ),
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+
+  void _showQuoteSummaryDialog(AuthService authService) {
+    showDialog(
+      context: context,
+      builder: (dialogContext) => QuoteResultDialog(
+        loops: _loops,
+        modules: _modules,
+        switchCount: _switchCountController.text,
+        otherDevices: _otherDevices,
+        powerSupplies: _powerSupplies,
+        boardMaterials: _boardMaterials,
+        wiring: _wiringItems,
+        ceilingHasLn: _ceilingHasLn,
+        ceilingHasMaintenanceHole: _ceilingHasMaintenanceHole,
+        switchHasLn: _switchHasLn,
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(dialogContext).pop(),
+            child: const Text('關閉'),
+          ),
+          OutlinedButton.icon(
+            onPressed: () {
+              Navigator.of(dialogContext).pop();
+              _saveConfiguration();
+            },
+            icon: const Icon(Icons.save_outlined),
+            label: const Text('儲存草稿'),
+          ),
+          if (!context.read<AuthService>().isCustomer)
+            FilledButton.icon(
+              onPressed: _selectedCustomer == null
+                  ? null
+                  : () {
+                      Navigator.of(dialogContext).pop();
+                      _sendQuoteToCustomer();
+                    },
+              icon: const Icon(Icons.send),
+              label: const Text('發給客戶'),
+            ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildStepTitle({
+    required int stepIndex,
+    required String number,
+    required String title,
+  }) {
+    return Row(
+      children: [
+        Container(
+          width: 32,
+          height: 32,
+          decoration: BoxDecoration(
+            color: _currentStep >= stepIndex
+                ? Theme.of(context).colorScheme.primary
+                : Theme.of(context).colorScheme.outline,
+            shape: BoxShape.circle,
+          ),
+          child: Center(
+            child: Text(
+              number,
+              style: TextStyle(
+                color: _currentStep >= stepIndex
+                    ? Theme.of(context).colorScheme.onPrimary
+                    : Theme.of(context).colorScheme.onSurfaceVariant,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+          ),
+        ),
+        const SizedBox(width: 12),
+        Text(
+          title,
+          style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w500),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildStepContentContainer(Widget child) {
+    return Container(
+      margin: const EdgeInsets.only(top: 8),
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: Theme.of(context).colorScheme.surface,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(
+          color: Theme.of(context).colorScheme.outline.withValues(alpha: 0.2),
+        ),
+      ),
+      child: child,
+    );
+  }
+
+  Widget _buildStepperControls(BuildContext context, ControlsDetails details) {
+    return Container(
+      margin: const EdgeInsets.only(top: 16),
+      child: LayoutBuilder(
+        builder: (context, constraints) {
+          final isSmallScreen = constraints.maxWidth < 600;
+          return isSmallScreen
+              ? Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    if (_currentStep > 0)
+                      OutlinedButton.icon(
+                        onPressed: details.onStepCancel,
+                        icon: const Icon(Icons.arrow_back),
+                        label: const Text('上一步'),
+                        style: OutlinedButton.styleFrom(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 24,
+                            vertical: 12,
+                          ),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                        ),
+                      ),
+                    if (_currentStep > 0 && _currentStep < 4)
+                      const SizedBox(height: 16),
+                    ElevatedButton.icon(
+                      onPressed: details.onStepContinue,
+                      icon: _currentStep < 4
+                          ? const Icon(Icons.arrow_forward)
+                          : const Icon(Icons.calculate),
+                      label: Text(_currentStep < 4 ? '下一步' : '生成報價'),
+                      style: ElevatedButton.styleFrom(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 24,
+                          vertical: 12,
+                        ),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                      ),
+                    ),
+                  ],
+                )
+              : Row(
+                  children: [
+                    if (_currentStep > 0)
+                      Expanded(
+                        child: OutlinedButton.icon(
+                          onPressed: details.onStepCancel,
+                          icon: const Icon(Icons.arrow_back),
+                          label: const Text('上一步'),
+                          style: OutlinedButton.styleFrom(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 24,
+                              vertical: 12,
+                            ),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(8),
+                            ),
+                          ),
+                        ),
+                      ),
+                    if (_currentStep > 0 && _currentStep < 4)
+                      const SizedBox(width: 16),
+                    Expanded(
+                      child: ElevatedButton.icon(
+                        onPressed: details.onStepContinue,
+                        icon: _currentStep < 4
+                            ? const Icon(Icons.arrow_forward)
+                            : const Icon(Icons.calculate),
+                        label: Text(_currentStep < 4 ? '下一步' : '生成報價'),
+                        style: ElevatedButton.styleFrom(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 24,
+                            vertical: 12,
+                          ),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
+                );
+        },
+      ),
+    );
+  }
+
+  List<Step> _buildQuoteSteps() {
+    return [
+      Step(
+        title: _buildStepTitle(stepIndex: 0, number: '1', title: '樣態選擇'),
+        content: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            CheckboxListTile(
+              title: const Text('天花版是否有LN'),
+              value: _ceilingHasLn,
+              onChanged: (v) {
+                setState(() => _ceilingHasLn = v!);
+                _autoSave();
+              },
+            ),
+            CheckboxListTile(
+              title: const Text('天花版是否有維修孔'),
+              value: _ceilingHasMaintenanceHole,
+              onChanged: (v) {
+                setState(() => _ceilingHasMaintenanceHole = v!);
+                _autoSave();
+              },
+            ),
+            CheckboxListTile(
+              title: const Text('開關是否有LN'),
+              value: _switchHasLn,
+              onChanged: (v) {
+                setState(() => _switchHasLn = v!);
+                _autoSave();
+              },
+            ),
+          ],
+        ),
+        isActive: _currentStep >= 0,
+        state: _currentStep > 0 ? StepState.complete : StepState.indexed,
+      ),
+      Step(
+        title: _buildStepTitle(stepIndex: 1, number: '2', title: '迴路+設備配置'),
+        content: _buildStepContentContainer(
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const SizedBox(height: 16),
+              StepLoopSwitchWidget(
+                loops: _loops,
+                switches: _switches,
+                switchCountController: _switchCountController,
+                otherDevices: _otherDevices,
+                spaces: _spaces,
+                onAddOtherDevice: _addOtherDevice,
+                onRemoveOtherDevice: _removeOtherDevice,
+                onUpdateOtherDevice: _updateOtherDevice,
+                onAddLoop: _showAddLoopDialog,
+                onAddSwitch: _showAddSwitchDialog,
+                onRemoveLoop: _removeLoop,
+                onUpdateLoop: _updateLoop,
+                onAddFixtureToLoop: _showAddFixtureDialog,
+                onRemoveFixtureFromLoop: _removeFixtureFromLoop,
+                onEditFixtureInLoop: _showEditFixtureDialog,
+                onUpdateSwitch: _updateSwitch,
+                onRemoveSwitch: _removeSwitch,
+                onAddSpace: _addSpace,
+                onRemoveSpace: _removeSpace,
+                onRenameSpace: _renameSpace,
+                onReorderLoopsInSpace: _reorderLoopsInSpace,
+                onMoveLoopToSpace: _moveLoopToSpace,
+                onReorderSwitchesInSpace: _reorderSwitchesInSpace,
+                onMoveSwitchToSpace: _moveSwitchToSpace,
+              ),
+            ],
+          ),
+        ),
+        isActive: _currentStep >= 1,
+        state: _currentStep > 1
+            ? StepState.complete
+            : (_currentStep == 1 ? StepState.editing : StepState.indexed),
+      ),
+      Step(
+        title: _buildStepTitle(stepIndex: 2, number: '3', title: '模組配置'),
+        content: _buildStepContentContainer(
+          StepModuleWidget(
+            modules: _modules,
+            onAddModule: _showAddModuleDialog,
+            onAutoAssign: _autoAssignModules,
+            onRemoveModule: _removeModule,
+            onAssignLoopToModule: _assignLoopToModule,
+            onRemoveLoopFromModule: _removeLoopFromModule,
+            onEditLoopInModule: _showEditLoopDialog,
+            unassignedLoops: _getUnassignedLoops(),
+          ),
+        ),
+        isActive: _currentStep >= 2,
+        state: _currentStep > 2
+            ? StepState.complete
+            : (_currentStep == 2 ? StepState.editing : StepState.indexed),
+      ),
+      Step(
+        title: _buildStepTitle(stepIndex: 3, number: '4', title: '電源供應器配置'),
+        content: _buildStepContentContainer(
+          StepPowerSupplyWidget(
+            powerSupplies: _powerSupplies,
+            availableOptions: _powerSupplyOptions,
+            assignedLoads: _powerSupplyLoads,
+            moduleCount: _modules.length,
+            onChanged: (list) {
+              setState(() {
+                _powerSupplies = List<PowerSupply>.from(list);
+                if (_powerSupplyLoads.length > _powerSupplies.length) {
+                  _powerSupplyLoads = _powerSupplyLoads.sublist(
+                    0,
+                    _powerSupplies.length,
+                  );
+                } else if (_powerSupplyLoads.length < _powerSupplies.length) {
+                  _powerSupplyLoads = [
+                    ..._powerSupplyLoads,
+                    ...List<double>.filled(
+                      _powerSupplies.length - _powerSupplyLoads.length,
+                      0.0,
+                    ),
+                  ];
+                }
+              });
+              _autoSave();
+            },
+            onAutoAssign: _showAutoAssignPowerSuppliesDialog,
+          ),
+        ),
+        isActive: _currentStep >= 3,
+        state: _currentStep > 3
+            ? StepState.complete
+            : (_currentStep == 3 ? StepState.editing : StepState.indexed),
+      ),
+      Step(
+        title: _buildStepTitle(stepIndex: 4, number: '5', title: '材料配置'),
+        content: _buildStepContentContainer(
+          StepMaterialWidget(
+            boardMaterials: _boardMaterials,
+            onBoardMaterialsChanged: (list) {
+              setState(() {
+                _boardMaterials.clear();
+                _boardMaterials.addAll(list);
+              });
+              _autoSave();
+            },
+            wiringItems: _wiringItems,
+            onWiringItemsChanged: (list) {
+              setState(() {
+                _wiringItems.clear();
+                _wiringItems.addAll(list);
+              });
+              _autoSave();
+            },
+          ),
+        ),
+        isActive: _currentStep >= 4,
+        state: _currentStep == 4 ? StepState.editing : StepState.indexed,
+      ),
+    ];
+  }
+
+  Widget _buildQuoteStepper(AuthService authService) {
+    return Stepper(
+      currentStep: _currentStep,
+      onStepContinue: () {
+        if (_currentStep < 4) {
+          setState(() {
+            _currentStep += 1;
+          });
+        } else {
+          _showQuoteSummaryDialog(authService);
+        }
+      },
+      onStepCancel: () {
+        if (_currentStep > 0) {
+          setState(() {
+            _currentStep -= 1;
+          });
+        }
+      },
+      onStepTapped: (step) {
+        setState(() {
+          _currentStep = step;
+        });
+      },
+      controlsBuilder: _buildStepperControls,
+      steps: _buildQuoteSteps(),
+    );
+  }
+
+  Widget _buildLoadingOverlay() {
+    return Container(
+      color: Colors.black.withValues(alpha: 0.3),
+      child: Center(
+        child: Card(
+          elevation: 8,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(16),
+          ),
+          child: Padding(
+            padding: const EdgeInsets.all(24),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                CircularProgressIndicator(
+                  valueColor: AlwaysStoppedAnimation<Color>(
+                    Theme.of(context).colorScheme.primary,
+                  ),
+                ),
+                const SizedBox(height: 16),
+                Text(
+                  '處理中...',
+                  style: TextStyle(
+                    color: Theme.of(context).colorScheme.onSurface,
+                    fontSize: 16,
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildQuotePageBody(AuthService authService) {
+    return Stack(
+      children: [
+        Container(
+          decoration: BoxDecoration(
+            gradient: LinearGradient(
+              begin: Alignment.topCenter,
+              end: Alignment.bottomCenter,
+              colors: [
+                Theme.of(context).colorScheme.surface,
+                Theme.of(context).colorScheme.surface.withValues(alpha: 0.8),
+              ],
+            ),
+          ),
+          child: Column(
+            children: [
+              _buildQuoteStatusBanner(authService),
+              Expanded(child: _buildQuoteStepper(authService)),
+            ],
+          ),
+        ),
+        if (_isLoading) _buildLoadingOverlay(),
+      ],
+    );
   }
 
   @override
@@ -722,6 +1344,11 @@ class _CustomerQuoteBuilderPageState extends State<CustomerQuoteBuilderPage> {
                     _selectedCustomer = customer;
                     _selectedConfigurationName = null;
                     _selectedConfigurationId = null;
+                    _currentProjectName = null;
+                    _currentProjectAddress = null;
+                    _currentUpdatedAt = null;
+                    _currentIsPublished = false;
+                    _currentSentAt = null;
                   });
                   _setActiveQuoteSyncId(null);
                 },
@@ -744,7 +1371,7 @@ class _CustomerQuoteBuilderPageState extends State<CustomerQuoteBuilderPage> {
                     ? allConfigurations
                           .where(
                             (c) =>
-                                c.customerUserId ==
+                                c.userId ==
                                 int.tryParse(authService.userId ?? ''),
                           )
                           .toList()
@@ -857,8 +1484,22 @@ class _CustomerQuoteBuilderPageState extends State<CustomerQuoteBuilderPage> {
                 color: Theme.of(context).colorScheme.primary,
               ),
               onPressed: _saveConfiguration,
-              tooltip: '儲存配置',
+              tooltip: '儲存草稿',
             ),
+            if (!authService.isCustomer)
+              IconButton(
+                iconSize: context.scaledIconSize(24),
+                icon: Icon(
+                  Icons.send,
+                  color: _selectedCustomer != null
+                      ? Theme.of(context).colorScheme.primary
+                      : Theme.of(context).colorScheme.outline,
+                ),
+                onPressed: _selectedCustomer != null
+                    ? _sendQuoteToCustomer
+                    : null,
+                tooltip: _selectedCustomer != null ? '發給客戶' : '請先選擇客戶',
+              ),
 
             //刪除配置按鈕
             IconButton(
@@ -898,577 +1539,7 @@ class _CustomerQuoteBuilderPageState extends State<CustomerQuoteBuilderPage> {
         ],
       ),
       drawer: const AppDrawer(),
-      body: Stack(
-        children: [
-          Container(
-            decoration: BoxDecoration(
-              gradient: LinearGradient(
-                begin: Alignment.topCenter,
-                end: Alignment.bottomCenter,
-                colors: [
-                  Theme.of(context).colorScheme.surface,
-                  Theme.of(context).colorScheme.surface.withValues(alpha: 0.8),
-                ],
-              ),
-            ),
-            child: Stepper(
-              currentStep: _currentStep,
-              onStepContinue: () {
-                if (_currentStep < 4) {
-                  setState(() {
-                    _currentStep += 1;
-                  });
-                } else {
-                  showDialog(
-                    context: context,
-                    builder: (context) => QuoteResultDialog(
-                      loops: _loops,
-                      modules: _modules,
-                      switchCount: _switchCountController.text,
-                      otherDevices: _otherDevices,
-                      powerSupplies: _powerSupplies,
-                      boardMaterials: _boardMaterials,
-                      wiring: _wiringItems,
-                      ceilingHasLn: _ceilingHasLn,
-                      ceilingHasMaintenanceHole: _ceilingHasMaintenanceHole,
-                      switchHasLn: _switchHasLn,
-                    ),
-                  );
-                }
-              },
-              onStepCancel: () {
-                if (_currentStep > 0) {
-                  setState(() {
-                    _currentStep -= 1;
-                  });
-                }
-              },
-              onStepTapped: (step) {
-                setState(() {
-                  _currentStep = step;
-                });
-              },
-              controlsBuilder: (BuildContext context, ControlsDetails details) {
-                return Container(
-                  margin: const EdgeInsets.only(top: 16),
-                  child: LayoutBuilder(
-                    builder: (context, constraints) {
-                      final isSmallScreen = constraints.maxWidth < 600;
-                      return isSmallScreen
-                          ? Column(
-                              crossAxisAlignment: CrossAxisAlignment.stretch,
-                              children: [
-                                if (_currentStep > 0)
-                                  OutlinedButton.icon(
-                                    onPressed: details.onStepCancel,
-                                    icon: const Icon(Icons.arrow_back),
-                                    label: const Text('上一步'),
-                                    style: OutlinedButton.styleFrom(
-                                      padding: const EdgeInsets.symmetric(
-                                        horizontal: 24,
-                                        vertical: 12,
-                                      ),
-                                      shape: RoundedRectangleBorder(
-                                        borderRadius: BorderRadius.circular(8),
-                                      ),
-                                    ),
-                                  ),
-                                if (_currentStep > 0 && _currentStep < 4)
-                                  const SizedBox(height: 16),
-                                ElevatedButton.icon(
-                                  onPressed: details.onStepContinue,
-                                  icon: _currentStep < 4
-                                      ? const Icon(Icons.arrow_forward)
-                                      : const Icon(Icons.calculate),
-                                  label: Text(
-                                    _currentStep < 4 ? '下一步' : '生成報價',
-                                  ),
-                                  style: ElevatedButton.styleFrom(
-                                    padding: const EdgeInsets.symmetric(
-                                      horizontal: 24,
-                                      vertical: 12,
-                                    ),
-                                    shape: RoundedRectangleBorder(
-                                      borderRadius: BorderRadius.circular(8),
-                                    ),
-                                  ),
-                                ),
-                              ],
-                            )
-                          : Row(
-                              children: [
-                                if (_currentStep > 0)
-                                  Expanded(
-                                    child: OutlinedButton.icon(
-                                      onPressed: details.onStepCancel,
-                                      icon: const Icon(Icons.arrow_back),
-                                      label: const Text('上一步'),
-                                      style: OutlinedButton.styleFrom(
-                                        padding: const EdgeInsets.symmetric(
-                                          horizontal: 24,
-                                          vertical: 12,
-                                        ),
-                                        shape: RoundedRectangleBorder(
-                                          borderRadius: BorderRadius.circular(
-                                            8,
-                                          ),
-                                        ),
-                                      ),
-                                    ),
-                                  ),
-                                if (_currentStep > 0 && _currentStep < 4)
-                                  const SizedBox(width: 16),
-                                Expanded(
-                                  child: ElevatedButton.icon(
-                                    onPressed: details.onStepContinue,
-                                    icon: _currentStep < 4
-                                        ? const Icon(Icons.arrow_forward)
-                                        : const Icon(Icons.calculate),
-                                    label: Text(
-                                      _currentStep < 4 ? '下一步' : '生成報價',
-                                    ),
-                                    style: ElevatedButton.styleFrom(
-                                      padding: const EdgeInsets.symmetric(
-                                        horizontal: 24,
-                                        vertical: 12,
-                                      ),
-                                      shape: RoundedRectangleBorder(
-                                        borderRadius: BorderRadius.circular(8),
-                                      ),
-                                    ),
-                                  ),
-                                ),
-                              ],
-                            );
-                    },
-                  ),
-                );
-              },
-              steps: [
-                // 第一個步驟：樣態選擇
-                Step(
-                  title: Row(
-                    children: [
-                      Container(
-                        width: 32,
-                        height: 32,
-                        decoration: BoxDecoration(
-                          color: _currentStep >= 0
-                              ? Theme.of(context).colorScheme.primary
-                              : Theme.of(context).colorScheme.outline,
-                          shape: BoxShape.circle,
-                        ),
-                        child: Center(
-                          child: Text(
-                            '1',
-                            style: TextStyle(
-                              color: _currentStep >= 0
-                                  ? Theme.of(context).colorScheme.onPrimary
-                                  : Theme.of(
-                                      context,
-                                    ).colorScheme.onSurfaceVariant,
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
-                        ),
-                      ),
-                      const SizedBox(width: 12),
-                      const Text(
-                        '樣態選擇',
-                        style: TextStyle(
-                          fontSize: 16,
-                          fontWeight: FontWeight.w500,
-                        ),
-                      ),
-                    ],
-                  ),
-                  content: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      CheckboxListTile(
-                        title: const Text('天花版是否有LN'),
-                        value: _ceilingHasLn,
-                        onChanged: (v) {
-                          setState(() => _ceilingHasLn = v!);
-                          _autoSave();
-                        },
-                      ),
-                      CheckboxListTile(
-                        title: const Text('天花版是否有維修孔'),
-                        value: _ceilingHasMaintenanceHole,
-                        onChanged: (v) {
-                          setState(() => _ceilingHasMaintenanceHole = v!);
-                          _autoSave();
-                        },
-                      ),
-                      CheckboxListTile(
-                        title: const Text('開關是否有LN'),
-                        value: _switchHasLn,
-                        onChanged: (v) {
-                          setState(() => _switchHasLn = v!);
-                          _autoSave();
-                        },
-                      ),
-                    ],
-                  ),
-                  isActive: _currentStep >= 0,
-                  state: _currentStep > 0
-                      ? StepState.complete
-                      : StepState.indexed,
-                ),
-                // 原來的迴路+設備步驟現在編號為2
-                Step(
-                  title: Row(
-                    children: [
-                      Container(
-                        width: 32,
-                        height: 32,
-                        decoration: BoxDecoration(
-                          color: _currentStep >= 1
-                              ? Theme.of(context).colorScheme.primary
-                              : Theme.of(context).colorScheme.outline,
-                          shape: BoxShape.circle,
-                        ),
-                        child: Center(
-                          child: Text(
-                            '2',
-                            style: TextStyle(
-                              color: _currentStep >= 1
-                                  ? Theme.of(context).colorScheme.onPrimary
-                                  : Theme.of(
-                                      context,
-                                    ).colorScheme.onSurfaceVariant,
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
-                        ),
-                      ),
-                      const SizedBox(width: 12),
-                      const Text(
-                        '迴路+設備配置',
-                        style: TextStyle(
-                          fontSize: 16,
-                          fontWeight: FontWeight.w500,
-                        ),
-                      ),
-                    ],
-                  ),
-                  content: Container(
-                    margin: const EdgeInsets.only(top: 8),
-                    padding: const EdgeInsets.all(16),
-                    decoration: BoxDecoration(
-                      color: Theme.of(context).colorScheme.surface,
-                      borderRadius: BorderRadius.circular(12),
-                      border: Border.all(
-                        color: Theme.of(
-                          context,
-                        ).colorScheme.outline.withValues(alpha: 0.2),
-                      ),
-                    ),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        const SizedBox(height: 16),
-                        StepLoopSwitchWidget(
-                          loops: _loops,
-                          switches: _switches,
-                          switchCountController: _switchCountController,
-                          otherDevices: _otherDevices,
-                          spaces: _spaces,
-                          onAddOtherDevice: _addOtherDevice,
-                          onRemoveOtherDevice: _removeOtherDevice,
-                          onUpdateOtherDevice: _updateOtherDevice,
-                          onAddLoop: _showAddLoopDialog,
-                          onAddSwitch: _showAddSwitchDialog,
-                          onRemoveLoop: _removeLoop,
-                          onUpdateLoop: _updateLoop,
-                          onAddFixtureToLoop: _showAddFixtureDialog,
-                          onRemoveFixtureFromLoop: _removeFixtureFromLoop,
-                          onEditFixtureInLoop: _showEditFixtureDialog,
-                          onUpdateSwitch: _updateSwitch,
-                          onRemoveSwitch: _removeSwitch,
-                          onAddSpace: _addSpace,
-                          onRemoveSpace: _removeSpace,
-                          onRenameSpace: _renameSpace,
-                          onReorderLoopsInSpace: _reorderLoopsInSpace,
-                          onMoveLoopToSpace: _moveLoopToSpace,
-                          onReorderSwitchesInSpace: _reorderSwitchesInSpace,
-                          onMoveSwitchToSpace: _moveSwitchToSpace,
-                        ),
-                      ],
-                    ),
-                  ),
-                  isActive: _currentStep >= 1,
-                  state: _currentStep > 1
-                      ? StepState.complete
-                      : (_currentStep == 1
-                            ? StepState.editing
-                            : StepState.indexed),
-                ),
-                Step(
-                  title: Row(
-                    children: [
-                      Container(
-                        width: 32,
-                        height: 32,
-                        decoration: BoxDecoration(
-                          color: _currentStep >= 2
-                              ? Theme.of(context).colorScheme.primary
-                              : Theme.of(context).colorScheme.outline,
-                          shape: BoxShape.circle,
-                        ),
-                        child: Center(
-                          child: Text(
-                            '3',
-                            style: TextStyle(
-                              color: _currentStep >= 2
-                                  ? Theme.of(context).colorScheme.onPrimary
-                                  : Theme.of(
-                                      context,
-                                    ).colorScheme.onSurfaceVariant,
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
-                        ),
-                      ),
-                      const SizedBox(width: 12),
-                      const Text(
-                        '模組配置',
-                        style: TextStyle(
-                          fontSize: 16,
-                          fontWeight: FontWeight.w500,
-                        ),
-                      ),
-                    ],
-                  ),
-                  content: Container(
-                    margin: const EdgeInsets.only(top: 8),
-                    padding: const EdgeInsets.all(16),
-                    decoration: BoxDecoration(
-                      color: Theme.of(context).colorScheme.surface,
-                      borderRadius: BorderRadius.circular(12),
-                      border: Border.all(
-                        color: Theme.of(
-                          context,
-                        ).colorScheme.outline.withValues(alpha: 0.2),
-                      ),
-                    ),
-                    child: StepModuleWidget(
-                      modules: _modules,
-                      onAddModule: _showAddModuleDialog,
-                      onAutoAssign: _autoAssignModules,
-                      onRemoveModule: _removeModule,
-                      onAssignLoopToModule: _assignLoopToModule,
-                      onRemoveLoopFromModule: _removeLoopFromModule,
-                      onEditLoopInModule: _showEditLoopDialog,
-                      unassignedLoops: _getUnassignedLoops(),
-                    ),
-                  ),
-                  isActive: _currentStep >= 2,
-                  state: _currentStep > 2
-                      ? StepState.complete
-                      : (_currentStep == 2
-                            ? StepState.editing
-                            : StepState.indexed),
-                ),
-                Step(
-                  title: Row(
-                    children: [
-                      Container(
-                        width: 32,
-                        height: 32,
-                        decoration: BoxDecoration(
-                          color: _currentStep >= 3
-                              ? Theme.of(context).colorScheme.primary
-                              : Theme.of(context).colorScheme.outline,
-                          shape: BoxShape.circle,
-                        ),
-                        child: Center(
-                          child: Text(
-                            '4',
-                            style: TextStyle(
-                              color: _currentStep >= 3
-                                  ? Theme.of(context).colorScheme.onPrimary
-                                  : Theme.of(
-                                      context,
-                                    ).colorScheme.onSurfaceVariant,
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
-                        ),
-                      ),
-                      const SizedBox(width: 12),
-                      const Text(
-                        '電源供應器配置',
-                        style: TextStyle(
-                          fontSize: 16,
-                          fontWeight: FontWeight.w500,
-                        ),
-                      ),
-                    ],
-                  ),
-                  content: Container(
-                    margin: const EdgeInsets.only(top: 8),
-                    padding: const EdgeInsets.all(16),
-                    decoration: BoxDecoration(
-                      color: Theme.of(context).colorScheme.surface,
-                      borderRadius: BorderRadius.circular(12),
-                      border: Border.all(
-                        color: Theme.of(
-                          context,
-                        ).colorScheme.outline.withValues(alpha: 0.2),
-                      ),
-                    ),
-                    child: StepPowerSupplyWidget(
-                      powerSupplies: _powerSupplies,
-                      availableOptions: _powerSupplyOptions,
-                      assignedLoads: _powerSupplyLoads,
-                      moduleCount: _modules.length,
-                      onChanged: (list) {
-                        setState(() {
-                          _powerSupplies = List<PowerSupply>.from(list);
-                          // keep loads aligned: trim or extend with zeros
-                          if (_powerSupplyLoads.length >
-                              _powerSupplies.length) {
-                            _powerSupplyLoads = _powerSupplyLoads.sublist(
-                              0,
-                              _powerSupplies.length,
-                            );
-                          } else if (_powerSupplyLoads.length <
-                              _powerSupplies.length) {
-                            _powerSupplyLoads = [
-                              ..._powerSupplyLoads,
-                              ...List<double>.filled(
-                                _powerSupplies.length -
-                                    _powerSupplyLoads.length,
-                                0.0,
-                              ),
-                            ];
-                          }
-                        });
-                        _autoSave();
-                      },
-                      onAutoAssign: _showAutoAssignPowerSuppliesDialog,
-                    ),
-                  ),
-                  isActive: _currentStep >= 3,
-                  state: _currentStep > 3
-                      ? StepState.complete
-                      : (_currentStep == 3
-                            ? StepState.editing
-                            : StepState.indexed),
-                ),
-                Step(
-                  title: Row(
-                    children: [
-                      Container(
-                        width: 32,
-                        height: 32,
-                        decoration: BoxDecoration(
-                          color: _currentStep >= 4
-                              ? Theme.of(context).colorScheme.primary
-                              : Theme.of(context).colorScheme.outline,
-                          shape: BoxShape.circle,
-                        ),
-                        child: Center(
-                          child: Text(
-                            '5',
-                            style: TextStyle(
-                              color: _currentStep >= 4
-                                  ? Theme.of(context).colorScheme.onPrimary
-                                  : Theme.of(
-                                      context,
-                                    ).colorScheme.onSurfaceVariant,
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
-                        ),
-                      ),
-                      const SizedBox(width: 12),
-                      const Text(
-                        '材料配置',
-                        style: TextStyle(
-                          fontSize: 16,
-                          fontWeight: FontWeight.w500,
-                        ),
-                      ),
-                    ],
-                  ),
-                  content: Container(
-                    margin: const EdgeInsets.only(top: 8),
-                    padding: const EdgeInsets.all(16),
-                    decoration: BoxDecoration(
-                      color: Theme.of(context).colorScheme.surface,
-                      borderRadius: BorderRadius.circular(12),
-                      border: Border.all(
-                        color: Theme.of(
-                          context,
-                        ).colorScheme.outline.withValues(alpha: 0.2),
-                      ),
-                    ),
-                    child: StepMaterialWidget(
-                      boardMaterials: _boardMaterials,
-                      onBoardMaterialsChanged: (list) {
-                        setState(() {
-                          _boardMaterials.clear();
-                          _boardMaterials.addAll(list);
-                        });
-                        _autoSave();
-                      },
-                      wiringItems: _wiringItems,
-                      onWiringItemsChanged: (list) {
-                        setState(() {
-                          _wiringItems.clear();
-                          _wiringItems.addAll(list);
-                        });
-                        _autoSave();
-                      },
-                    ),
-                  ),
-                  isActive: _currentStep >= 4,
-                  state: _currentStep == 4
-                      ? StepState.editing
-                      : StepState.indexed,
-                ),
-              ],
-            ),
-          ),
-          if (_isLoading)
-            Container(
-              color: Colors.black.withValues(alpha: 0.3),
-              child: Center(
-                child: Card(
-                  elevation: 8,
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(16),
-                  ),
-                  child: Padding(
-                    padding: const EdgeInsets.all(24),
-                    child: Column(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        CircularProgressIndicator(
-                          valueColor: AlwaysStoppedAnimation<Color>(
-                            Theme.of(context).colorScheme.primary,
-                          ),
-                        ),
-                        const SizedBox(height: 16),
-                        Text(
-                          '處理中...',
-                          style: TextStyle(
-                            color: Theme.of(context).colorScheme.onSurface,
-                            fontSize: 16,
-                            fontWeight: FontWeight.w500,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ),
-              ),
-            ),
-        ],
-      ),
+      body: _buildQuotePageBody(authService),
     );
   }
 
@@ -2489,7 +2560,7 @@ class _CustomerQuoteBuilderPageState extends State<CustomerQuoteBuilderPage> {
                     ? int.tryParse(authService.userId ?? '')
                     : _selectedCustomer?.userId;
 
-                final configurationId = await _quoteService.saveConfiguration(
+                final saveResult = await _quoteService.saveConfiguration(
                   newConfigName,
                   _buildCurrentQuoteData(),
                   customerUserId: effectiveCustomerId,
@@ -2498,11 +2569,9 @@ class _CustomerQuoteBuilderPageState extends State<CustomerQuoteBuilderPage> {
 
                 if (!mounted) return;
                 setState(() {
-                  _currentConfigurationName = newConfigName;
-                  _selectedConfigurationName = newConfigName;
-                  _selectedConfigurationId = configurationId;
+                  _applySaveResult(saveResult);
                 });
-                _setActiveQuoteSyncId(configurationId);
+                _setActiveQuoteSyncId(saveResult?.configurationId);
               } catch (e) {
                 errorMessage = '新建配置失敗: $e';
               }
@@ -2510,7 +2579,7 @@ class _CustomerQuoteBuilderPageState extends State<CustomerQuoteBuilderPage> {
               if (!mounted) return;
               navigator.pop();
               messenger.showSnackBar(
-                SnackBar(content: Text(errorMessage ?? '已新建配置')),
+                SnackBar(content: Text(errorMessage ?? '已新建草稿')),
               );
             },
             child: const Text('確定'),
@@ -2520,27 +2589,56 @@ class _CustomerQuoteBuilderPageState extends State<CustomerQuoteBuilderPage> {
     );
   }
 
-  void _saveConfiguration() async {
+  void _saveConfiguration() {
+    _showQuoteSaveDialog();
+  }
+
+  void _sendQuoteToCustomer() {
+    _showQuoteSaveDialog(assignToSelectedCustomer: true);
+  }
+
+  void _showQuoteSaveDialog({bool assignToSelectedCustomer = false}) {
+    if (assignToSelectedCustomer && _selectedCustomer == null) {
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('請先選擇要接收報價的客戶')));
+      return;
+    }
+
     _saveSwitchConfigurations();
     final TextEditingController nameController = TextEditingController(
       text: _currentConfigurationName,
     );
-    final TextEditingController projectNameController = TextEditingController();
+    final TextEditingController projectNameController = TextEditingController(
+      text: _currentProjectName ?? '',
+    );
     final TextEditingController projectAddressController =
-        TextEditingController();
+        TextEditingController(text: _currentProjectAddress ?? '');
 
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text('儲存估價配置'),
+        title: Text(assignToSelectedCustomer ? '發送報價給客戶' : '儲存草稿'),
         content: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
+            if (assignToSelectedCustomer && _selectedCustomer != null) ...[
+              Align(
+                alignment: Alignment.centerLeft,
+                child: Text(
+                  '接收客戶：${_selectedCustomer!.name}${_selectedCustomer!.company != null ? ' (${_selectedCustomer!.company})' : ''}',
+                  style: Theme.of(
+                    context,
+                  ).textTheme.bodyMedium?.copyWith(fontWeight: FontWeight.w600),
+                ),
+              ),
+              const SizedBox(height: 16),
+            ],
             TextField(
               controller: nameController,
               decoration: const InputDecoration(
-                labelText: '配置名稱',
-                hintText: '輸入配置名稱',
+                labelText: '報價單名稱',
+                hintText: '輸入報價單名稱',
               ),
             ),
             const SizedBox(height: 16),
@@ -2584,7 +2682,7 @@ class _CustomerQuoteBuilderPageState extends State<CustomerQuoteBuilderPage> {
                       : _selectedCustomer?.userId;
                   final savedConfigurationName = nameController.text.trim();
 
-                  final configurationId = await _quoteService.saveConfiguration(
+                  final saveResult = await _quoteService.saveConfiguration(
                     savedConfigurationName,
                     _buildCurrentQuoteData(),
                     customerUserId: effectiveCustomerId,
@@ -2595,17 +2693,24 @@ class _CustomerQuoteBuilderPageState extends State<CustomerQuoteBuilderPage> {
                         projectAddressController.text.trim().isNotEmpty
                         ? projectAddressController.text.trim()
                         : null,
+                    publishQuote: assignToSelectedCustomer ? true : null,
                   );
                   if (!mounted) return;
                   setState(() {
-                    _currentConfigurationName = savedConfigurationName;
-                    _selectedConfigurationName = savedConfigurationName;
-                    _selectedConfigurationId = configurationId;
+                    _applySaveResult(saveResult);
                   });
-                  _setActiveQuoteSyncId(configurationId);
-                  _loadConfigurations(); // 刷新配置列表
+                  _setActiveQuoteSyncId(saveResult?.configurationId);
+                  await _loadConfigurations();
                   navigator.pop();
-                  messenger.showSnackBar(SnackBar(content: Text('配置已儲存')));
+                  messenger.showSnackBar(
+                    SnackBar(
+                      content: Text(
+                        assignToSelectedCustomer
+                            ? '報價單已發送給 ${_selectedCustomer!.name}，可於顧客端「我的報價單」查看'
+                            : '草稿已儲存',
+                      ),
+                    ),
+                  );
                 } catch (e) {
                   if (!mounted) return;
                   messenger.showSnackBar(SnackBar(content: Text('儲存失敗: $e')));
@@ -2614,7 +2719,7 @@ class _CustomerQuoteBuilderPageState extends State<CustomerQuoteBuilderPage> {
                 }
               }
             },
-            child: const Text('儲存'),
+            child: Text(assignToSelectedCustomer ? '發送' : '儲存'),
           ),
         ],
       ),
@@ -2649,6 +2754,7 @@ class _CustomerQuoteBuilderPageState extends State<CustomerQuoteBuilderPage> {
             )
             .toList();
       });
+      _syncCurrentConfigurationMetadata();
     } catch (e) {
       // 静默处理错误，用户可以稍後重试
       debugPrint('載入配置列表失敗: $e');
@@ -2945,6 +3051,11 @@ class _CustomerQuoteBuilderPageState extends State<CustomerQuoteBuilderPage> {
             configurationId: configuration.id,
             resetStep: true,
           );
+          _currentProjectName = configuration.projectName;
+          _currentProjectAddress = configuration.projectAddress;
+          _currentUpdatedAt = configuration.updatedAt;
+          _currentIsPublished = configuration.isPublished;
+          _currentSentAt = configuration.sentAt;
         });
         _setActiveQuoteSyncId(configuration.id);
         ScaffoldMessenger.of(

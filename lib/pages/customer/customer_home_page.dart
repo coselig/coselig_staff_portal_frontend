@@ -123,11 +123,23 @@ class CustomerHomePage extends StatelessWidget {
                             Navigator.of(context).pushNamed('/customer_profile');
                           },
                         );
+                        final quotesCard = _buildActionCard(
+                          context: context,
+                          icon: Icons.receipt_long_outlined,
+                          title: '我的報價單',
+                          description: '查看員工已發送的報價單，並確認最後一次修改時間與內容摘要。',
+                          buttonLabel: '查看報價單',
+                          onPressed: () {
+                            Navigator.of(context).pushNamed('/customer_quotes');
+                          },
+                        );
 
                         if (!isWide) {
                           return Column(
                             children: [
                               quoteCard,
+                              const SizedBox(height: 16),
+                              quotesCard,
                               const SizedBox(height: 16),
                               profileCard,
                             ],
@@ -138,6 +150,8 @@ class CustomerHomePage extends StatelessWidget {
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             Expanded(child: quoteCard),
+                            const SizedBox(width: 16),
+                            Expanded(child: quotesCard),
                             const SizedBox(width: 16),
                             Expanded(child: profileCard),
                           ],

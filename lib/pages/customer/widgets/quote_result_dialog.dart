@@ -14,6 +14,7 @@ class QuoteResultDialog extends StatelessWidget {
   final bool ceilingHasLn;
   final bool ceilingHasMaintenanceHole;
   final bool switchHasLn;
+  final List<Widget>? actions;
 
   const QuoteResultDialog({
     super.key,
@@ -27,6 +28,7 @@ class QuoteResultDialog extends StatelessWidget {
     required this.ceilingHasLn,
     required this.ceilingHasMaintenanceHole,
     required this.switchHasLn,
+    this.actions,
   });
 
   @override
@@ -269,12 +271,14 @@ class QuoteResultDialog extends StatelessWidget {
           ],
         ),
       ),
-      actions: [
-        TextButton(
-          onPressed: () => Navigator.of(context).pop(),
-          child: const Text('確定'),
-        ),
-      ],
+      actions:
+          actions ??
+          [
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(),
+              child: const Text('確定'),
+            ),
+          ],
     );
   }
 

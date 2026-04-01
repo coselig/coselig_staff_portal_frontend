@@ -19,6 +19,8 @@ class QuoteConfiguration {
   final String? customerCompany;
   final String? projectName;
   final String? projectAddress;
+  final bool isPublished;
+  final String? sentAt;
   final QuoteData? quoteData;
 
   QuoteConfiguration({
@@ -34,10 +36,23 @@ class QuoteConfiguration {
     this.customerCompany,
     this.projectName,
     this.projectAddress,
+    this.isPublished = false,
+    this.sentAt,
     this.quoteData,
   });
 
   factory QuoteConfiguration.fromJson(Map<String, dynamic> json) {
+    bool parseBool(dynamic value) {
+      if (value is bool) {
+        return value;
+      }
+      if (value is num) {
+        return value != 0;
+      }
+      final normalized = value?.toString().trim().toLowerCase();
+      return normalized == 'true' || normalized == '1';
+    }
+
     return QuoteConfiguration(
       id: json['id'] ?? 0,
       userId: json['user_id'] ?? 0,
@@ -51,9 +66,67 @@ class QuoteConfiguration {
       customerCompany: json['customer_company'],
       projectName: json['project_name'],
       projectAddress: json['project_address'],
+      isPublished: parseBool(json['is_published']),
+      sentAt: json['sent_at']?.toString(),
       quoteData: json['quote_data'] != null
           ? QuoteData.fromJson(jsonDecode(json['quote_data']))
           : null,
+    );
+  }
+}
+
+class QuoteSaveResult {
+  final int? configurationId;
+  final String name;
+  final String? createdAt;
+  final String? updatedAt;
+  final int? customerUserId;
+  final String? projectName;
+  final String? projectAddress;
+  final bool isPublished;
+  final String? sentAt;
+
+  const QuoteSaveResult({
+    required this.configurationId,
+    required this.name,
+    this.createdAt,
+    this.updatedAt,
+    this.customerUserId,
+    this.projectName,
+    this.projectAddress,
+    this.isPublished = false,
+    this.sentAt,
+  });
+
+  factory QuoteSaveResult.fromJson(Map<String, dynamic> json) {
+    int? parseInt(dynamic value) {
+      if (value is int) {
+        return value;
+      }
+      return int.tryParse(value?.toString() ?? '');
+    }
+
+    bool parseBool(dynamic value) {
+      if (value is bool) {
+        return value;
+      }
+      if (value is num) {
+        return value != 0;
+      }
+      final normalized = value?.toString().trim().toLowerCase();
+      return normalized == 'true' || normalized == '1';
+    }
+
+    return QuoteSaveResult(
+      configurationId: parseInt(json['configurationId']),
+      name: json['name']?.toString() ?? '',
+      createdAt: json['createdAt']?.toString(),
+      updatedAt: json['updatedAt']?.toString(),
+      customerUserId: parseInt(json['customerUserId']),
+      projectName: json['projectName']?.toString(),
+      projectAddress: json['projectAddress']?.toString(),
+      isPublished: parseBool(json['isPublished']),
+      sentAt: json['sentAt']?.toString(),
     );
   }
 }
@@ -270,30 +343,40 @@ class QuoteService extends ChangeNotifier {
     }
   }
 
-  Future<int?> saveConfiguration(
+  Future<QuoteSaveResult?> saveConfiguration(
     String name,
     QuoteData quoteData, {
     int? customerUserId,
     String? projectName,
     String? projectAddress,
     bool broadcastListUpdate = true,
+    bool? publishQuote,
   }) async {
     _isLoading = true;
     _error = null;
     notifyListeners();
 
     try {
-      final requestBody = {'name': name, 'quoteData': quoteData.toJson()};
-      if (customerUserId != null) {
-        requestBody['customerUserId'] = customerUserId;
-      }
-      if (projectName != null && projectName.isNotEmpty) {
-        requestBody['projectName'] = projectName;
-      }
-      if (projectAddress != null && projectAddress.isNotEmpty) {
-        requestBody['projectAddress'] = projectAddress;
-      }
+      final normalizedProjectName = projectName?.trim();
+      final normalizedProjectAddress = projectAddress?.trim();
+      final Map<String, dynamic> requestBody = {
+        'name': name,
+        'quoteData': quoteData.toJson(),
+        'customerUserId': customerUserId,
+        'projectName':
+            normalizedProjectName != null && normalizedProjectName.isNotEmpty
+            ? normalizedProjectName
+            : null,
+        'projectAddress':
+            normalizedProjectAddress != null &&
+                normalizedProjectAddress.isNotEmpty
+            ? normalizedProjectAddress
+            : null,
+      };
       requestBody['broadcastListUpdate'] = broadcastListUpdate;
+      if (publishQuote != null) {
+        requestBody['publishQuote'] = publishQuote;
+      }
       final response = await _client.post(
         Uri.parse('$baseUrl/api/quote-configurations'),
         headers: {'Content-Type': 'application/json'},
@@ -302,11 +385,13 @@ class QuoteService extends ChangeNotifier {
 
       if (response.statusCode == 200) {
         final data = jsonDecode(response.body);
-        final configurationId = _normalizeQuoteId(data['configurationId']);
+        final saveResult = QuoteSaveResult.fromJson(
+          Map<String, dynamic>.from(data),
+        );
         if (broadcastListUpdate) {
           await fetchConfigurations(); // Refresh the list
         }
-        return configurationId;
+        return saveResult;
       } else if (response.statusCode == 401) {
         _error = 'Unauthorized';
         navigatorKey.currentState?.pushReplacementNamed('/login');

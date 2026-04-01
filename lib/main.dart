@@ -15,6 +15,7 @@ import 'package:coselig_staff_portal/pages/general/splash_page.dart';
 import 'package:coselig_staff_portal/pages/staff/staff_home_page.dart';
 import 'package:coselig_staff_portal/pages/customer/customer_home_page.dart';
 import 'package:coselig_staff_portal/pages/customer/customer_quote_builder_page.dart';
+import 'package:coselig_staff_portal/pages/customer/customer_quotes_page.dart';
 import 'package:coselig_staff_portal/pages/customer/profile_page.dart';
 import 'package:coselig_staff_portal/pages/staff/staff_data_page.dart';
 import 'package:coselig_staff_portal/pages/staff/switch_management_page.dart';
@@ -144,6 +145,7 @@ class MainApp extends StatelessWidget {
                 '/customer_home': (context) => const CustomerHomePage(),
                 '/customer_quote_builder': (context) =>
                     const CustomerQuoteBuilderPage(),
+                '/customer_quotes': (context) => const CustomerQuotesPage(),
                 '/customer_profile': (context) => const CustomerProfilePage(),
                 '/admin': (context) => const AllAttendanceViewPage(),
                 '/discovery_generate': (context) =>
