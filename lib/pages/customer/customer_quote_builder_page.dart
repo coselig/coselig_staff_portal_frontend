@@ -22,9 +22,12 @@ import 'widgets/edit_loop_dialog.dart';
 
 import 'package:coselig_staff_portal/models/quote/loop_info.dart';
 import 'package:coselig_staff_portal/pages/customer/wiring_diagram_page.dart';
+import 'package:coselig_staff_portal/services/project_case_service.dart';
 
 class CustomerQuoteBuilderPage extends StatefulWidget {
-  const CustomerQuoteBuilderPage({super.key});
+  final int? caseId;
+
+  const CustomerQuoteBuilderPage({super.key, this.caseId});
 
   @override
   State<CustomerQuoteBuilderPage> createState() =>
@@ -635,6 +638,69 @@ class _CustomerQuoteBuilderPageState extends State<CustomerQuoteBuilderPage> {
         _autoSaving = false;
       }
     });
+  }
+
+  void _showSaveSnapshotDialog() {
+    final labelController = TextEditingController();
+    showDialog(
+      context: context,
+      builder: (ctx) {
+        bool saving = false;
+        return StatefulBuilder(
+          builder: (ctx, setDialogState) {
+            return AlertDialog(
+              title: const Text('儲存估價版本'),
+              content: TextField(
+                controller: labelController,
+                autofocus: true,
+                decoration: const InputDecoration(
+                  labelText: '版本名稱（例如：初步估價、現場修改後）',
+                  border: OutlineInputBorder(),
+                ),
+              ),
+              actions: [
+                TextButton(
+                  onPressed: saving ? null : () => Navigator.of(ctx).pop(),
+                  child: const Text('取消'),
+                ),
+                FilledButton(
+                  onPressed: saving
+                      ? null
+                      : () async {
+                          final label = labelController.text.trim();
+                          if (label.isEmpty) return;
+                          setDialogState(() => saving = true);
+                          final navigator = Navigator.of(ctx);
+                          final messenger = ScaffoldMessenger.of(context);
+                          final service = ProjectCaseService();
+                          final id = await service.createSnapshot(
+                            widget.caseId!,
+                            label: label,
+                            quoteData: _buildCurrentQuoteData(),
+                          );
+                          if (!mounted) return;
+                          final snackMsg = id != null
+                              ? '版本「$label」已儲存'
+                              : '儲存失敗，請重試';
+                          navigator.pop();
+                          messenger.showSnackBar(
+                            SnackBar(content: Text(snackMsg)),
+                          );
+                        },
+                  child: saving
+                      ? const SizedBox(
+                          width: 16,
+                          height: 16,
+                          child: CircularProgressIndicator(strokeWidth: 2),
+                        )
+                      : const Text('儲存'),
+                ),
+              ],
+            );
+          },
+        );
+      },
+    );
   }
 
   void _saveSwitchConfigurations() async {
@@ -1486,6 +1552,21 @@ class _CustomerQuoteBuilderPageState extends State<CustomerQuoteBuilderPage> {
               onPressed: _saveConfiguration,
               tooltip: '儲存草稿',
             ),
+            // 儲存版本快照（僅在有案件時顯示）
+            if (widget.caseId != null)
+              IconButton(
+                iconSize: context.scaledIconSize(24),
+                icon: Icon(
+                  Icons.bookmark_add,
+                  color: Theme.of(context).colorScheme.tertiary,
+                ),
+                onPressed: _selectedConfigurationName != null
+                    ? () => _showSaveSnapshotDialog()
+                    : null,
+                tooltip: _selectedConfigurationName != null
+                    ? '儲存此版本'
+                    : '請先載入配置',
+              ),
             if (!authService.isCustomer)
               IconButton(
                 iconSize: context.scaledIconSize(24),

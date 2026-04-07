@@ -26,6 +26,9 @@ import 'package:coselig_staff_portal/services/quote_service.dart';
 import 'package:coselig_staff_portal/services/theme_provider.dart';
 import 'package:coselig_staff_portal/services/ui_settings_provider.dart';
 import 'package:coselig_staff_portal/services/customer_service.dart';
+import 'package:coselig_staff_portal/services/project_case_service.dart';
+import 'package:coselig_staff_portal/pages/case_management/case_list_page.dart';
+import 'package:coselig_staff_portal/pages/case_management/case_detail_page.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:web/web.dart';
@@ -58,6 +61,7 @@ void main() async {
         ChangeNotifierProvider(create: (_) => UiSettingsProvider()),
         ChangeNotifierProvider(create: (_) => QuoteService()),
         ChangeNotifierProvider(create: (_) => CustomerService()),
+        ChangeNotifierProvider(create: (_) => ProjectCaseService()),
         ChangeNotifierProxyProvider<AuthService, ThemeProvider>(
           create: (context) =>
               ThemeProvider(Provider.of<AuthService>(context, listen: false)),
@@ -131,12 +135,6 @@ class MainApp extends StatelessWidget {
                 );
               },
               initialRoute: '/',
-              onUnknownRoute: (settings) {
-                // 對於未知路由，重定向到 splash，讓它處理
-                return MaterialPageRoute(
-                  builder: (context) => const SplashScreen(),
-                );
-              },
               routes: {
                 '/': (context) => const SplashScreen(),
                 '/splash': (context) => const SplashScreen(),
@@ -164,6 +162,22 @@ class MainApp extends StatelessWidget {
                 '/device_config_management': (context) =>
                     const DeviceConfigManagementPage(),
                 '/privacy': (context) => const PrivacyPolicyPage(),
+                '/cases': (context) => const CaseListPage(),
+              },
+              onGenerateRoute: (settings) {
+                final caseMatch = RegExp(
+                  r'^/cases/(\d+)$',
+                ).firstMatch(settings.name ?? '');
+                if (caseMatch != null) {
+                  final caseId = int.parse(caseMatch.group(1)!);
+                  return MaterialPageRoute(
+                    settings: settings,
+                    builder: (_) => CaseDetailPage(caseId: caseId),
+                  );
+                }
+                return MaterialPageRoute(
+                  builder: (context) => const SplashScreen(),
+                );
               },
             );
           },

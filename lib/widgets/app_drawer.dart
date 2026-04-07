@@ -55,6 +55,13 @@ class AppDrawer extends StatelessWidget {
               },
             ),
             ListTile(
+              leading: Icon(Icons.folder_special),
+              title: Text('案件管理'),
+              onTap: () {
+                navigatorKey.currentState!.pushNamed('/cases');
+              },
+            ),
+            ListTile(
               leading: Icon(Icons.person),
               title: Text('我的資料'),
               onTap: () {

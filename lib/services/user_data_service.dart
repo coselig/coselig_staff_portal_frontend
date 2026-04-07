@@ -99,4 +99,78 @@ class UserDataService extends ChangeNotifier {
       throw Exception('網路錯誤: $e');
     }
   }
+
+  // 更新用戶角色（僅管理員）
+  Future<void> updateUserRole(String userId, String role) async {
+    try {
+      final response = await _client.patch(
+        Uri.parse('$baseUrl/api/users/$userId'),
+        headers: {'Content-Type': 'application/json'},
+        body: jsonEncode({'role': role}),
+      );
+
+      if (response.statusCode == 200) {
+        return;
+      } else if (response.statusCode == 401) {
+        navigatorKey.currentState?.pushReplacementNamed('/login');
+        throw Exception('未登入');
+      } else if (response.statusCode == 403) {
+        final error = jsonDecode(response.body);
+        throw Exception(error['error'] ?? '權限不足');
+      } else {
+        final error = jsonDecode(response.body);
+        throw Exception(error['error'] ?? '更新角色失敗');
+      }
+    } catch (e) {
+      throw Exception('網路錯誤: $e');
+    }
+  }
+
+  // 查詢用戶關聯資料摘要（刪除前預覽，僅管理員）
+  Future<Map<String, dynamic>> getUserRelatedData(String userId) async {
+    try {
+      final response = await _client.get(
+        Uri.parse('$baseUrl/api/users/$userId/related-data'),
+      );
+
+      if (response.statusCode == 200) {
+        return jsonDecode(response.body) as Map<String, dynamic>;
+      } else if (response.statusCode == 401) {
+        navigatorKey.currentState?.pushReplacementNamed('/login');
+        throw Exception('未登入');
+      } else if (response.statusCode == 403) {
+        final error = jsonDecode(response.body);
+        throw Exception(error['error'] ?? '權限不足');
+      } else {
+        final error = jsonDecode(response.body);
+        throw Exception(error['error'] ?? '查詢失敗');
+      }
+    } catch (e) {
+      throw Exception('網路錯誤: $e');
+    }
+  }
+
+  // 刪除用戶及其所有關聯資料（僅管理員）
+  Future<void> deleteUser(String userId) async {
+    try {
+      final response = await _client.delete(
+        Uri.parse('$baseUrl/api/users/$userId'),
+      );
+
+      if (response.statusCode == 200) {
+        return;
+      } else if (response.statusCode == 401) {
+        navigatorKey.currentState?.pushReplacementNamed('/login');
+        throw Exception('未登入');
+      } else if (response.statusCode == 403) {
+        final error = jsonDecode(response.body);
+        throw Exception(error['error'] ?? '權限不足');
+      } else {
+        final error = jsonDecode(response.body);
+        throw Exception(error['error'] ?? '刪除失敗');
+      }
+    } catch (e) {
+      throw Exception('網路錯誤: $e');
+    }
+  }
 }
