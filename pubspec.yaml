@@ -1,4 +1,4 @@
-name: coselig_staff_portal
+﻿name: coselig_staff_portal
 description: "coselig.com staff portal application"
 publish_to: 'none'
 version: 0.27.0
@@ -43,3 +43,5 @@ flutter:
     - family: Iansui
       fonts:
         - asset: assets/fonts/Iansui-Regular.ttf
+version: 0.28.0
+

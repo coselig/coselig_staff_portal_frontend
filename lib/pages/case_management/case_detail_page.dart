@@ -6,6 +6,7 @@ import 'package:coselig_staff_portal/pages/staff/smart_home_assessment_page.dart
 import 'package:coselig_staff_portal/services/project_case_service.dart';
 import 'package:coselig_staff_portal/widgets/app_drawer.dart';
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 
 class CaseDetailPage extends StatefulWidget {
   final int caseId;
@@ -17,7 +18,7 @@ class CaseDetailPage extends StatefulWidget {
 }
 
 class _CaseDetailPageState extends State<CaseDetailPage> {
-  final ProjectCaseService _service = ProjectCaseService();
+  late final ProjectCaseService _service;
   ProjectCase? _case;
   List<QuoteSnapshot> _snapshots = [];
   bool _loading = true;
@@ -26,7 +27,48 @@ class _CaseDetailPageState extends State<CaseDetailPage> {
   @override
   void initState() {
     super.initState();
+    _service = context.read<ProjectCaseService>();
     _load();
+  }
+
+  Future<void> _confirmDelete() async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('刪除案件'),
+        content: const Text('確定要刪除此案件？此操作無法復原。'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(false),
+            child: const Text('取消'),
+          ),
+          FilledButton(
+            style: FilledButton.styleFrom(
+              backgroundColor: Theme.of(context).colorScheme.error,
+            ),
+            onPressed: () => Navigator.of(ctx).pop(true),
+            child: const Text('刪除'),
+          ),
+        ],
+      ),
+    );
+    if (confirmed != true) return;
+
+    setState(() {
+      _loading = true;
+      _error = null;
+    });
+
+    final ok = await _service.deleteCase(widget.caseId);
+    if (!mounted) return;
+    if (ok) {
+      Navigator.of(context).pop();
+    } else {
+      setState(() {
+        _loading = false;
+        _error = '刪除失敗，請重試';
+      });
+    }
   }
 
   Future<void> _load() async {
@@ -229,6 +271,12 @@ class _CaseDetailPageState extends State<CaseDetailPage> {
               icon: const Icon(Icons.edit),
               tooltip: '編輯案件',
               onPressed: _showEditDialog,
+            ),
+          if (_case != null)
+            IconButton(
+              icon: const Icon(Icons.delete_outline),
+              tooltip: '刪除案件',
+              onPressed: _confirmDelete,
             ),
           IconButton(
             icon: const Icon(Icons.refresh),
