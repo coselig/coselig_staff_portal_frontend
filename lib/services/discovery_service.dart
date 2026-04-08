@@ -479,6 +479,39 @@ class DiscoveryService extends ChangeNotifier {
     }
   }
 
+  Future<void> bindConfiguration(String name, int caseId) async {
+    _isLoading = true;
+    _error = null;
+    notifyListeners();
+
+    try {
+      final response = await _client.post(
+        Uri.parse('$baseUrl/api/configurations/bind'),
+        headers: {'Content-Type': 'application/json'},
+        body: jsonEncode({'name': name, 'case_id': caseId}),
+      );
+
+      if (response.statusCode == 200) {
+        await fetchConfigurations(caseId: caseId);
+      } else if (response.statusCode == 401) {
+        _error = 'Unauthorized';
+        navigatorKey.currentState?.pushReplacementNamed('/login');
+      } else {
+        final error = jsonDecode(response.body);
+        _error = error['error'] ?? 'Failed to bind configuration';
+        notifyListeners();
+        throw Exception(_error);
+      }
+    } catch (e) {
+      _error ??= 'Network error: $e';
+      notifyListeners();
+      rethrow;
+    } finally {
+      _isLoading = false;
+      notifyListeners();
+    }
+  }
+
   // 清空設備列表
   void clearDevices() {
     _devices.clear();

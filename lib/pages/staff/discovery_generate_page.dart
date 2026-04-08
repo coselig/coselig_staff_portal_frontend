@@ -6,7 +6,6 @@ import 'package:coselig_staff_portal/widgets/app_drawer.dart';
 import 'package:coselig_staff_portal/services/discovery_service.dart';
 import 'package:coselig_staff_portal/utils/icon_utils.dart';
 
-
 class DiscoveryGeneratePage extends StatefulWidget {
   final int? caseId;
   final String? caseName;
@@ -287,7 +286,9 @@ class _DiscoveryGeneratePageState extends State<DiscoveryGeneratePage> {
 
   Future<void> _handleModuleIdSelection(String? newValue) async {
     if (newValue == _customModuleIdOption) {
-      final newModuleId = await _showModuleIdInputDialog(moduleIdController.text);
+      final newModuleId = await _showModuleIdInputDialog(
+        moduleIdController.text,
+      );
       if (newModuleId != null && newModuleId.isNotEmpty) {
         moduleIdController.text = newModuleId;
         if (mounted) {
@@ -597,14 +598,21 @@ class _DiscoveryGeneratePageState extends State<DiscoveryGeneratePage> {
       final json = _service.exportDeviceConfigsJson();
       final blob = html.Blob([json], 'application/json');
       final url = html.Url.createObjectUrlFromBlob(blob);
-      final filename = '${_service.currentConfigurationName.replaceAll(' ', '_')}_device_configs.json';
+      final filename =
+          '${_service.currentConfigurationName.replaceAll(' ', '_')}_device_configs.json';
       final _ = html.AnchorElement(href: url)
         ..setAttribute('download', filename)
         ..click();
       html.Url.revokeObjectUrl(url);
-      if (mounted) ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('已下載 deviceConfigs JSON')));
+      if (mounted)
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(const SnackBar(content: Text('已下載 deviceConfigs JSON')));
     } catch (e) {
-      if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('匯出失敗: $e')));
+      if (mounted)
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('匯出失敗: $e')));
     }
   }
 
@@ -618,9 +626,15 @@ class _DiscoveryGeneratePageState extends State<DiscoveryGeneratePage> {
         ..setAttribute('download', filename)
         ..click();
       html.Url.revokeObjectUrl(url);
-      if (mounted) ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('已下載 deviceConfigs JSON Schema')));
+      if (mounted)
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('已下載 deviceConfigs JSON Schema')),
+        );
     } catch (e) {
-      if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('匯出 Schema 失敗: $e')));
+      if (mounted)
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('匯出 Schema 失敗: $e')));
     }
   }
 
@@ -657,7 +671,9 @@ class _DiscoveryGeneratePageState extends State<DiscoveryGeneratePage> {
                   // 清空設備列表
                   _service.clearDevices();
                   if (mounted) {
-                    messenger.showSnackBar(const SnackBar(content: Text('已清空配置')));
+                    messenger.showSnackBar(
+                      const SnackBar(content: Text('已清空配置')),
+                    );
                   }
                 } else {
                   try {
@@ -666,10 +682,14 @@ class _DiscoveryGeneratePageState extends State<DiscoveryGeneratePage> {
                       caseId: widget.caseId,
                     );
                     if (!mounted) return;
-                    messenger.showSnackBar(const SnackBar(content: Text('配置加載成功')));
+                    messenger.showSnackBar(
+                      const SnackBar(content: Text('配置加載成功')),
+                    );
                   } catch (e) {
                     if (!mounted) return;
-                    messenger.showSnackBar(SnackBar(content: Text('加載配置失敗: $e')));
+                    messenger.showSnackBar(
+                      SnackBar(content: Text('加載配置失敗: $e')),
+                    );
                   }
                 }
               }
@@ -744,10 +764,14 @@ class _DiscoveryGeneratePageState extends State<DiscoveryGeneratePage> {
                     _service.setConfigurationName(newName);
                     await _service.fetchConfigurations(caseId: widget.caseId);
                     if (!mounted) return;
-                    messenger.showSnackBar(const SnackBar(content: Text('配置保存成功')));
+                    messenger.showSnackBar(
+                      const SnackBar(content: Text('配置保存成功')),
+                    );
                   } catch (e) {
                     if (!mounted) return;
-                    messenger.showSnackBar(SnackBar(content: Text('保存配置失敗: $e')));
+                    messenger.showSnackBar(
+                      SnackBar(content: Text('保存配置失敗: $e')),
+                    );
                   }
                 }
               } else {
@@ -759,7 +783,9 @@ class _DiscoveryGeneratePageState extends State<DiscoveryGeneratePage> {
                   );
                   await _service.fetchConfigurations(caseId: widget.caseId);
                   if (!mounted) return;
-                  messenger.showSnackBar(const SnackBar(content: Text('配置保存成功')));
+                  messenger.showSnackBar(
+                    const SnackBar(content: Text('配置保存成功')),
+                  );
                 } catch (e) {
                   if (!mounted) return;
                   messenger.showSnackBar(SnackBar(content: Text('保存配置失敗: $e')));
@@ -776,7 +802,9 @@ class _DiscoveryGeneratePageState extends State<DiscoveryGeneratePage> {
               if (_selectedConfiguration == null ||
                   _selectedConfiguration == '新配置') {
                 if (mounted) {
-                  messenger.showSnackBar(const SnackBar(content: Text('請先選擇要刪除的配置')));
+                  messenger.showSnackBar(
+                    const SnackBar(content: Text('請先選擇要刪除的配置')),
+                  );
                 }
                 return;
               }
@@ -812,7 +840,9 @@ class _DiscoveryGeneratePageState extends State<DiscoveryGeneratePage> {
                   _service.clearDevices();
                   await _service.fetchConfigurations(caseId: widget.caseId);
                   if (!mounted) return;
-                  messenger.showSnackBar(const SnackBar(content: Text('配置刪除成功')));
+                  messenger.showSnackBar(
+                    const SnackBar(content: Text('配置刪除成功')),
+                  );
                 } catch (e) {
                   if (!mounted) return;
                   messenger.showSnackBar(SnackBar(content: Text('刪除配置失敗: $e')));
@@ -820,6 +850,57 @@ class _DiscoveryGeneratePageState extends State<DiscoveryGeneratePage> {
               }
             },
           ),
+          if (widget.caseId != null) ...[
+            IconButton(
+              icon: const Icon(Icons.link),
+              tooltip: '綁定專案',
+              onPressed:
+                  (_selectedConfiguration == null ||
+                      _selectedConfiguration == '新配置' ||
+                      _selectedConfiguration!.isEmpty)
+                  ? null
+                  : () async {
+                      final confirm = await showDialog<bool>(
+                        context: context,
+                        builder: (ctx) => AlertDialog(
+                          title: const Text('綁定配置到案件'),
+                          content: Text(
+                            '確定要將配置 "$_selectedConfiguration" 綁定到案件 #${widget.caseId} 嗎？',
+                          ),
+                          actions: [
+                            TextButton(
+                              onPressed: () => Navigator.of(ctx).pop(false),
+                              child: const Text('取消'),
+                            ),
+                            TextButton(
+                              onPressed: () => Navigator.of(ctx).pop(true),
+                              child: const Text('綁定'),
+                            ),
+                          ],
+                        ),
+                      );
+
+                      if (confirm == true) {
+                        try {
+                          await _service.bindConfiguration(
+                            _selectedConfiguration!,
+                            widget.caseId!,
+                          );
+                          if (!mounted) return;
+                          ScaffoldMessenger.of(
+                            context,
+                          ).showSnackBar(const SnackBar(content: Text('綁定完成')));
+                          setState(() {});
+                        } catch (e) {
+                          if (!mounted) return;
+                          ScaffoldMessenger.of(
+                            context,
+                          ).showSnackBar(SnackBar(content: Text('綁定失敗: $e')));
+                        }
+                      }
+                    },
+            ),
+          ],
         ],
       ),
       drawer: const AppDrawer(),
@@ -950,42 +1031,15 @@ class _DiscoveryGeneratePageState extends State<DiscoveryGeneratePage> {
               color: Theme.of(context).colorScheme.onSurfaceVariant,
             ),
           ),
-          Expanded(
-            flex: 2,
-            child: _buildHeaderLabel('Brand'),
-          ),
-          Expanded(
-            flex: 2,
-            child: _buildHeaderLabel('Model'),
-          ),
-          Expanded(
-            flex: 2,
-            child: _buildHeaderLabel('Type'),
-          ),
-          Expanded(
-            flex: 3,
-            child: _buildHeaderLabel('Module ID'),
-          ),
-          Expanded(
-            flex: 2,
-            child: _buildHeaderLabel('Channel'),
-          ),
-          Expanded(
-            flex: 3,
-            child: _buildHeaderLabel('Name'),
-          ),
-          Expanded(
-            flex: 2,
-            child: _buildHeaderLabel('TCP'),
-          ),
-          Expanded(
-            flex: 2,
-            child: _buildHeaderLabel('Area'),
-          ),
-          SizedBox(
-            width: 100,
-            child: _buildHeaderLabel('操作'),
-          ),
+          Expanded(flex: 2, child: _buildHeaderLabel('Brand')),
+          Expanded(flex: 2, child: _buildHeaderLabel('Model')),
+          Expanded(flex: 2, child: _buildHeaderLabel('Type')),
+          Expanded(flex: 3, child: _buildHeaderLabel('Module ID')),
+          Expanded(flex: 2, child: _buildHeaderLabel('Channel')),
+          Expanded(flex: 3, child: _buildHeaderLabel('Name')),
+          Expanded(flex: 2, child: _buildHeaderLabel('TCP')),
+          Expanded(flex: 2, child: _buildHeaderLabel('Area')),
+          SizedBox(width: 100, child: _buildHeaderLabel('操作')),
         ],
       ),
     );
@@ -1045,7 +1099,10 @@ class _DiscoveryGeneratePageState extends State<DiscoveryGeneratePage> {
                       ),
                       const SizedBox(width: 8),
                       IconButton(
-                        icon: Icon(Icons.delete, size: context.scaledIconSize(18)),
+                        icon: Icon(
+                          Icons.delete,
+                          size: context.scaledIconSize(18),
+                        ),
                         onPressed: () => removeDevice(device.id!),
                         tooltip: '刪除',
                         padding: EdgeInsets.zero,
@@ -1085,8 +1142,7 @@ class _DiscoveryGeneratePageState extends State<DiscoveryGeneratePage> {
         children: [
           Text(
             '添加新設備',
-            style: TextStyle(
-              fontSize: 16, fontWeight: FontWeight.bold),
+            style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
           ),
           const SizedBox(height: 16),
           LayoutBuilder(
@@ -1191,8 +1247,9 @@ class _DiscoveryGeneratePageState extends State<DiscoveryGeneratePage> {
                           ).first;
                         });
                       },
-                      items: brands
-                          .map<DropdownMenuItem<String>>((String value) {
+                      items: brands.map<DropdownMenuItem<String>>((
+                        String value,
+                      ) {
                         return DropdownMenuItem<String>(
                           value: value,
                           child: Text(value),
@@ -1228,11 +1285,12 @@ class _DiscoveryGeneratePageState extends State<DiscoveryGeneratePage> {
                       },
                       items: models[selectedBrand]!
                           .map<DropdownMenuItem<String>>((String value) {
-                        return DropdownMenuItem<String>(
-                          value: value,
-                          child: Text(value),
-                        );
-                      }).toList(),
+                            return DropdownMenuItem<String>(
+                              value: value,
+                              child: Text(value),
+                            );
+                          })
+                          .toList(),
                     ),
                   ),
                   SizedBox(
@@ -1256,11 +1314,12 @@ class _DiscoveryGeneratePageState extends State<DiscoveryGeneratePage> {
                       },
                       items: getAvailableTypes(selectedBrand, selectedModel)
                           .map<DropdownMenuItem<String>>((String value) {
-                        return DropdownMenuItem<String>(
-                          value: value,
-                          child: Text(value),
-                        );
-                      }).toList(),
+                            return DropdownMenuItem<String>(
+                              value: value,
+                              child: Text(value),
+                            );
+                          })
+                          .toList(),
                     ),
                   ),
                   SizedBox(
@@ -1277,8 +1336,9 @@ class _DiscoveryGeneratePageState extends State<DiscoveryGeneratePage> {
                         _handleModuleIdSelection(newValue);
                       },
                       items: [
-                        ...availableModuleIds
-                            .map<DropdownMenuItem<String>>((value) {
+                        ...availableModuleIds.map<DropdownMenuItem<String>>((
+                          value,
+                        ) {
                           return DropdownMenuItem<String>(
                             value: value,
                             child: Text(value),
@@ -1391,8 +1451,9 @@ class _DiscoveryGeneratePageState extends State<DiscoveryGeneratePage> {
                         _handleAreaSelection(newValue, areaController);
                       },
                       items: [
-                        ...availableAreas
-                            .map<DropdownMenuItem<String>>((value) {
+                        ...availableAreas.map<DropdownMenuItem<String>>((
+                          value,
+                        ) {
                           return DropdownMenuItem<String>(
                             value: value,
                             child: Text(value),
@@ -1499,9 +1560,6 @@ class _DiscoveryGeneratePageState extends State<DiscoveryGeneratePage> {
       ),
     );
   }
-
-
-
 
   // 自動儲存配置
   Future<void> _autoSaveConfiguration() async {
