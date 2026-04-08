@@ -339,17 +339,19 @@ class DiscoveryService extends ChangeNotifier {
   }
 
   // Configuration management
-  Future<void> saveConfiguration(String name) async {
+  Future<void> saveConfiguration(String name, {int? caseId}) async {
     _isLoading = true;
     _error = null;
     notifyListeners();
 
     try {
       final devicesData = _devices.map((d) => d.toJson()).toList();
+      final body = {'name': name, 'devices': devicesData};
+      if (caseId != null) body['case_id'] = caseId;
       final response = await _client.post(
         Uri.parse('$baseUrl/api/configurations'),
         headers: {'Content-Type': 'application/json'},
-        body: jsonEncode({'name': name, 'devices': devicesData}),
+        body: jsonEncode(body),
       );
 
       if (response.statusCode == 200) {
@@ -371,15 +373,15 @@ class DiscoveryService extends ChangeNotifier {
     }
   }
 
-  Future<void> loadConfiguration(String name) async {
+  Future<void> loadConfiguration(String name, {int? caseId}) async {
     _isLoading = true;
     _error = null;
     notifyListeners();
 
     try {
-      final response = await _client.get(
-        Uri.parse('$baseUrl/api/configurations/load?name=$name'),
-      );
+      var uri = '$baseUrl/api/configurations/load?name=$name';
+      if (caseId != null) uri += '&case_id=$caseId';
+      final response = await _client.get(Uri.parse(uri));
 
       if (response.statusCode == 200) {
         final data = jsonDecode(response.body);
@@ -408,15 +410,15 @@ class DiscoveryService extends ChangeNotifier {
     }
   }
 
-  Future<void> fetchConfigurations() async {
+  Future<void> fetchConfigurations({int? caseId}) async {
     _isLoading = true;
     _error = null;
     notifyListeners();
 
     try {
-      final response = await _client.get(
-        Uri.parse('$baseUrl/api/configurations'),
-      );
+      var uri = '$baseUrl/api/configurations';
+      if (caseId != null) uri += '?case_id=$caseId';
+      final response = await _client.get(Uri.parse(uri));
 
       if (response.statusCode == 200) {
         final data = jsonDecode(response.body);
@@ -448,15 +450,15 @@ class DiscoveryService extends ChangeNotifier {
     return _configurations.map((config) => config.name).toList();
   }
 
-  Future<void> deleteConfiguration(String name) async {
+  Future<void> deleteConfiguration(String name, {int? caseId}) async {
     _isLoading = true;
     _error = null;
     notifyListeners();
 
     try {
-      final response = await _client.delete(
-        Uri.parse('$baseUrl/api/configurations?name=$name'),
-      );
+      var uri = '$baseUrl/api/configurations?name=$name';
+      if (caseId != null) uri += '&case_id=$caseId';
+      final response = await _client.delete(Uri.parse(uri));
 
       if (response.statusCode == 200) {
         // Success

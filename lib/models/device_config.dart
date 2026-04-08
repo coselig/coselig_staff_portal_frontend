@@ -3,6 +3,7 @@ import 'dart:convert';
 class DeviceConfiguration {
   final int id;
   final int userId;
+  final int? caseId;
   final String name;
   final String chineseName;
   final String userName;
@@ -13,6 +14,7 @@ class DeviceConfiguration {
   DeviceConfiguration({
     required this.id,
     required this.userId,
+    this.caseId,
     required this.name,
     required this.chineseName,
     required this.userName,
@@ -25,6 +27,11 @@ class DeviceConfiguration {
     return DeviceConfiguration(
       id: json['id'] ?? 0,
       userId: json['user_id'] ?? 0,
+      caseId: json['case_id'] != null
+          ? (json['case_id'] is int
+                ? json['case_id']
+                : int.tryParse(json['case_id'].toString()))
+          : null,
       name: json['name'] ?? '',
       chineseName: json['chinese_name'] ?? json['user_name'] ?? 'Unknown',
       userName: json['user_name'] ?? '',

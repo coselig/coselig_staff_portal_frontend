@@ -107,7 +107,8 @@ class _CaseDetailPageState extends State<CaseDetailPage> {
   void _openDiscovery() {
     Navigator.of(context).push(
       MaterialPageRoute(
-        builder: (_) => const DiscoveryGeneratePage(),
+        builder: (_) =>
+            DiscoveryGeneratePage(caseId: widget.caseId, caseName: _case?.name),
       ),
     );
   }

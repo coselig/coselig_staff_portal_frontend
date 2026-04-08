@@ -8,7 +8,9 @@ import 'package:coselig_staff_portal/utils/icon_utils.dart';
 
 
 class DiscoveryGeneratePage extends StatefulWidget {
-  const DiscoveryGeneratePage({super.key});
+  final int? caseId;
+  final String? caseName;
+  const DiscoveryGeneratePage({super.key, this.caseId, this.caseName});
 
   @override
   State<DiscoveryGeneratePage> createState() => _DiscoveryGeneratePageState();
@@ -48,7 +50,7 @@ class _DiscoveryGeneratePageState extends State<DiscoveryGeneratePage> {
     _service.addListener(_update);
 
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      _service.fetchConfigurations();
+      _service.fetchConfigurations(caseId: widget.caseId);
       _service.fetchDeviceConfigOptions();
     });
 
@@ -626,7 +628,9 @@ class _DiscoveryGeneratePageState extends State<DiscoveryGeneratePage> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('裝置註冊表生成器'),
+        title: Text(
+          '裝置註冊表生成器' + (widget.caseId != null ? ' — 案件#${widget.caseId}' : ''),
+        ),
         leading: Builder(
           builder: (context) => IconButton(
             icon: const Icon(Icons.menu),
@@ -657,7 +661,10 @@ class _DiscoveryGeneratePageState extends State<DiscoveryGeneratePage> {
                   }
                 } else {
                   try {
-                    await _service.loadConfiguration(newValue);
+                    await _service.loadConfiguration(
+                      newValue,
+                      caseId: widget.caseId,
+                    );
                     if (!mounted) return;
                     messenger.showSnackBar(const SnackBar(content: Text('配置加載成功')));
                   } catch (e) {
@@ -727,12 +734,15 @@ class _DiscoveryGeneratePageState extends State<DiscoveryGeneratePage> {
                   }
 
                   try {
-                    await _service.saveConfiguration(newName);
+                    await _service.saveConfiguration(
+                      newName,
+                      caseId: widget.caseId,
+                    );
                     setState(() {
                       _selectedConfiguration = newName;
                     });
                     _service.setConfigurationName(newName);
-                    await _service.fetchConfigurations();
+                    await _service.fetchConfigurations(caseId: widget.caseId);
                     if (!mounted) return;
                     messenger.showSnackBar(const SnackBar(content: Text('配置保存成功')));
                   } catch (e) {
@@ -743,8 +753,11 @@ class _DiscoveryGeneratePageState extends State<DiscoveryGeneratePage> {
               } else {
                 // 直接保存到當前選擇的配置
                 try {
-                  await _service.saveConfiguration(_selectedConfiguration!);
-                  await _service.fetchConfigurations();
+                  await _service.saveConfiguration(
+                    _selectedConfiguration!,
+                    caseId: widget.caseId,
+                  );
+                  await _service.fetchConfigurations(caseId: widget.caseId);
                   if (!mounted) return;
                   messenger.showSnackBar(const SnackBar(content: Text('配置保存成功')));
                 } catch (e) {
@@ -797,7 +810,7 @@ class _DiscoveryGeneratePageState extends State<DiscoveryGeneratePage> {
                     _selectedConfiguration = '新配置';
                   });
                   _service.clearDevices();
-                  await _service.fetchConfigurations();
+                  await _service.fetchConfigurations(caseId: widget.caseId);
                   if (!mounted) return;
                   messenger.showSnackBar(const SnackBar(content: Text('配置刪除成功')));
                 } catch (e) {
