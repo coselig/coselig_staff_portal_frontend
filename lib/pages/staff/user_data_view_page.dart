@@ -115,6 +115,52 @@ class _UserDataViewPageState extends State<UserDataViewPage> {
     }
   }
 
+  Future<void> _toggleActive(Map<String, dynamic> user, bool setActive) async {
+    final userId = user['id'].toString();
+    final displayName = user['chinese_name'] ?? user['name'] ?? '此帳號';
+    final actionLabel = setActive ? '設為在職' : '設為離職';
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: Text('確認 $actionLabel'),
+        content: Text('確定要將「$displayName」$actionLabel？'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(false),
+            child: const Text('取消'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.of(ctx).pop(true),
+            child: const Text('確認'),
+          ),
+        ],
+      ),
+    );
+    if (confirmed != true || !mounted) return;
+
+    try {
+      await _userDataService.updateUserActive(userId, setActive);
+      setState(() {
+        final idx = _allUsers.indexWhere((u) => u['id'].toString() == userId);
+        if (idx != -1)
+          _allUsers[idx] = {..._allUsers[idx], 'is_active': setActive ? 1 : 0};
+      });
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('已將「$displayName」${setActive ? '設為在職' : '標記為離職'}'),
+          ),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('更新失敗: $e')));
+      }
+    }
+  }
+
   Widget _buildRoleChip(String? role) {
     final label = _roleLabels[role] ?? role ?? '未知';
     final color = _roleColors[role] ?? Colors.grey;
@@ -187,6 +233,19 @@ class _UserDataViewPageState extends State<UserDataViewPage> {
             },
             style: TextButton.styleFrom(foregroundColor: Colors.red),
             child: const Text('刪除帳號'),
+          ),
+          TextButton(
+            onPressed: () {
+              Navigator.of(ctx).pop();
+              final isActive = user['is_active'];
+              final isInactive = isActive == 0 || isActive == false;
+              _toggleActive(user, isInactive);
+            },
+            child: Text(
+              (user['is_active'] == 0 || user['is_active'] == false)
+                  ? '設為在職'
+                  : '設為離職',
+            ),
           ),
           TextButton(
             onPressed: () => Navigator.of(ctx).pop(),
@@ -552,8 +611,11 @@ class _UserDataViewPageState extends State<UserDataViewPage> {
                         email,
                         style: const TextStyle(fontSize: 12),
                       ),
-                      trailing: role == 'customer'
-                          ? Tooltip(
+                      trailing: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          if (role == 'customer')
+                            Tooltip(
                               message: '升級為員工',
                               child: IconButton(
                                 icon: const Icon(
@@ -562,8 +624,19 @@ class _UserDataViewPageState extends State<UserDataViewPage> {
                                 ),
                                 onPressed: () => _changeRole(user, 'employee'),
                               ),
-                            )
-                          : const Icon(Icons.chevron_right),
+                            ),
+                          IconButton(
+                            tooltip: inactive ? '設為在職' : '設為離職',
+                            icon: Icon(
+                              inactive ? Icons.person : Icons.person_off,
+                              color: inactive ? Colors.green : Colors.orange,
+                            ),
+                            onPressed: () => _toggleActive(user, inactive),
+                          ),
+                          if (role != 'customer')
+                            const Icon(Icons.chevron_right),
+                        ],
+                      ),
                       onTap: () => _showUserDetail(user),
                     ),
                   );

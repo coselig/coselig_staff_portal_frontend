@@ -126,6 +126,32 @@ class UserDataService extends ChangeNotifier {
     }
   }
 
+  // 更新用戶在職狀態（僅管理員）
+  Future<void> updateUserActive(String userId, bool isActive) async {
+    try {
+      final response = await _client.patch(
+        Uri.parse('$baseUrl/api/users/$userId'),
+        headers: {'Content-Type': 'application/json'},
+        body: jsonEncode({'is_active': isActive ? 1 : 0}),
+      );
+
+      if (response.statusCode == 200) {
+        return;
+      } else if (response.statusCode == 401) {
+        navigatorKey.currentState?.pushReplacementNamed('/login');
+        throw Exception('未登入');
+      } else if (response.statusCode == 403) {
+        final error = jsonDecode(response.body);
+        throw Exception(error['error'] ?? '權限不足');
+      } else {
+        final error = jsonDecode(response.body);
+        throw Exception(error['error'] ?? '更新在職狀態失敗');
+      }
+    } catch (e) {
+      throw Exception('網路錯誤: $e');
+    }
+  }
+
   // 查詢用戶關聯資料摘要（刪除前預覽，僅管理員）
   Future<Map<String, dynamic>> getUserRelatedData(String userId) async {
     try {
